@@ -189,8 +189,8 @@ namespace Algara.Identity.Services
             };
             _context.UserSessions.Add(session);
 
-            // Генерираме уникален идентификатор за сесията
-            //user.LastLoginSessionId = Guid.NewGuid().ToString();
+            user.LastLoginSessionId = session.SessionId;
+            user.LastLoginDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             var claims = new List<Claim>

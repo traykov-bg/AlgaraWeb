@@ -15,6 +15,7 @@ namespace Algara.Identity.Models
         public List<string> Roles { get; set; } = new();
 
         public string? LastLoginSessionId { get; set; }
+        public DateTime? LastLoginDate { get; set; }
         public int FailedLoginAttempts { get; set; } = 0;
         public DateTime? LockoutUntil { get; set; }
 
