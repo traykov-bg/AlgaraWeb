@@ -78,7 +78,7 @@ namespace Algara.Web.Controllers
                 return View(model);
             }
 
-            if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
+            if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.Now)
             {
                 ModelState.AddModelError("", $"Акаунтът ви е заключен до {user.LockoutUntil.Value.ToLocalTime()}.");
                 return View(model);
@@ -90,7 +90,7 @@ namespace Algara.Web.Controllers
                 return View(model);
             }
 
-            await _userService.SignInAsync(HttpContext, user, model.RememberMe);
+            await _userService.SignInAsync(HttpContext, user, model.RememberMe, model.TimeZoneOffset);
             return RedirectToAction("Index", "Home");
         }
 

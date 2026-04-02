@@ -11,7 +11,7 @@ public interface IUserService
     Task<bool> RegisterUserAsync(string username, string email, string password);
     Task<bool> ValidateUserAsync(string username, string password);
     Task ValidateSecurityStampAsync(CookieValidatePrincipalContext context);
-    Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe);
+    Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe, int? timeZoneOffset = null);
     Task SignOutAsync(HttpContext httpContext);
     Task<UserSession?> GetActiveSessionAsync(int userN, string sessionId);
     Task ForceSignOutAllSessionsAsync(string userId);

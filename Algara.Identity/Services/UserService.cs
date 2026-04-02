@@ -67,7 +67,7 @@ namespace Algara.Identity.Services
             }
 
             // Проверяваме дали акаунтът е заключен
-            if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
+            if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.Now)
             {
                 _logger.LogWarning($"Заключен акаунт опит за вход: {username}");
                 return false;
@@ -80,7 +80,7 @@ namespace Algara.Identity.Services
 
                 if (user.FailedLoginAttempts >= 5) // Например, заключваме след 5 грешни опита
                 {
-                    user.LockoutUntil = DateTime.UtcNow.AddMinutes(15); // Заключване за 15 минути
+                    user.LockoutUntil = DateTime.Now.AddMinutes(15); // Заключване за 15 минути
                     _logger.LogWarning($"Потребителят {username} беше заключен за 15 минути след {user.FailedLoginAttempts} неуспешни опита.");
                 }
                 else
@@ -164,7 +164,7 @@ namespace Algara.Identity.Services
             }
         }
 
-        public async Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe)
+        public async Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe, int? timeZoneOffset = null)
         {
             var activeSessions = await _context.UserSessions
                 .Where(us => us.UserN == user.N && us.IsActive)
@@ -183,14 +183,15 @@ namespace Algara.Identity.Services
             {
                 UserN = user.N,
                 SessionId = Guid.NewGuid().ToString(),
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
                 DeviceInfo = "",
-                IsActive = true
+                IsActive = true,
+                TimeZoneOffset = timeZoneOffset
             };
             _context.UserSessions.Add(session);
 
             user.LastLoginSessionId = session.SessionId;
-            user.LastLoginDate = DateTime.UtcNow;
+            user.LastLoginDate = DateTime.Now;
             await _context.SaveChangesAsync();
 
             var claims = new List<Claim>
