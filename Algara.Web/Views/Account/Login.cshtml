@@ -30,7 +30,17 @@
 
 @section Scripts {
     <script>
-        // getTimezoneOffset() връща минути ЗАД UTC (UTC+2 → -120), затова го негираме
-        document.getElementById('timeZoneOffset').value = -new Date().getTimezoneOffset();
+        // Задаваме TimeZoneOffset точно преди изпращане на формата, за да е сигурно.
+        // querySelector по name е надежден — не зависи от генерирания id.
+        // getTimezoneOffset() връща минути ЗАД UTC (UTC+2 → -120), затова го негираме.
+        (function () {
+            var form = document.getElementById('loginForm');
+            function setOffset() {
+                var field = form.querySelector('[name="TimeZoneOffset"]');
+                if (field) field.value = -new Date().getTimezoneOffset();
+            }
+            setOffset();                        // при зареждане на страницата
+            form.addEventListener('submit', setOffset); // и точно преди submit
+        })();
     </script>
 }
