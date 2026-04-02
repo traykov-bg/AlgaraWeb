@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Algara.Web.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
-    [Migration("20250313222748_AddUserSessionsTable")]
-    partial class AddUserSessionsTable
+    [Migration("20260402195628_AddLockoutColumns")]
+    partial class AddLockoutColumns
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -118,6 +118,9 @@ namespace Algara.Web.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("int");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -131,11 +134,10 @@ namespace Algara.Web.Migrations
                     b.Property<string>("LastLoginSessionId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("LockoutUntil")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Roles")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

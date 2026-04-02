@@ -1,13 +1,19 @@
 ﻿using Algara.Identity.Data;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Algara.Identity.Models
 {
     public class ApplicationUser : IdentityUser
     {
-        // Тук можеш да добавиш допълнителни свойства при нужда
         public string FullName { get; set; }
         public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
-        public List<string> Roles { get; set; } = new(); 
+
+        /// <summary>
+        /// Runtime cache на ролите — зарежда се от UserRoles таблицата, не се пази в Users.
+        /// </summary>
+        [NotMapped]
+        public List<string> Roles { get; set; } = new();
+
         public string? LastLoginSessionId { get; set; }
         public int FailedLoginAttempts { get; set; } = 0;
         public DateTime? LockoutUntil { get; set; }

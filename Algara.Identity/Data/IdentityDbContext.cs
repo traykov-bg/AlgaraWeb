@@ -1,8 +1,5 @@
 ﻿using Algara.Identity.Models;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Reflection.Emit;
 
 namespace Algara.Identity.Data
 {
@@ -25,13 +22,6 @@ namespace Algara.Identity.Data
             modelBuilder.Entity<ApplicationUser>()
                 .HasIndex(u => u.Id, "IX_Users_Id") // Дава име на индекса
                 .IsUnique();
-
-            modelBuilder.Entity<ApplicationUser>()
-            .Property(u => u.Roles)
-            .HasConversion(
-                v => JsonConvert.SerializeObject(v), // Сериализира към JSON string
-                v => JsonConvert.DeserializeObject<List<string>>(v) ?? new List<string>() // Десериализира обратно
-            );
 
             modelBuilder.Entity<ApplicationRole>()
                 .HasKey(r => r.N); // Казваме, че Primary Key е N
