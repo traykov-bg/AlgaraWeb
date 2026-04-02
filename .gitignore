@@ -1,0 +1,30 @@
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet
+**/packages/
+**/*.nupkg
+**/nuget.config
+
+# Logs
+**/logs/
+*.log
+
+# Secrets & config overrides
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Development.json
+
+# OS
+Thumbs.db
+.DS_Store

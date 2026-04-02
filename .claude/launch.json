@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Algara.Web (HTTP)",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Algara.Web/Algara.Web.csproj", "--launch-profile", "http"],
+      "port": 5112
+    },
+    {
+      "name": "Algara.Web (HTTPS)",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Algara.Web/Algara.Web.csproj", "--launch-profile", "https"],
+      "port": 7190
+    }
+  ]
+}
