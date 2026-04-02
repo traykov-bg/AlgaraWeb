@@ -323,15 +323,7 @@ namespace Algara.Identity.Services
                 new Claim("SessionId", user.LastLoginSessionId??"") // 
             };
 
-            // Добавяме всички роли
             var roles = await GetRolesAsync(user);
-
-            //foreach (var role in roles)
-            //{
-            //    claims.Add(new Claim(ClaimTypes.Role, role));
-            //}
-
-            //Добавяме всяка роля като отделен claim
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             return claims;

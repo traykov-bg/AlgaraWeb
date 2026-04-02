@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(git config:*)",
+      "Bash(grep -n \"@Html.AntiForgeryToken\\\\|asp-antiforgery\" /e/.NETProjects/Algara/Algara.Web/Views/Account/*.cshtml)"
     ]
   }
 }

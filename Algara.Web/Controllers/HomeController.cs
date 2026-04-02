@@ -22,10 +22,6 @@ namespace Algara.Web.Controllers
             _logger.LogInformation("Index page accessed.");
             return View();
         }
-        //public HomeController(IProductRepository productRepository)
-        //{
-        //    _productRepository = productRepository;
-        //}
 
         public async Task<IActionResult> TestProducts()
         {

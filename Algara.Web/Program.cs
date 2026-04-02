@@ -43,7 +43,6 @@ try
     {
         throw new Exception("Unsupported database provider!");
     }
-    //builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));//b => b.MigrationsAssembly("Algara.Data"))); // <-- Това добавя правилната сборка за миграциите
     builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Algara.Web")));
 
@@ -52,36 +51,6 @@ try
 
     // Регистрираме UserService
     builder.Services.AddScoped<IUserService, UserService>();
-    //builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    //    .AddEntityFrameworkStores<ApplicationDbContext>()
-    //    .AddDefaultTokenProviders();
-    
-    //builder.Services.ConfigureApplicationCookie(options =>
-    //{
-    //    options.LoginPath = "/Account/Login";
-    //    options.AccessDeniedPath = "/Account/Login";
-    //    options.Events = new CookieAuthenticationEvents
-    //    {
-    //        OnValidatePrincipal = async context =>
-    //        {
-    //            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-    //            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-    //            if (userId != null)
-    //            {
-    //                var userStore = context.HttpContext.RequestServices.GetRequiredService<IUserStore<ApplicationUser>>();
-    //                var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
-    //                var securityStamp = context.Principal?.FindFirst("SecurityStamp")?.Value;
-
-    //                if (user == null || user.SecurityStamp != securityStamp)
-    //                {
-    //                    context.RejectPrincipal();
-    //                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    //                }
-    //            }
-    //        }
-    //    };
-    //});
 
     builder.Services.Configure<IdentityOptions>(options =>
     {
@@ -161,11 +130,6 @@ try
     builder.Services.AddScoped<IUserStore<ApplicationUser>, UserStore>();
     builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
-    //builder.Services.AddControllers().AddJsonOptions(options =>
-    //{
-    //    options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-    //});
-
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
         {
@@ -187,6 +151,16 @@ try
 
     app.UseHttpsRedirection();
     app.UseStaticFiles();
+
+    // Security headers
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        await next();
+    });
 
     app.UseRouting();
 

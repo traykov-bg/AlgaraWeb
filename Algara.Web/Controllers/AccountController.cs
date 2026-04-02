@@ -98,7 +98,7 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _userService.SignOutAsync(HttpContext);
             return RedirectToAction("Index", "Home");
         }
 
