@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Контакти";
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-lg-8">
+        <h1 class="algara-section-title">Контакти</h1>
+        <p class="text-muted">Свържете се с нас — ще се радваме да ви помогнем да намерите идеалното обзавеждане.</p>
+
+        <div class="row g-4 mt-2">
+            <div class="col-md-6">
+                <div class="p-4 rounded" style="background: var(--algara-subtle); border: 1px solid var(--algara-border);">
+                    <h5 class="fw-semibold mb-3">Информация за контакт</h5>
+                    <p class="mb-2">
+                        <i class="bi bi-geo-alt-fill me-2" style="color: var(--algara-accent);"></i>
+                        ул. Примерна 1, София 1000
+                    </p>
+                    <p class="mb-2">
+                        <i class="bi bi-telephone-fill me-2" style="color: var(--algara-accent);"></i>
+                        +359 2 000 0000
+                    </p>
+                    <p class="mb-2">
+                        <i class="bi bi-envelope-fill me-2" style="color: var(--algara-accent);"></i>
+                        info@algara.bg
+                    </p>
+                    <p class="mb-0">
+                        <i class="bi bi-clock-fill me-2" style="color: var(--algara-accent);"></i>
+                        Пон–Пет: 09:00–18:00
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-4 rounded" style="background: var(--algara-subtle); border: 1px solid var(--algara-border);">
+                    <h5 class="fw-semibold mb-3">Изпратете запитване</h5>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Вашето име</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="Иван Иванов" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Имейл</label>
+                            <input type="email" class="form-control form-control-sm" placeholder="ivan@example.com" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Съобщение</label>
+                            <textarea class="form-control form-control-sm" rows="3" placeholder="Вашето запитване…"></textarea>
+                        </div>
+                        <button type="submit" class="btn algara-btn-primary btn-sm w-100" disabled>
+                            Изпрати (скоро)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

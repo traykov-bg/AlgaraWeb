@@ -1,0 +1,54 @@
+@model Algara.Data.Models.Product
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Каталог</a></li>
+        @if (Model.Category != null)
+        {
+            <li class="breadcrumb-item">
+                <a asp-action="Category" asp-route-n="@Model.Category.N">@Model.Category.Name</a>
+            </li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-5">
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Name" />
+        }
+        else
+        {
+            <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                 style="height: 350px;">
+                <span class="text-muted">Без снимка</span>
+            </div>
+        }
+    </div>
+    <div class="col-md-7">
+        <h2>@Model.Name</h2>
+        @if (Model.Category != null)
+        {
+            <p class="text-muted">
+                <a asp-action="Category" asp-route-n="@Model.Category.N">@Model.Category.Name</a>
+            </p>
+        }
+        @if (Model.IsCustomizable)
+        {
+            <span class="badge bg-info mb-2">По поръчка</span>
+        }
+        <h4 class="my-3">@Model.Price.ToString("C")</h4>
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p>@Model.Description</p>
+        }
+        <hr />
+        <a asp-action="Index" class="btn btn-outline-secondary">← Назад към каталога</a>
+    </div>
+</div>

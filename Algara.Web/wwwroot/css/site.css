@@ -1,3 +1,355 @@
+﻿/* ═══════════════════════════════════════════════════════════
+   ALGARA THEME — CSS Custom Properties
+═══════════════════════════════════════════════════════════ */
+:root {
+    --algara-bg:        #F8F6F2;
+    --algara-subtle:    #F0EDE7;
+    --algara-accent:    #B85C38;
+    --algara-accent-dk: #8F4226;
+    --algara-text:      #1A1A1A;
+    --algara-muted:     #6B6B6B;
+    --algara-border:    #E0D9D0;
+}
+
+/* Base */
+body {
+    background-color: var(--algara-bg);
+    color: var(--algara-text);
+}
+
+/* ───── Navbar ───── */
+.navbar {
+    background: var(--algara-bg) !important;
+    border-bottom: 1px solid var(--algara-border) !important;
+}
+.algara-navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--algara-text) !important;
+    letter-spacing: .02em;
+}
+.navbar .nav-link {
+    color: var(--algara-text) !important;
+    font-size: .9rem;
+    font-weight: 500;
+    padding-left: .75rem;
+    padding-right: .75rem;
+    transition: color .15s;
+}
+.navbar .nav-link:hover { color: var(--algara-accent) !important; }
+
+/* ───── Navbar search ───── */
+.algara-search-wrapper { min-width: 0; }   /* flex shrink fix */
+
+@media (min-width: 992px) {
+    .algara-search-wrapper { width: 300px; }
+}
+
+.algara-search-input {
+    background: var(--algara-subtle);
+    border: 1px solid var(--algara-border);
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    font-size: .85rem;
+    color: var(--algara-text);
+    width: 100%;
+}
+.algara-search-input:focus {
+    background: #fff;
+    border-color: var(--algara-accent);
+    box-shadow: none;
+    outline: none;
+}
+.algara-search-btn {
+    background: var(--algara-accent);
+    color: #fff;
+    border: 1px solid var(--algara-accent);
+    border-radius: 0 4px 4px 0;
+    padding: .3rem .65rem;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.algara-search-btn:hover { background: var(--algara-accent-dk); color: #fff; }
+
+/* ───── Live-search dropdown ───── */
+.algara-search-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--algara-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 1055;
+    overflow: hidden;
+}
+.algara-search-dropdown.is-open { display: block; }
+
+.algara-sd-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.algara-sd-item + .algara-sd-item {
+    border-top: 1px solid var(--algara-border);
+}
+.algara-sd-link {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .85rem;
+    text-decoration: none;
+    color: var(--algara-text);
+    transition: background .12s;
+}
+.algara-sd-link:hover { background: var(--algara-subtle); }
+
+.algara-sd-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--algara-border);
+}
+.algara-sd-img--ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    color: var(--algara-muted);
+}
+
+.algara-sd-body   { min-width: 0; }
+.algara-sd-name   { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.algara-sd-name strong { color: var(--algara-accent); font-weight: 700; }
+.algara-sd-meta   { font-size: .75rem; color: var(--algara-muted); margin-top: 1px; }
+.algara-sd-cat    { }
+
+.algara-sd-footer {
+    border-top: 1px solid var(--algara-border);
+    padding: .5rem .85rem;
+    background: var(--algara-subtle);
+}
+.algara-sd-all {
+    font-size: .82rem;
+    color: var(--algara-accent);
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+.algara-sd-all:hover { color: var(--algara-accent-dk); text-decoration: underline; }
+
+/* ───── Cart icon ───── */
+.algara-cart-btn {
+    color: var(--algara-text);
+    font-size: 1.25rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: .15rem .4rem;
+    border-radius: 4px;
+    transition: color .15s, background .15s;
+}
+.algara-cart-btn:hover {
+    color: var(--algara-accent);
+    background: var(--algara-subtle);
+}
+
+/* ───── Navbar user / auth buttons ───── */
+.algara-nav-user {
+    font-size: .85rem;
+    color: var(--algara-muted);
+    white-space: nowrap;
+}
+.algara-btn-ghost {
+    color: var(--algara-text);
+    border: 1px solid var(--algara-border);
+    background: transparent;
+    font-size: .82rem;
+    padding: .25rem .75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background .15s;
+}
+.algara-btn-ghost:hover { background: var(--algara-subtle); color: var(--algara-text); }
+.algara-btn-primary-sm {
+    background: var(--algara-accent);
+    color: #fff;
+    border: 1px solid var(--algara-accent);
+    font-size: .82rem;
+    padding: .25rem .75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background .15s;
+}
+.algara-btn-primary-sm:hover { background: var(--algara-accent-dk); color: #fff; }
+.algara-btn-outline-sm {
+    background: transparent;
+    color: var(--algara-accent);
+    border: 1px solid var(--algara-accent);
+    font-size: .82rem;
+    padding: .25rem .75rem;
+    border-radius: 4px;
+    transition: background .15s, color .15s;
+}
+.algara-btn-outline-sm:hover { background: var(--algara-accent); color: #fff; }
+
+/* ───── Hero ───── */
+.algara-hero {
+    min-height: 520px;
+    background: linear-gradient(135deg, #D4C5B0 0%, #B8A898 60%, #8B7355 100%);
+    display: flex;
+    align-items: center;
+}
+.algara-hero__overlay {
+    width: 100%;
+    padding: 4rem 0;
+}
+.algara-hero__eyebrow {
+    color: var(--algara-accent);
+    font-size: .85rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: .5rem;
+}
+.algara-hero__title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    color: #1A1A1A;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+}
+.algara-hero__subtitle {
+    color: #3D2B1A;
+    font-size: 1.05rem;
+    margin-bottom: 1.5rem;
+    opacity: .85;
+}
+
+/* ───── Buttons ───── */
+.algara-btn-primary {
+    background: var(--algara-accent);
+    color: #fff;
+    border: none;
+    padding: .75rem 2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background .2s;
+}
+.algara-btn-primary:hover {
+    background: var(--algara-accent-dk);
+    color: #fff;
+}
+.algara-btn-outline {
+    border: 1.5px solid var(--algara-accent);
+    color: var(--algara-accent);
+    background: transparent;
+    padding: .65rem 2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background .2s, color .2s;
+    text-decoration: none;
+    display: inline-block;
+}
+.algara-btn-outline:hover {
+    background: var(--algara-accent);
+    color: #fff;
+}
+
+/* ───── Accent link ───── */
+.algara-link-accent {
+    color: var(--algara-accent);
+    text-decoration: none;
+    font-size: .9rem;
+    font-weight: 500;
+}
+.algara-link-accent:hover { color: var(--algara-accent-dk); text-decoration: underline; }
+
+/* ───── Section titles ───── */
+.algara-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--algara-text);
+}
+
+/* ───── Category cards ───── */
+.algara-cat-card {
+    background: var(--algara-subtle);
+    border: 1px solid var(--algara-border);
+    border-radius: 8px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--algara-text);
+    transition: box-shadow .2s, color .2s;
+}
+.algara-cat-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    color: var(--algara-accent);
+    text-decoration: none;
+}
+.algara-cat-card__icon { font-size: 2rem; margin-bottom: .5rem; }
+.algara-cat-card__name { font-weight: 600; font-size: .95rem; }
+.algara-cat-card__desc { font-size: .75rem; color: var(--algara-muted); margin-top: .25rem; }
+
+/* ───── Product cards ───── */
+.algara-product-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--algara-border);
+    transition: box-shadow .2s;
+    color: var(--algara-text);
+}
+.algara-product-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    color: var(--algara-text);
+}
+.algara-product-card__img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+.algara-product-card__body { padding: 1rem; }
+.algara-product-card__cat  { font-size: .72rem; color: var(--algara-muted); text-transform: uppercase; letter-spacing: .08em; }
+.algara-product-card__name { font-weight: 600; font-size: .95rem; margin: .25rem 0 .4rem; }
+.algara-product-card__price {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--algara-accent);
+}
+
+/* ───── Customizable badge ───── */
+.algara-badge-custom {
+    display: inline-block;
+    margin-top: .4rem;
+    padding: .2rem .5rem;
+    font-size: .7rem;
+    border-radius: 20px;
+    background: var(--algara-subtle);
+    color: var(--algara-accent);
+    border: 1px solid var(--algara-border);
+    font-weight: 500;
+}
+
+/* ───── USP strip ───── */
+.algara-usp { background: var(--algara-bg); }
+.algara-usp-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+
+/* ───── Subtle bg helper ───── */
+.bg-algara-subtle { background-color: var(--algara-subtle) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   ORIGINAL TEMPLATE STYLES
+═══════════════════════════════════════════════════════════ */
 html {
   font-size: 14px;
 }

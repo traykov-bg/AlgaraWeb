@@ -1,6 +1,5 @@
 using System.Diagnostics;
-using Algara.Web.Models;
-using Algara.Web.Repositories;
+using Algara.Data.Repositories;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,32 +7,42 @@ namespace Algara.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IProductRepository _productRepository;
         private readonly ILogger<HomeController> _logger;
+        private readonly IProductRepository _productRepository;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public HomeController(IProductRepository productRepository,ILogger<HomeController> logger)
+        public HomeController(
+            ILogger<HomeController> logger,
+            IProductRepository productRepository,
+            ICategoryRepository categoryRepository)
         {
-            _productRepository = productRepository;
             _logger = logger;
+            _productRepository = productRepository;
+            _categoryRepository = categoryRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             _logger.LogInformation("Index page accessed.");
-            return View();
-        }
-        //public HomeController(IProductRepository productRepository)
-        //{
-        //    _productRepository = productRepository;
-        //}
-
-        public async Task<IActionResult> TestProducts()
-        {
-            var products = await _productRepository.GetAllAsync();
-            return Json(products);
+            var model = new HomeViewModel
+            {
+                Categories       = await _categoryRepository.GetAllAsync(),
+                FeaturedProducts = await _productRepository.GetFeaturedAsync(4),
+            };
+            return View(model);
         }
 
         public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public IActionResult Contact()
         {
             return View();
         }

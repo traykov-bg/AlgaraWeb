@@ -6,11 +6,28 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Algara.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserSessionsTable : Migration
+    public partial class AddLockoutColumns : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "Roles",
+                table: "Users");
+
+            migrationBuilder.AddColumn<int>(
+                name: "FailedLoginAttempts",
+                table: "Users",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "LockoutUntil",
+                table: "Users",
+                type: "datetime2",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "UserSessions",
                 columns: table => new
@@ -45,6 +62,21 @@ namespace Algara.Web.Migrations
         {
             migrationBuilder.DropTable(
                 name: "UserSessions");
+
+            migrationBuilder.DropColumn(
+                name: "FailedLoginAttempts",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "LockoutUntil",
+                table: "Users");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Roles",
+                table: "Users",
+                type: "nvarchar(max)",
+                nullable: false,
+                defaultValue: "");
         }
     }
 }

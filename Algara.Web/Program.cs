@@ -1,8 +1,10 @@
-﻿using Algara.Identity.Data;
+﻿using Algara.Data.Data;
+using Algara.Data.Repositories;
+using Algara.Identity.Data;
+using Algara.Web.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Utils;
-using Algara.Web.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -43,45 +45,23 @@ try
     {
         throw new Exception("Unsupported database provider!");
     }
-    //builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));//b => b.MigrationsAssembly("Algara.Data"))); // <-- Това добавя правилната сборка за миграциите
     builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Algara.Web")));
+        options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Algara.Web")));
+
+    builder.Services.AddDbContext<ShopDbContext>(options =>
+        options.UseSqlServer(connectionString, b => b
+            .MigrationsAssembly("Algara.Web")
+            .MigrationsHistoryTable("__EFMigrationsHistory_Shop")));
 
     // Регистрираме IHttpContextAccessor (нужен за UserService)
     builder.Services.AddHttpContextAccessor();
 
     // Регистрираме UserService
     builder.Services.AddScoped<IUserService, UserService>();
-    //builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    //    .AddEntityFrameworkStores<ApplicationDbContext>()
-    //    .AddDefaultTokenProviders();
-    
-    //builder.Services.ConfigureApplicationCookie(options =>
-    //{
-    //    options.LoginPath = "/Account/Login";
-    //    options.AccessDeniedPath = "/Account/Login";
-    //    options.Events = new CookieAuthenticationEvents
-    //    {
-    //        OnValidatePrincipal = async context =>
-    //        {
-    //            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-    //            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-    //            if (userId != null)
-    //            {
-    //                var userStore = context.HttpContext.RequestServices.GetRequiredService<IUserStore<ApplicationUser>>();
-    //                var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
-    //                var securityStamp = context.Principal?.FindFirst("SecurityStamp")?.Value;
-
-    //                if (user == null || user.SecurityStamp != securityStamp)
-    //                {
-    //                    context.RejectPrincipal();
-    //                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    //                }
-    //            }
-    //        }
-    //    };
-    //});
+    // Регистрираме Shop repositories
+    builder.Services.AddScoped<IProductRepository, ProductRepository>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
     builder.Services.Configure<IdentityOptions>(options =>
     {
@@ -157,14 +137,7 @@ try
     });
 
     builder.Services.AddAuthorization();
-    // Регистрираме Repository след като DatabaseHelper вече е дефиниран
     builder.Services.AddScoped<IUserStore<ApplicationUser>, UserStore>();
-    builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
-    //builder.Services.AddControllers().AddJsonOptions(options =>
-    //{
-    //    options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-    //});
 
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
@@ -177,6 +150,14 @@ try
     var dbHelper = app.Services.GetRequiredService<IDatabaseHelper>();
     await dbHelper.EnsureTablesExist();
 
+    // Seed данни (само в Development)
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var shopDb = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
+        await ShopDbSeeder.SeedAsync(shopDb);
+    }
+
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
     {
@@ -187,6 +168,16 @@ try
 
     app.UseHttpsRedirection();
     app.UseStaticFiles();
+
+    // Security headers
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        await next();
+    });
 
     app.UseRouting();
 

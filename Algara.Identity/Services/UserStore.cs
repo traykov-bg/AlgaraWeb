@@ -157,10 +157,10 @@ namespace Algara.Identity.Services
 
             string query = @"
         DELETE FROM UserRoles 
-        WHERE UserN = @UserN 
+        WHERE UserN = @UserN
         AND RoleN = (SELECT N FROM Roles WHERE Name = @RoleName)";
 
-            var parameters = new { UserId = user.N, RoleName = roleName };
+            var parameters = new { UserN = user.N, RoleName = roleName };
             await _databaseHelper.ExecuteAsync(query, parameters);
         }
 

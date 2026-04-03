@@ -12,6 +12,6 @@ namespace Algara.Identity.Models
         public string PasswordHash { get; set; }
         public string Salt { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

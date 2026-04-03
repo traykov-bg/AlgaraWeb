@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(git config:*)",
+      "Bash(grep -n \"@Html.AntiForgeryToken\\\\|asp-antiforgery\" /e/.NETProjects/Algara/Algara.Web/Views/Account/*.cshtml)",
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet build:*)",
+      "Bash(Sort-Object LastWriteTime)",
+      "Bash(Select-Object -Last 2 Name)",
+      "Bash(tasklist)",
+      "Bash(findstr /i \"Algara.Web.exe\")",
+      "Bash(tasklist /FI \"PID eq 8232\")",
+      "Bash(findstr /i \"Algara\")",
+      "Bash(Get-Process)",
+      "Bash(Select-Object Id, Name, CPU)",
+      "Bash(wmic process:*)"
     ]
   }
 }

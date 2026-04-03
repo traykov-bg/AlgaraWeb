@@ -6,7 +6,9 @@
 
 <h2>Вход</h2>
 
-<form asp-action="Login" method="post">
+<form asp-action="Login" method="post" id="loginForm">
+    <input asp-for="TimeZoneOffset" type="hidden" id="timeZoneOffset" />
+
     <div class="form-group">
         <label asp-for="Email"></label>
         <input asp-for="Email" class="form-control" />
@@ -25,3 +27,20 @@
     </div>
     <button type="submit" class="btn btn-primary">Вход</button>
 </form>
+
+@section Scripts {
+    <script>
+        // Задаваме TimeZoneOffset точно преди изпращане на формата, за да е сигурно.
+        // querySelector по name е надежден — не зависи от генерирания id.
+        // getTimezoneOffset() връща минути ЗАД UTC (UTC+2 → -120), затова го негираме.
+        (function () {
+            var form = document.getElementById('loginForm');
+            function setOffset() {
+                var field = form.querySelector('[name="TimeZoneOffset"]');
+                if (field) field.value = -new Date().getTimezoneOffset();
+            }
+            setOffset();                        // при зареждане на страницата
+            form.addEventListener('submit', setOffset); // и точно преди submit
+        })();
+    </script>
+}

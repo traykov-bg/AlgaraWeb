@@ -13,5 +13,11 @@ namespace Algara.Web.ViewModels
         public string Password { get; set; } = string.Empty;
 
         public bool RememberMe { get; set; } = false;
+
+        /// <summary>
+        /// Разлика в минути от UTC — попълва се от JavaScript при зареждане на страницата.
+        /// Пример: UTC+2 → +120
+        /// </summary>
+        public int? TimeZoneOffset { get; set; }
     }
 }
