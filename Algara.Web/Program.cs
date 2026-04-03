@@ -1,8 +1,9 @@
-﻿using Algara.Identity.Data;
+﻿using Algara.Data.Data;
+using Algara.Data.Repositories;
+using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Utils;
-using Algara.Web.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -44,13 +45,22 @@ try
         throw new Exception("Unsupported database provider!");
     }
     builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Algara.Web")));
+        options.UseSqlServer(connectionString, b => b.MigrationsAssembly("Algara.Web")));
+
+    builder.Services.AddDbContext<ShopDbContext>(options =>
+        options.UseSqlServer(connectionString, b => b
+            .MigrationsAssembly("Algara.Web")
+            .MigrationsHistoryTable("__EFMigrationsHistory_Shop")));
 
     // Регистрираме IHttpContextAccessor (нужен за UserService)
     builder.Services.AddHttpContextAccessor();
 
     // Регистрираме UserService
     builder.Services.AddScoped<IUserService, UserService>();
+
+    // Регистрираме Shop repositories
+    builder.Services.AddScoped<IProductRepository, ProductRepository>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
     builder.Services.Configure<IdentityOptions>(options =>
     {
@@ -126,9 +136,7 @@ try
     });
 
     builder.Services.AddAuthorization();
-    // Регистрираме Repository след като DatabaseHelper вече е дефиниран
     builder.Services.AddScoped<IUserStore<ApplicationUser>, UserStore>();
-    builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>

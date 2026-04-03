@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using Algara.Web.Models;
-using Algara.Web.Repositories;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,12 +6,10 @@ namespace Algara.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IProductRepository _productRepository;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(IProductRepository productRepository,ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger)
         {
-            _productRepository = productRepository;
             _logger = logger;
         }
 
@@ -21,12 +17,6 @@ namespace Algara.Web.Controllers
         {
             _logger.LogInformation("Index page accessed.");
             return View();
-        }
-
-        public async Task<IActionResult> TestProducts()
-        {
-            var products = await _productRepository.GetAllAsync();
-            return Json(products);
         }
 
         public IActionResult Privacy()
