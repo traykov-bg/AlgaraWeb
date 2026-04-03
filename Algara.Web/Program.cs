@@ -1,6 +1,7 @@
 ﻿using Algara.Data.Data;
 using Algara.Data.Repositories;
 using Algara.Identity.Data;
+using Algara.Web.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Utils;
@@ -148,6 +149,14 @@ try
 
     var dbHelper = app.Services.GetRequiredService<IDatabaseHelper>();
     await dbHelper.EnsureTablesExist();
+
+    // Seed данни (само в Development)
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var shopDb = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
+        await ShopDbSeeder.SeedAsync(shopDb);
+    }
 
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())

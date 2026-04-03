@@ -1,12 +1,23 @@
 @model IEnumerable<Algara.Data.Models.Product>
 
 @{
-    ViewData["Title"] = ViewBag.CategoryName ?? "Каталог";
+    var searchQuery = ViewBag.SearchQuery as string;
+    var categoryName = ViewBag.CategoryName as string;
+    ViewData["Title"] = categoryName ?? "Каталог";
     var categories = ViewBag.Categories as IEnumerable<Algara.Data.Models.Category>;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>@ViewData["Title"]</h2>
+    <div>
+        <h2 class="mb-0">@ViewData["Title"]</h2>
+        @if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            <p class="text-muted small mt-1">
+                Резултати за: <strong>@searchQuery</strong> &nbsp;
+                <a asp-action="Index" class="text-muted"><i class="bi bi-x-circle"></i> Изчисти</a>
+            </p>
+        }
+    </div>
 </div>
 
 @if (categories != null && categories.Any())

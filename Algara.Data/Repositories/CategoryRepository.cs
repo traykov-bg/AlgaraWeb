@@ -19,6 +19,12 @@ namespace Algara.Data.Repositories
                 .OrderBy(c => c.Name)
                 .ToListAsync();
 
+        public async Task<IEnumerable<Category>> GetFeaturedAsync()
+            => await _context.Categories
+                .Where(c => c.IsFeatured && c.IsActive)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
         public async Task<Category?> GetByNAsync(int n)
             => await _context.Categories.FindAsync(n);
 

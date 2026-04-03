@@ -1,8 +1,137 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model Algara.Web.ViewModels.HomeViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutFull.cshtml";
+    ViewData["Title"] = "Начало";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- ═══════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════ -->
+<section class="algara-hero">
+    <div class="algara-hero__overlay">
+        <div class="container">
+            <p class="algara-hero__eyebrow">Пролетна колекция 2026</p>
+            <h1 class="algara-hero__title">Обзавеждане,<br>което вдъхновява</h1>
+            <p class="algara-hero__subtitle">Скандинавски дизайн, качествени материали<br>и персонализирани решения за вашия дом.</p>
+            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-primary mt-2">Разгледай каталога</a>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     КАТЕГОРИИ
+═══════════════════════════════════════════════════════════ -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="algara-section-title">Разгледай по категория</h2>
+        @if (Model.Categories.Any())
+        {
+            <div class="row g-3">
+                @foreach (var cat in Model.Categories)
+                {
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <a asp-controller="Product" asp-action="Category" asp-route-categoryN="@cat.N"
+                           class="algara-cat-card d-block h-100">
+                            <div class="algara-cat-card__icon">
+                                @switch (cat.Name)
+                                {
+                                    case "Мека мебел": <text>🛋️</text> break;
+                                    case "Спалня":     <text>🛏️</text> break;
+                                    case "Шкафове":    <text>🗄️</text> break;
+                                    case "Маси":       <text>🪑</text> break;
+                                    case "Столове":    <text>💺</text> break;
+                                    default:           <text>🏠</text> break;
+                                }
+                            </div>
+                            <div class="algara-cat-card__name">@cat.Name</div>
+                            @if (!string.IsNullOrWhiteSpace(cat.Description))
+                            {
+                                <div class="algara-cat-card__desc">@cat.Description</div>
+                            }
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Категориите се зареждат…</p>
+        }
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ПРЕПОРЪЧАНИ ПРОДУКТИ
+═══════════════════════════════════════════════════════════ -->
+<section class="py-5 bg-algara-subtle">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-baseline mb-4">
+            <h2 class="algara-section-title mb-0">Препоръчани продукти</h2>
+            <a asp-controller="Product" asp-action="Index" class="algara-link-accent">Виж всички &rarr;</a>
+        </div>
+
+        @if (Model.FeaturedProducts.Any())
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+                @foreach (var p in Model.FeaturedProducts)
+                {
+                    <div class="col">
+                        <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
+                           class="algara-product-card d-block text-decoration-none h-100">
+                            @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                            {
+                                <img src="@p.ImageUrl" alt="@p.Name" class="algara-product-card__img" />
+                            }
+                            <div class="algara-product-card__body">
+                                @if (p.Category != null)
+                                {
+                                    <span class="algara-product-card__cat">@p.Category.Name</span>
+                                }
+                                <div class="algara-product-card__name">@p.Name</div>
+                                <div class="algara-product-card__price">@p.Price.ToString("N0") лв.</div>
+                                @if (p.IsCustomizable)
+                                {
+                                    <span class="algara-badge-custom">По поръчка</span>
+                                }
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Няма препоръчани продукти в момента.</p>
+        }
+
+        <div class="text-center mt-5">
+            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">Виж целия каталог</a>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ЗАЩО АЛГАРА
+═══════════════════════════════════════════════════════════ -->
+<section class="py-5 algara-usp">
+    <div class="container">
+        <h2 class="algara-section-title text-center mb-5">Защо Алгара?</h2>
+        <div class="row text-center g-4">
+            <div class="col-12 col-md-4">
+                <div class="algara-usp-icon">🪵</div>
+                <h5 class="fw-semibold">Качествена дървесина</h5>
+                <p class="text-muted small">Използваме само сертифицирани материали — масивен дъб, бук и ясен за дълготраен комфорт.</p>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="algara-usp-icon">🚚</div>
+                <h5 class="fw-semibold">Безплатна доставка</h5>
+                <p class="text-muted small">Безплатна доставка и монтаж за поръчки над 500 лв. в цяла България.</p>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="algara-usp-icon">🔧</div>
+                <h5 class="fw-semibold">По поръчка и персонализация</h5>
+                <p class="text-muted small">Изберете размер, материал и цвят — правим мебел точно по вашите нужди.</p>
+            </div>
+        </div>
+    </div>
+</section>

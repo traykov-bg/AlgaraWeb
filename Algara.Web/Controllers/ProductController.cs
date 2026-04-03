@@ -19,10 +19,25 @@ namespace Algara.Web.Controllers
             _logger = logger;
         }
 
-        // GET /Product
-        public async Task<IActionResult> Index()
+        // GET /Product  или  /Product?q=диван
+        public async Task<IActionResult> Index(string? q = null)
         {
-            var products = await _productRepository.GetAllAsync();
+            var allProducts = await _productRepository.GetAllAsync();
+
+            IEnumerable<Algara.Data.Models.Product> products;
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                products = allProducts.Where(p =>
+                    p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+                ViewBag.SearchQuery = q;
+            }
+            else
+            {
+                products = allProducts;
+            }
+
             ViewBag.Categories = await _categoryRepository.GetAllAsync();
             return View(products);
         }
@@ -37,6 +52,32 @@ namespace Algara.Web.Controllers
             ViewBag.Categories = await _categoryRepository.GetAllAsync();
             ViewBag.CategoryName = category.Name;
             return View("Index", products);
+        }
+
+        // GET /Product/Search?q=диван  (JSON — за live search dropdown)
+        [HttpGet]
+        public async Task<IActionResult> Search(string? q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+                return Json(Array.Empty<object>());
+
+            var allProducts = await _productRepository.GetAllAsync();
+            var results = allProducts
+                .Where(p =>
+                    p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                .Take(5)
+                .Select(p => new
+                {
+                    n        = p.N,
+                    name     = p.Name,
+                    category = p.Category?.Name,
+                    price    = (long)p.Price,
+                    imageUrl = p.ImageUrl,
+                });
+
+            return Json(results);
         }
 
         // GET /Product/Detail/5
