@@ -19,6 +19,13 @@ namespace Algara.Identity.Models
         public int FailedLoginAttempts { get; set; } = 0;
         public DateTime? LockoutUntil { get; set; }
 
+        /// <summary>
+        /// Предпочитан часови пояс на потребителя (Windows timezone ID, например "FLE Standard Time").
+        /// Задава се от страницата с профилни настройки.
+        /// Null = часовият пояс не е конфигуриран — използва се offset-ът от последната сесия.
+        /// </summary>
+        public string? PreferredTimeZoneId { get; set; }
+
         public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
     }
 }
