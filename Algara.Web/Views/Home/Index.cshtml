@@ -30,7 +30,7 @@
                 @foreach (var cat in Model.Categories)
                 {
                     <div class="col-6 col-md-4 col-lg-2">
-                        <a asp-controller="Product" asp-action="Category" asp-route-n="@cat.N"
+                        <a asp-controller="Product" asp-action="Category" asp-route-slug="@cat.Slug"
                            class="algara-cat-card d-block h-100">
                             <div class="algara-cat-card__icon">
                                 @switch (cat.Name)

@@ -3,6 +3,7 @@
 @{
     var searchQuery = ViewBag.SearchQuery as string;
     var categoryName = ViewBag.CategoryName as string;
+    var categorySlug = ViewBag.CategorySlug as string;
     ViewData["Title"] = categoryName ?? "Каталог";
     var categories = ViewBag.Categories as IEnumerable<Algara.Data.Models.Category>;
 }
@@ -26,8 +27,8 @@
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-1">Всички</a>
         @foreach (var cat in categories)
         {
-            <a asp-action="Category" asp-route-n="@cat.N"
-               class="btn btn-sm me-1 @(ViewBag.CategoryName == cat.Name ? "btn-primary" : "btn-outline-primary")">
+            <a asp-action="Category" asp-route-slug="@cat.Slug"
+               class="btn btn-sm me-1 @(categorySlug == cat.Slug ? "btn-primary" : "btn-outline-primary")">
                 @cat.Name
             </a>
         }

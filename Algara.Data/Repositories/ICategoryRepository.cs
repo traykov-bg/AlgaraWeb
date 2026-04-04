@@ -7,6 +7,7 @@ namespace Algara.Data.Repositories
         Task<IEnumerable<Category>> GetAllAsync();
         Task<IEnumerable<Category>> GetFeaturedAsync();
         Task<Category?> GetByNAsync(int n);
+        Task<Category?> GetBySlugAsync(string slug);
         Task AddAsync(Category category);
         Task UpdateAsync(Category category);
         Task DeleteAsync(int n);

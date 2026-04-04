@@ -2,6 +2,7 @@
 using Algara.Data.Models;
 using Algara.Data.Repositories;
 using Algara.Identity.Data;
+using Algara.Web.Helpers;
 using Algara.Web.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -210,11 +211,16 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CategoryCreate(AdminCategoryFormViewModel vm)
         {
+            // Ако slug-ът е празен, го генерираме от Name
+            if (string.IsNullOrWhiteSpace(vm.Slug))
+                vm.Slug = SlugHelper.Generate(vm.Name);
+
             if (!ModelState.IsValid) return View(vm);
 
             var category = new Category
             {
                 Name        = vm.Name,
+                Slug        = vm.Slug,
                 Description = vm.Description,
                 IsFeatured  = vm.IsFeatured,
                 IsActive    = vm.IsActive,
@@ -235,6 +241,7 @@ namespace Algara.Web.Controllers
             {
                 N           = category.N,
                 Name        = category.Name,
+                Slug        = category.Slug,
                 Description = category.Description,
                 IsFeatured  = category.IsFeatured,
                 IsActive    = category.IsActive,
@@ -246,12 +253,17 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CategoryEdit(AdminCategoryFormViewModel vm)
         {
+            // Ако slug-ът е празен, го генерираме от Name
+            if (string.IsNullOrWhiteSpace(vm.Slug))
+                vm.Slug = SlugHelper.Generate(vm.Name);
+
             if (!ModelState.IsValid) return View(vm);
 
             var category = await _shopDb.Categories.FindAsync(vm.N);
             if (category == null) return NotFound();
 
             category.Name        = vm.Name;
+            category.Slug        = vm.Slug;
             category.Description = vm.Description;
             category.IsFeatured  = vm.IsFeatured;
             category.IsActive    = vm.IsActive;

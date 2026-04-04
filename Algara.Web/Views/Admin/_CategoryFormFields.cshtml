@@ -2,8 +2,19 @@
 
 <div class="mb-3">
     <label asp-for="Name" class="form-label fw-semibold"></label>
-    <input asp-for="Name" class="form-control" />
+    <input asp-for="Name" class="form-control" id="catName" />
     <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Slug" class="form-label fw-semibold"></label>
+    <div class="input-group">
+        <span class="input-group-text text-muted small">/kategorii/</span>
+        <input asp-for="Slug" class="form-control font-monospace" id="catSlug"
+               placeholder="meka-mebel" />
+    </div>
+    <div class="form-text">Генерира се автоматично от името. Използва се в URL адреса.</div>
+    <span asp-validation-for="Slug" class="text-danger small"></span>
 </div>
 
 <div class="mb-3">
@@ -21,3 +32,51 @@
         <label class="form-check-label" asp-for="IsActive">Активна</label>
     </div>
 </div>
+
+@* Auto-fill slug from name — само ако slug-ът все още не е ръчно редактиран *@
+<script>
+    (function () {
+        var nameInput = document.getElementById('catName');
+        var slugInput = document.getElementById('catSlug');
+        if (!nameInput || !slugInput) return;
+
+        // Cyrillic → Latin transliteration map (matches SlugHelper.cs)
+        var map = {
+            '\u0430':'a','\u0431':'b','\u0432':'v','\u0433':'g',
+            '\u0434':'d','\u0435':'e','\u0436':'zh','\u0437':'z',
+            '\u0438':'i','\u0439':'y','\u043a':'k','\u043b':'l',
+            '\u043c':'m','\u043d':'n','\u043e':'o','\u043f':'p',
+            '\u0440':'r','\u0441':'s','\u0442':'t','\u0443':'u',
+            '\u0444':'f','\u0445':'h','\u0446':'ts','\u0447':'ch',
+            '\u0448':'sh','\u0449':'sht','\u044a':'a','\u044c':'',
+            '\u044e':'yu','\u044f':'ya'
+        };
+
+        function toSlug(text) {
+            var result = '';
+            for (var i = 0; i < text.length; i++) {
+                var ch = text[i].toLowerCase();
+                if (map[ch] !== undefined) {
+                    result += map[ch];
+                } else if (/[a-z0-9]/.test(ch)) {
+                    result += ch;
+                } else if (/[ \-_]/.test(ch)) {
+                    result += '-';
+                }
+            }
+            return result.replace(/-+/g, '-').replace(/^-|-$/g, '');
+        }
+
+        var userEdited = slugInput.value.length > 0 && '@Model.N' !== '0';
+
+        slugInput.addEventListener('input', function () {
+            userEdited = true;
+        });
+
+        nameInput.addEventListener('input', function () {
+            if (!userEdited) {
+                slugInput.value = toSlug(nameInput.value);
+            }
+        });
+    })();
+</script>

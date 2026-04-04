@@ -28,6 +28,10 @@ namespace Algara.Data.Repositories
         public async Task<Category?> GetByNAsync(int n)
             => await _context.Categories.FindAsync(n);
 
+        public async Task<Category?> GetBySlugAsync(string slug)
+            => await _context.Categories
+                .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive);
+
         public async Task AddAsync(Category category)
         {
             _context.Categories.Add(category);

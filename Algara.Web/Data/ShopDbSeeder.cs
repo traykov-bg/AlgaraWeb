@@ -1,5 +1,6 @@
 ﻿using Algara.Data.Data;
 using Algara.Data.Models;
+using Algara.Web.Helpers;
 
 namespace Algara.Web.Data
 {
@@ -13,16 +14,27 @@ namespace Algara.Web.Data
 
         public static async Task SeedAsync(ShopDbContext context)
         {
+            // Backfill missing slugs for categories that were created before the Slug column
+            var withoutSlug = context.Categories
+                .Where(c => c.Slug == null || c.Slug == "")
+                .ToList();
+            if (withoutSlug.Any())
+            {
+                foreach (var cat in withoutSlug)
+                    cat.Slug = SlugHelper.Generate(cat.Name);
+                await context.SaveChangesAsync();
+            }
+
             if (context.Categories.Any()) return; // вече има данни
 
             var categories = new List<Category>
             {
-                new() { Name = "Мека мебел",  Description = "Дивани, канапета и кресла за всекидневната", IsFeatured = true  },
-                new() { Name = "Спалня",      Description = "Легла, матраци и спални комплекти",          IsFeatured = true  },
-                new() { Name = "Шкафове",     Description = "Гардероби, витрини и стелажи",               IsFeatured = true  },
-                new() { Name = "Маси",        Description = "Трапезни, кафе и работни маси",              IsFeatured = true  },
-                new() { Name = "Столове",     Description = "Трапезни, работни и декоративни столове",    IsFeatured = true  },
-                new() { Name = "Аксесоари",   Description = "Осветление, декорация и текстил",            IsFeatured = false },
+                new() { Name = "Мека мебел",  Slug = "meka-mebel",  Description = "Дивани, канапета и кресла за всекидневната", IsFeatured = true  },
+                new() { Name = "Спалня",      Slug = "spalnya",      Description = "Легла, матраци и спални комплекти",          IsFeatured = true  },
+                new() { Name = "Шкафове",     Slug = "shkafove",     Description = "Гардероби, витрини и стелажи",               IsFeatured = true  },
+                new() { Name = "Маси",        Slug = "masi",         Description = "Трапезни, кафе и работни маси",              IsFeatured = true  },
+                new() { Name = "Столове",     Slug = "stolove",      Description = "Трапезни, работни и декоративни столове",    IsFeatured = true  },
+                new() { Name = "Аксесоари",   Slug = "aksesoari",    Description = "Осветление, декорация и текстил",            IsFeatured = false },
             };
             context.Categories.AddRange(categories);
             await context.SaveChangesAsync();

@@ -42,15 +42,17 @@ namespace Algara.Web.Controllers
             return View(products);
         }
 
-        // GET /Product/Category/5
-        public async Task<IActionResult> Category(int n)
+        // GET /kategorii/{slug}   напр. /kategorii/meka-mebel
+        [Route("/kategorii/{slug}")]
+        public async Task<IActionResult> Category(string slug)
         {
-            var category = await _categoryRepository.GetByNAsync(n);
+            var category = await _categoryRepository.GetBySlugAsync(slug);
             if (category == null) return NotFound();
 
-            var products = await _productRepository.GetByCategoryAsync(n);
+            var products = await _productRepository.GetByCategoryAsync(category.N);
             ViewBag.Categories = await _categoryRepository.GetAllAsync();
             ViewBag.CategoryName = category.Name;
+            ViewBag.CategorySlug = category.Slug;
             return View("Index", products);
         }
 
@@ -80,7 +82,7 @@ namespace Algara.Web.Controllers
             return Json(results);
         }
 
-        // GET /Product/Detail/5
+        // GET /Product/Detail/{n}
         public async Task<IActionResult> Detail(int n)
         {
             var product = await _productRepository.GetByNAsync(n);
