@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * jQuery Validation Plugin v1.21.0
  *
  * https://jqueryvalidation.org/
