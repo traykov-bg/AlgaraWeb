@@ -19,51 +19,9 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════
-     КАТЕГОРИИ
-═══════════════════════════════════════════════════════════ -->
-<section class="py-5">
-    <div class="container">
-        <h2 class="algara-section-title">Разгледай по категория</h2>
-        @if (Model.Categories.Any())
-        {
-            <div class="row g-3">
-                @foreach (var cat in Model.Categories)
-                {
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <a asp-controller="Product" asp-action="Category" asp-route-slug="@cat.Slug"
-                           class="algara-cat-card d-block h-100">
-                            <div class="algara-cat-card__icon">
-                                @switch (cat.Name)
-                                {
-                                    case "Мека мебел": <text>🛋️</text> break;
-                                    case "Спалня":     <text>🛏️</text> break;
-                                    case "Шкафове":    <text>🗄️</text> break;
-                                    case "Маси":       <text>🪑</text> break;
-                                    case "Столове":    <text>💺</text> break;
-                                    default:           <text>🏠</text> break;
-                                }
-                            </div>
-                            <div class="algara-cat-card__name">@cat.Name</div>
-                            @if (!string.IsNullOrWhiteSpace(cat.Description))
-                            {
-                                <div class="algara-cat-card__desc">@cat.Description</div>
-                            }
-                        </a>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <p class="text-muted">Категориите се зареждат…</p>
-        }
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════
      ПРЕПОРЪЧАНИ ПРОДУКТИ
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-5 bg-algara-subtle">
+<section class="py-5">
     <div class="container">
         <div class="d-flex justify-content-between align-items-baseline mb-4">
             <h2 class="algara-section-title mb-0">Препоръчани продукти</h2>
@@ -107,6 +65,48 @@
         <div class="text-center mt-5">
             <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">Виж целия каталог</a>
         </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     КАТЕГОРИИ
+═══════════════════════════════════════════════════════════ -->
+<section class="py-5 bg-algara-subtle">
+    <div class="container">
+        <h2 class="algara-section-title">Разгледай по категория</h2>
+        @if (Model.Categories.Any())
+        {
+            <div class="row g-3">
+                @foreach (var cat in Model.Categories)
+                {
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <a asp-controller="Product" asp-action="Category" asp-route-slug="@cat.Slug"
+                           class="algara-cat-card d-block h-100">
+                            <div class="algara-cat-card__icon">
+                                @switch (cat.Name)
+                                {
+                                    case "Мека мебел": <text>🛋️</text> break;
+                                    case "Спалня":     <text>🛏️</text> break;
+                                    case "Шкафове":    <text>🗄️</text> break;
+                                    case "Маси":       <text>🪑</text> break;
+                                    case "Столове":    <text>💺</text> break;
+                                    default:           <text>🏠</text> break;
+                                }
+                            </div>
+                            <div class="algara-cat-card__name">@cat.Name</div>
+                            @if (!string.IsNullOrWhiteSpace(cat.Description))
+                            {
+                                <div class="algara-cat-card__desc">@cat.Description</div>
+                            }
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Категориите се зареждат…</p>
+        }
     </div>
 </section>
 

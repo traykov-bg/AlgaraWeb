@@ -1,9 +1,6 @@
 ﻿<nav class="navbar navbar-expand-lg border-bottom algara-navbar">
     <div class="container-fluid px-3 px-lg-4">
 
-        <!-- Brand -->
-        <a class="navbar-brand algara-navbar-brand" asp-controller="Home" asp-action="Index">Алгара</a>
-
         <!-- Hamburger -->
         <button class="navbar-toggler border-0" type="button"
                 data-bs-toggle="collapse" data-bs-target="#navbarMain"
@@ -11,10 +8,15 @@
             <span class="navbar-toggler-icon"></span>
         </button>
 
+        <!-- Brand for small screens: visible when collapsed, centered -->
+        <a class="navbar-brand algara-navbar-brand d-lg-none mx-auto" asp-controller="Home" asp-action="Index">
+            <img src="~/images/algara-logo.svg" alt="Алгара" height="36" class="d-inline-block align-text-top me-2" />
+        </a>
+
         <div class="collapse navbar-collapse" id="navbarMain">
 
             <!-- ── Ляво: основна навигация ── -->
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Home" asp-action="Index">Начало</a>
                 </li>
@@ -22,7 +24,7 @@
                     <a class="nav-link" asp-controller="Product" asp-action="Index">Каталог</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" asp-controller="Home" asp-action="About">Кои сме ние</a>
+                    <a class="nav-link text-nowrap" asp-controller="Home" asp-action="About">За нас</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Home" asp-action="Contact">Контакти</a>
@@ -36,6 +38,11 @@
                     </li>
                 }
             </ul>
+
+            <!-- ── Център: Brand (само на lg+) -->
+            <a class="navbar-brand algara-navbar-brand d-none d-lg-flex mx-auto align-items-center" asp-controller="Home" asp-action="Index">
+                <img src="~/images/algara-logo.svg" alt="Алгара" height="36" class="d-inline-block align-text-top me-2" />
+            </a>
 
             <!-- ── Дясно: търсачка + количка + потребител ── -->
             <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 pb-2 pb-lg-0">

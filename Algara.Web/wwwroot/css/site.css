@@ -38,6 +38,11 @@ body {
 }
 .navbar .nav-link:hover { color: var(--algara-accent) !important; }
 
+/* Без пренасяне за основните navbar линкове */
+.algara-navbar .nav-link {
+    white-space: nowrap;
+}
+
 /* ───── Navbar search ───── */
 .algara-search-wrapper { min-width: 0; }   /* flex shrink fix */
 
