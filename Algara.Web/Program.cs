@@ -62,6 +62,7 @@ try
     // Регистрираме Shop repositories
     builder.Services.AddScoped<IProductRepository, ProductRepository>();
     builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
     builder.Services.Configure<IdentityOptions>(options =>
     {
@@ -156,6 +157,10 @@ try
         using var scope = app.Services.CreateScope();
         var shopDb = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
         await ShopDbSeeder.SeedAsync(shopDb);
+
+        var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        var userSvc    = scope.ServiceProvider.GetRequiredService<IUserService>();
+        await AdminSeeder.SeedAsync(identityDb, userSvc);
     }
 
     // Configure the HTTP request pipeline.
@@ -168,6 +173,9 @@ try
 
     app.UseHttpsRedirection();
     app.UseStaticFiles();
+
+    // Персонализирани страници за HTTP грешки (404, 403 и др.)
+    app.UseStatusCodePagesWithReExecute("/Home/HttpError/{0}");
 
     // Security headers
     app.Use(async (context, next) =>

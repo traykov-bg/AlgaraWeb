@@ -1,4 +1,4 @@
-namespace Algara.Web.ViewModels
+﻿namespace Algara.Web.ViewModels
 {
     public class ErrorViewModel
     {

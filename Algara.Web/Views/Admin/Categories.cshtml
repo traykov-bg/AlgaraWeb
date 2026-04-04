@@ -1,0 +1,70 @@
+﻿@model IEnumerable<Algara.Data.Models.Category>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Категории";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="CategoryCreate" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Нова категория
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Наименование</th>
+                    <th>Описание</th>
+                    <th class="text-center">Продукти</th>
+                    <th class="text-center">Препоръчана</th>
+                    <th class="text-center">Статус</th>
+                    <th class="text-end">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr class="@(!c.IsActive ? "table-secondary text-muted" : "")">
+                        <td class="text-muted small">@c.N</td>
+                        <td class="fw-semibold">@c.Name</td>
+                        <td class="small text-muted">@(c.Description ?? "—")</td>
+                        <td class="text-center small">@c.Products.Count</td>
+                        <td class="text-center">
+                            @if (c.IsFeatured) { <i class="bi bi-star-fill text-warning"></i> }
+                        </td>
+                        <td class="text-center">
+                            @if (c.IsActive)
+                            {
+                                <span class="badge bg-success">Активна</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Неактивна</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="CategoryEdit" asp-route-n="@c.N"
+                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="CategoryToggle" asp-route-n="@c.N" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-xs @(c.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
+                                        style="padding:.2rem .5rem;font-size:.78rem;"
+                                        title="@(c.IsActive ? "Деактивирай" : "Активирай")">
+                                    <i class="bi @(c.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">Няма категории.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

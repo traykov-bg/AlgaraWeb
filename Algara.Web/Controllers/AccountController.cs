@@ -109,8 +109,10 @@ namespace Algara.Web.Controllers
             return Json(claims);
         }
 
-        [Authorize(Roles = "Admin")]
-        public IActionResult AdminPanel()
+        // AdminPanel stub премахнат — вместо него AdminController на /admin/
+
+        [HttpGet]
+        public IActionResult AccessDenied()
         {
             return View();
         }

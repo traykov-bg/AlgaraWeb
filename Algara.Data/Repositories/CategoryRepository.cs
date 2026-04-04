@@ -1,4 +1,4 @@
-using Algara.Data.Data;
+﻿using Algara.Data.Data;
 using Algara.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +38,16 @@ namespace Algara.Data.Repositories
         {
             _context.Categories.Update(category);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int n)
+        {
+            var category = await _context.Categories.FindAsync(n);
+            if (category != null)
+            {
+                category.IsActive = false;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

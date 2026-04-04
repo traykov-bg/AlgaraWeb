@@ -1,0 +1,85 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminOrderListViewModel
+@using Algara.Data.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Поръчки";
+
+    string StatusLabel(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending   => "Чакаща",
+        OrderStatus.Confirmed => "Потвърдена",
+        OrderStatus.Shipped   => "Изпратена",
+        OrderStatus.Delivered => "Доставена",
+        OrderStatus.Cancelled => "Отказана",
+        _ => s.ToString()
+    };
+
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending   => "bg-warning text-dark",
+        OrderStatus.Confirmed => "bg-primary",
+        OrderStatus.Shipped   => "bg-info text-dark",
+        OrderStatus.Delivered => "bg-success",
+        OrderStatus.Cancelled => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+}
+
+<!-- Статус табове -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.StatusFilter == null ? "active" : "")"
+           asp-action="Orders">Всички</a>
+    </li>
+    @foreach (OrderStatus s in Enum.GetValues<OrderStatus>())
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.StatusFilter == s ? "active" : "")"
+               asp-action="Orders" asp-route-status="@((int)s)">@StatusLabel(s)</a>
+        </li>
+    }
+</ul>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Потребител</th>
+                    <th class="text-center">Статус</th>
+                    <th class="text-end">Сума</th>
+                    <th>Дата</th>
+                    <th class="text-end">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="text-muted small">@row.Order.N</td>
+                        <td>
+                            <div class="fw-semibold small">@row.UserDisplayName</div>
+                            <div class="text-muted" style="font-size:.75rem;">@row.UserEmail</div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge @StatusBadge(row.Order.Status)">@StatusLabel(row.Order.Status)</span>
+                        </td>
+                        <td class="text-end small">@row.Order.TotalAmount.ToString("N0") лв.</td>
+                        <td class="small text-muted">@row.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="text-end">
+                            <a asp-action="OrderDetail" asp-route-n="@row.Order.N"
+                               class="btn btn-xs btn-outline-primary" style="padding:.2rem .5rem;font-size:.78rem;">
+                                <i class="bi bi-eye"></i> Детайли
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Няма поръчки.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

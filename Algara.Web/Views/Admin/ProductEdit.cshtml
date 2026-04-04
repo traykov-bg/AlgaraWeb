@@ -1,0 +1,26 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminProductFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Редактирай продукт";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <asp-validation-summary asp-validation-summary="ModelOnly" class="alert alert-danger" />
+
+                <form asp-action="ProductEdit" asp-route-n="@Model.N" method="post">
+                    <input type="hidden" asp-for="N" />
+                    @await Html.PartialAsync("_ProductFormFields", Model)
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-1"></i>Запиши
+                        </button>
+                        <a asp-action="Products" class="btn btn-outline-secondary">Откажи</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

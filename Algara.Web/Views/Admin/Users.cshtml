@@ -1,0 +1,89 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminUserListViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Потребители";
+    var allRoles = ViewBag.AllRoles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Потребител</th>
+                    <th>Имейл</th>
+                    <th class="text-center">Статус</th>
+                    <th>Роли</th>
+                    <th class="text-end">Управление на роли</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="text-muted small">@row.User.N</td>
+                        <td class="fw-semibold small">@(row.User.DisplayName ?? row.User.UserName)</td>
+                        <td class="small text-muted">@row.User.Email</td>
+                        <td class="text-center">
+                            @if (row.User.IsActive)
+                            {
+                                <span class="badge bg-success">Активен</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Неактивен</span>
+                            }
+                        </td>
+                        <td>
+                            @foreach (var role in row.Roles)
+                            {
+                                <span class="badge bg-primary me-1">@role</span>
+                            }
+                            @if (!row.Roles.Any())
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex gap-1 justify-content-end flex-wrap">
+                                <!-- Премахване на роля -->
+                                @foreach (var role in row.Roles)
+                                {
+                                    <form asp-action="RemoveRole" method="post" class="d-inline">
+                                        <input type="hidden" name="Username" value="@row.User.UserName" />
+                                        <input type="hidden" name="RoleName" value="@role" />
+                                        <button type="submit" class="btn btn-xs btn-outline-danger"
+                                                style="padding:.15rem .45rem;font-size:.75rem;"
+                                                title="Премахни роля @role">
+                                            <i class="bi bi-x"></i> @role
+                                        </button>
+                                    </form>
+                                }
+                                <!-- Добавяне на роля -->
+                                <form asp-action="AssignRole" method="post" class="d-inline d-flex gap-1">
+                                    <input type="hidden" name="Username" value="@row.User.UserName" />
+                                    <select name="RoleName" class="form-select form-select-sm"
+                                            style="font-size:.78rem;padding:.15rem .4rem;min-width:90px;">
+                                        @foreach (var r in allRoles)
+                                        {
+                                            <option value="@r.Value">@r.Text</option>
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-xs btn-outline-success"
+                                            style="padding:.15rem .45rem;font-size:.75rem;" title="Добави роля">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Няма потребители.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

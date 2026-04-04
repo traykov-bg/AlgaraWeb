@@ -1,0 +1,55 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminProductFormViewModel
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label fw-semibold"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Description" class="form-label fw-semibold"></label>
+    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-6">
+        <label asp-for="Price" class="form-label fw-semibold"></label>
+        <div class="input-group">
+            <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
+            <span class="input-group-text">лв.</span>
+        </div>
+        <span asp-validation-for="Price" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="CategoryN" class="form-label fw-semibold"></label>
+        <select asp-for="CategoryN"
+                asp-items="@(new SelectList(Model.Categories, "N", "Name", Model.CategoryN))"
+                class="form-select">
+            <option value="">— Без категория —</option>
+        </select>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ImageUrl" class="form-label fw-semibold"></label>
+    <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+    {
+        <img src="@Model.ImageUrl" alt="preview" class="mt-2 rounded" style="height:80px;object-fit:cover;" />
+    }
+</div>
+
+<div class="d-flex flex-wrap gap-4 mt-2">
+    <div class="form-check">
+        <input class="form-check-input" asp-for="IsCustomizable" />
+        <label class="form-check-label" asp-for="IsCustomizable">По поръчка</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" asp-for="IsFeatured" />
+        <label class="form-check-label" asp-for="IsFeatured">Препоръчан на начална страница</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" asp-for="IsActive" />
+        <label class="form-check-label" asp-for="IsActive">Активен (видим в каталога)</label>
+    </div>
+</div>

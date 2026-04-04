@@ -1,4 +1,4 @@
-using Algara.Data.Models;
+﻿using Algara.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Algara.Data.Data

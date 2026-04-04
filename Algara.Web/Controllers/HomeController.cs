@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Algara.Data.Repositories;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +35,13 @@ namespace Algara.Web.Controllers
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        [Route("Home/HttpError/{code:int}")]
+        public IActionResult HttpError(int code)
+        {
+            Response.StatusCode = code;
+            return View(code);
         }
 
         public IActionResult About()

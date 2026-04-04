@@ -1,4 +1,4 @@
-using Algara.Data.Models;
+﻿using Algara.Data.Models;
 
 namespace Algara.Data.Repositories
 {
@@ -9,5 +9,6 @@ namespace Algara.Data.Repositories
         Task<Category?> GetByNAsync(int n);
         Task AddAsync(Category category);
         Task UpdateAsync(Category category);
+        Task DeleteAsync(int n);
     }
 }

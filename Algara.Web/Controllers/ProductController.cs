@@ -1,4 +1,4 @@
-using Algara.Data.Repositories;
+﻿using Algara.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Algara.Web.Controllers

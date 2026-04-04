@@ -1,4 +1,4 @@
-using Algara.Data.Data;
+﻿using Algara.Data.Data;
 using Algara.Data.Models;
 
 namespace Algara.Web.Data

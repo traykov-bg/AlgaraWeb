@@ -1,0 +1,23 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminCategoryFormViewModel
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label fw-semibold"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Description" class="form-label fw-semibold"></label>
+    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+</div>
+
+<div class="d-flex flex-wrap gap-4 mt-2">
+    <div class="form-check">
+        <input class="form-check-input" asp-for="IsFeatured" />
+        <label class="form-check-label" asp-for="IsFeatured">Препоръчана на начална страница</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" asp-for="IsActive" />
+        <label class="form-check-label" asp-for="IsActive">Активна</label>
+    </div>
+</div>

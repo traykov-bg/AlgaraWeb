@@ -1,0 +1,63 @@
+﻿@model int
+@{
+    ViewData["Title"] = Model == 404 ? "Страницата не е намерена" : $"Грешка {Model}";
+
+    var (emoji, heading, subtext, detail) = Model switch
+    {
+        404 => (
+            "🛋️",
+            "Тази страница се е преместила",
+            "...и явно не ни е оставила нов адрес.",
+            "Може би продуктът, който търсите, е разпродаден. Или просто сте написали нещо нередно в адреса. Така или иначе — тук има само празно място, точно като незаета стена без рафт."
+        ),
+        403 => (
+            "🔒",
+            "Влизането е забранено",
+            "Тази стая е заключена.",
+            "Нямате необходимите права за достъп. Ако смятате, че е грешка, свържете се с администратор."
+        ),
+        500 => (
+            "🪛",
+            "Нещо се е счупило",
+            "Не по ваша вина — обещаваме.",
+            "Сервизният ни екип е уведомен. Опитайте отново след малко."
+        ),
+        _ => (
+            "🪑",
+            $"Грешка {Model}",
+            "Нещо не е наред.",
+            "Опитайте да се върнете назад или отидете на началната страница."
+        )
+    };
+}
+
+<div class="d-flex align-items-center justify-content-center" style="min-height: 65vh;">
+    <div class="text-center px-3" style="max-width: 520px;">
+
+        <div style="font-size: 5rem; line-height: 1.1;">@emoji</div>
+
+        <div class="text-muted fw-bold mt-2 mb-1" style="font-size: 5rem; letter-spacing: -.03em; opacity: .12; line-height: 1; font-family: monospace; position: relative; top: -1rem;">
+            @Model
+        </div>
+
+        <h1 class="mb-1" style="font-size: 1.65rem; font-weight: 700; color: var(--algara-text); margin-top: -1rem;">
+            @heading
+        </h1>
+        <p class="fw-semibold mb-2" style="color: var(--algara-accent); font-size: 1rem;">
+            @subtext
+        </p>
+        <p class="text-muted mb-4" style="font-size: .92rem; line-height: 1.6;">
+            @detail
+        </p>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+            <a asp-controller="Home" asp-action="Index" class="btn algara-btn-primary">
+                <i class="bi bi-house me-1"></i>Към началото
+            </a>
+            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">
+                <i class="bi bi-grid me-1"></i>Разгледай каталога
+            </a>
+        </div>
+
+    </div>
+</div>

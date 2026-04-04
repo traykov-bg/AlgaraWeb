@@ -1,4 +1,4 @@
-using Algara.Identity.Data;
+﻿using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;

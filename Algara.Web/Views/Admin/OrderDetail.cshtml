@@ -1,0 +1,131 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminOrderDetailViewModel
+@using Algara.Data.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = $"Поръчка #{Model.Order.N}";
+
+    string StatusLabel(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending   => "Чакаща",
+        OrderStatus.Confirmed => "Потвърдена",
+        OrderStatus.Shipped   => "Изпратена",
+        OrderStatus.Delivered => "Доставена",
+        OrderStatus.Cancelled => "Отказана",
+        _ => s.ToString()
+    };
+
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending   => "bg-warning text-dark",
+        OrderStatus.Confirmed => "bg-primary",
+        OrderStatus.Shipped   => "bg-info text-dark",
+        OrderStatus.Delivered => "bg-success",
+        OrderStatus.Cancelled => "bg-secondary",
+        _ => "bg-light text-dark"
+    };
+}
+
+<div class="mb-3">
+    <a asp-action="Orders" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Обратно към поръчките
+    </a>
+</div>
+
+<div class="row g-3">
+    <!-- Информация за поръчката -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">Поръчка #@Model.Order.N</div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted">Статус</dt>
+                    <dd class="col-7"><span class="badge @StatusBadge(Model.Order.Status)">@StatusLabel(Model.Order.Status)</span></dd>
+
+                    <dt class="col-5 text-muted">Сума</dt>
+                    <dd class="col-7 fw-semibold">@Model.Order.TotalAmount.ToString("N0") лв.</dd>
+
+                    <dt class="col-5 text-muted">Дата</dt>
+                    <dd class="col-7">@Model.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+
+                    @if (Model.Order.UpdatedAt.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Обновена</dt>
+                        <dd class="col-7">@Model.Order.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Потребител -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">Потребител</div>
+            <div class="card-body small">
+                <p class="mb-1"><i class="bi bi-person me-2 text-muted"></i><strong>@Model.UserDisplayName</strong></p>
+                <p class="mb-0"><i class="bi bi-envelope me-2 text-muted"></i>@Model.UserEmail</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Смяна на статус -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">Промяна на статус</div>
+            <div class="card-body">
+                <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post">
+                    <select name="status" class="form-select form-select-sm mb-2">
+                        @foreach (var s in Model.AllStatuses)
+                        {
+                            if (s == Model.Order.Status)
+                            {
+                                <option value="@((int)s)" selected="selected">@StatusLabel(s)</option>
+                            }
+                            else
+                            {
+                                <option value="@((int)s)">@StatusLabel(s)</option>
+                            }
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="bi bi-floppy me-1"></i>Запиши статус
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Артикули -->
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-header bg-white fw-semibold">Артикули</div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Продукт</th>
+                    <th class="text-center">Количество</th>
+                    <th class="text-end">Ед. цена</th>
+                    <th class="text-end">Сума</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Order.OrderItems)
+                {
+                    <tr>
+                        <td>@(item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
+                        <td class="text-center">@item.Quantity</td>
+                        <td class="text-end small">@item.UnitPrice.ToString("N0") лв.</td>
+                        <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) лв.</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="table-light">
+                    <td colspan="3" class="text-end fw-semibold">Общо:</td>
+                    <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N0") лв.</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

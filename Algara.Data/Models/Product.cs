@@ -1,4 +1,4 @@
-namespace Algara.Data.Models
+﻿namespace Algara.Data.Models
 {
     public class Product
     {

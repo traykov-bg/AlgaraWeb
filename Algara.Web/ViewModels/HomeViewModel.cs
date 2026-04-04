@@ -1,4 +1,4 @@
-using Algara.Data.Models;
+﻿using Algara.Data.Models;
 
 namespace Algara.Web.ViewModels
 {
