@@ -43,7 +43,7 @@
         {
             <span class="badge bg-info mb-2">По поръчка</span>
         }
-        <h4 class="my-3">@Model.Price.ToString("C")</h4>
+        <h4 class="my-3">@Model.Price.ToString("N0") €</h4>
         @if (!string.IsNullOrEmpty(Model.Description))
         {
             <p>@Model.Description</p>

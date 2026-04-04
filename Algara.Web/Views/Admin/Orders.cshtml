@@ -65,7 +65,7 @@
                         <td class="text-center">
                             <span class="badge @StatusBadge(row.Order.Status)">@StatusLabel(row.Order.Status)</span>
                         </td>
-                        <td class="text-end small">@row.Order.TotalAmount.ToString("N0") лв.</td>
+                        <td class="text-end small">@row.Order.TotalAmount.ToString("N0") €</td>
                         <td class="small text-muted">@row.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
                         <td class="text-end">
                             <a asp-action="OrderDetail" asp-route-n="@row.Order.N"

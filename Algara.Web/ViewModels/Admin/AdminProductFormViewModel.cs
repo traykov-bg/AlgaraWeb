@@ -17,7 +17,7 @@ namespace Algara.Web.ViewModels.Admin
 
         [Required(ErrorMessage = "Цената е задължителна")]
         [Range(0.01, 9_999_999, ErrorMessage = "Невалидна цена")]
-        [Display(Name = "Цена (лв.)")]
+        [Display(Name = "Цена (€)")]
         public decimal Price { get; set; }
 
         [Display(Name = "URL на снимка")]

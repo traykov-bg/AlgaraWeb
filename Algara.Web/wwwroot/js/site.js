@@ -62,7 +62,7 @@
                 +     imgHtml
                 +     '<div class="algara-sd-body">'
                 +       '<div class="algara-sd-name">' + highlight(item.name, q) + '</div>'
-                +       '<div class="algara-sd-meta">' + catHtml + formatPrice(item.price) + ' лв.</div>'
+                +       '<div class="algara-sd-meta">' + catHtml + formatPrice(item.price) + ' €</div>'
                 +     '</div>'
                 +   '</a>'
                 + '</li>';

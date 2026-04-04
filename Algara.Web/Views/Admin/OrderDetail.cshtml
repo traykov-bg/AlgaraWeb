@@ -42,7 +42,7 @@
                     <dd class="col-7"><span class="badge @StatusBadge(Model.Order.Status)">@StatusLabel(Model.Order.Status)</span></dd>
 
                     <dt class="col-5 text-muted">Сума</dt>
-                    <dd class="col-7 fw-semibold">@Model.Order.TotalAmount.ToString("N0") лв.</dd>
+                    <dd class="col-7 fw-semibold">@Model.Order.TotalAmount.ToString("N0") €</dd>
 
                     <dt class="col-5 text-muted">Дата</dt>
                     <dd class="col-7">@Model.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
@@ -115,15 +115,15 @@
                     <tr>
                         <td>@(item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
                         <td class="text-center">@item.Quantity</td>
-                        <td class="text-end small">@item.UnitPrice.ToString("N0") лв.</td>
-                        <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) лв.</td>
+                        <td class="text-end small">@item.UnitPrice.ToString("N0") €</td>
+                        <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>
                     </tr>
                 }
             </tbody>
             <tfoot>
                 <tr class="table-light">
                     <td colspan="3" class="text-end fw-semibold">Общо:</td>
-                    <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N0") лв.</td>
+                    <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N0") €</td>
                 </tr>
             </tfoot>
         </table>
