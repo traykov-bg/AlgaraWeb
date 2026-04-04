@@ -41,6 +41,9 @@ namespace Algara.Web.Controllers
 
             if (created)
             {
+                // Автоматично задаване на роля "User" при регистрация
+                await _userService.AddUserToRoleAsync(model.Email, "User");
+
                 // Ако регистрацията е успешна, вземаме потребителя и го вписваме стандартно.
                 var user = await _userService.GetUserByUsernameAsync(model.Email);
                 if (user != null)
@@ -55,43 +58,51 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public IActionResult Login(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToLocal(returnUrl);
             }
 
+            ViewBag.ReturnUrl = returnUrl;
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.ReturnUrl = returnUrl;
+                return View(model);
+            }
 
             var user = await _userService.GetUserByUsernameAsync(model.Email);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Грешен имейл или парола.");
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
             }
 
             if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.Now)
             {
                 ModelState.AddModelError("", $"Акаунтът ви е заключен до {user.LockoutUntil.Value.ToLocalTime()}.");
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
             }
 
             if (!await _userService.ValidateUserAsync(model.Email, model.Password))
             {
                 ModelState.AddModelError(string.Empty, "Грешен имейл или парола.");
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
             }
 
             await _userService.SignInAsync(HttpContext, user, model.RememberMe, model.TimeZoneOffset);
-            return RedirectToAction("Index", "Home");
+            return RedirectToLocal(returnUrl);
         }
 
         [HttpPost]
@@ -126,6 +137,15 @@ namespace Algara.Web.Controllers
             await _userService.ForceSignOutAllSessionsAsync(userId);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Login", "Account");
+        }
+
+        // ─── Helpers ───────────────────────────────────────────────────────────
+        private IActionResult RedirectToLocal(string? returnUrl)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction("Index", "Home");
         }
     }
 }

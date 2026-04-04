@@ -27,6 +27,14 @@
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Home" asp-action="Contact">Контакти</a>
                 </li>
+                @if (User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link algara-nav-admin" asp-controller="Admin" asp-action="Index">
+                            <i class="bi bi-shield-lock me-1"></i>Администрация
+                        </a>
+                    </li>
+                }
             </ul>
 
             <!-- ── Дясно: търсачка + количка + потребител ── -->

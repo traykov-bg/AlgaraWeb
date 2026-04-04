@@ -7,7 +7,7 @@ namespace Algara.Web.Data
     {
         public static async Task SeedAsync(IdentityDbContext identityDb, IUserService userService)
         {
-            // 1. Създай Admin роля ако не съществува (вече е N=1 в dev БД)
+            // 1. Роля "Admin"
             if (!identityDb.Roles.Any(r => r.Name == "Admin"))
             {
                 identityDb.Roles.Add(new ApplicationRole
@@ -18,7 +18,18 @@ namespace Algara.Web.Data
                 await identityDb.SaveChangesAsync();
             }
 
-            // 2. Създай default admin потребител само за чисто нова среда
+            // 2. Роля "User" (задава се автоматично на всеки нов потребител)
+            if (!identityDb.Roles.Any(r => r.Name == "User"))
+            {
+                identityDb.Roles.Add(new ApplicationRole
+                {
+                    Name        = "User",
+                    Description = "Регистриран потребител"
+                });
+                await identityDb.SaveChangesAsync();
+            }
+
+            // 3. Default admin потребител (само за чисто нова среда)
             if (!identityDb.Users.Any(u => u.UserName == "admin@algara.bg"))
             {
                 await userService.RegisterUserAsync("admin@algara.bg", "admin@algara.bg", "Admin@algara1");

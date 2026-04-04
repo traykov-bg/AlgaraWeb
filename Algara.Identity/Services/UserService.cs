@@ -304,6 +304,11 @@ namespace Algara.Identity.Services
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null) return;
 
+            // Обновяваме сесията само ако потребителят е текущо влезлият —
+            // при промяна на роли от администратор не трябва да подменяме неговата сесия.
+            var currentUserId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (currentUserId != user.Id) return;
+
             var claims = await GetUserClaimsAsync(user);
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties { IsPersistent = true };

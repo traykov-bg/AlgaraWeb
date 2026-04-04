@@ -6,7 +6,7 @@
 
 <h2>Вход</h2>
 
-<form asp-action="Login" method="post" id="loginForm">
+<form asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" id="loginForm">
     <input asp-for="TimeZoneOffset" type="hidden" id="timeZoneOffset" />
 
     <div class="form-group">

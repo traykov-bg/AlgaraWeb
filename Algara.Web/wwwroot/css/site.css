@@ -160,6 +160,16 @@ body {
     background: var(--algara-subtle);
 }
 
+/* ───── Admin nav link ───── */
+.algara-nav-admin {
+    color: var(--algara-accent) !important;
+    font-weight: 600;
+    font-size: .9rem;
+}
+.algara-nav-admin:hover {
+    color: var(--algara-accent-dark, #8f3e22) !important;
+}
+
 /* ───── Navbar user / auth buttons ───── */
 .algara-nav-user {
     font-size: .85rem;
