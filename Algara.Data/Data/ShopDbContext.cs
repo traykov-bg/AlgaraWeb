@@ -12,6 +12,7 @@ namespace Algara.Data.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<HeroSlide> HeroSlides { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -68,6 +69,22 @@ namespace Algara.Data.Data
                  .WithMany(p => p.OrderItems)
                  .HasForeignKey(oi => oi.ProductN)
                  .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // --- HeroSlide ---
+            modelBuilder.Entity<HeroSlide>(b =>
+            {
+                b.HasKey(s => s.N);
+                b.Property(s => s.N).UseIdentityColumn();
+                b.ToTable("HeroSlides");
+                b.Property(s => s.ImageUrl).IsRequired().HasMaxLength(2048);
+                b.Property(s => s.EyebrowText).HasMaxLength(200);
+                b.Property(s => s.Title).IsRequired().HasMaxLength(300);
+                b.Property(s => s.Subtitle).HasMaxLength(500);
+                b.Property(s => s.ButtonText).IsRequired().HasMaxLength(100);
+                b.Property(s => s.ButtonUrl).IsRequired().HasMaxLength(2048);
+                b.HasIndex(s => new { s.IsActive, s.DisplayOrder })
+                 .HasDatabaseName("IX_HeroSlides_Active_Order");
             });
 
             base.OnModelCreating(modelBuilder);

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Algara.Web.Controllers
 {
@@ -20,8 +21,10 @@ namespace Algara.Web.Controllers
         private readonly IProductRepository  _productRepo;
         private readonly ICategoryRepository _categoryRepo;
         private readonly IOrderRepository    _orderRepo;
+        private readonly IHeroSlideRepository _heroSlideRepo;
         private readonly IUserService        _userService;
         private readonly ILogger<AdminController> _logger;
+        private readonly IWebHostEnvironment _env;
 
         public AdminController(
             ShopDbContext shopDb,
@@ -29,16 +32,20 @@ namespace Algara.Web.Controllers
             IProductRepository productRepo,
             ICategoryRepository categoryRepo,
             IOrderRepository orderRepo,
+            IHeroSlideRepository heroSlideRepo,
             IUserService userService,
-            ILogger<AdminController> logger)
+            ILogger<AdminController> logger,
+            IWebHostEnvironment env)
         {
-            _shopDb       = shopDb;
-            _identityDb   = identityDb;
-            _productRepo  = productRepo;
-            _categoryRepo = categoryRepo;
-            _orderRepo    = orderRepo;
-            _userService  = userService;
-            _logger       = logger;
+            _shopDb        = shopDb;
+            _identityDb    = identityDb;
+            _productRepo   = productRepo;
+            _categoryRepo  = categoryRepo;
+            _orderRepo     = orderRepo;
+            _heroSlideRepo = heroSlideRepo;
+            _userService   = userService;
+            _logger        = logger;
+            _env           = env;
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -288,6 +295,144 @@ namespace Algara.Web.Controllers
                 ? $"\"{category.Name}\" е активирана."
                 : $"\"{category.Name}\" е деактивирана.";
             return RedirectToAction(nameof(Categories));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  HERO SLIDES
+        // ═══════════════════════════════════════════════════════════
+
+        [HttpGet("hero-slides")]
+        public async Task<IActionResult> HeroSlides()
+        {
+            var slides = await _heroSlideRepo.GetAllAsync();
+            return View(slides);
+        }
+
+        [HttpGet("hero-slides/create")]
+        public async Task<IActionResult> HeroSlideCreate()
+        {
+            ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
+            return View(new AdminHeroSlideFormViewModel());
+        }
+
+        [HttpPost("hero-slides/create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HeroSlideCreate(AdminHeroSlideFormViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
+                return View(vm);
+            }
+
+            var slide = new HeroSlide
+            {
+                ImageUrl     = vm.ImageUrl,
+                EyebrowText  = vm.EyebrowText,
+                Title        = vm.Title,
+                Subtitle     = vm.Subtitle,
+                ButtonText   = vm.ButtonText,
+                ButtonUrl    = vm.ButtonUrl,
+                DisplayOrder = vm.DisplayOrder,
+                IsActive     = vm.IsActive,
+            };
+            await _heroSlideRepo.AddAsync(slide);
+
+            TempData["Success"] = $"Слайдът \"{slide.Title}\" е добавен успешно.";
+            return RedirectToAction(nameof(HeroSlides));
+        }
+
+        [HttpGet("hero-slides/edit/{n}")]
+        public async Task<IActionResult> HeroSlideEdit(int n)
+        {
+            var slide = await _heroSlideRepo.GetByNAsync(n);
+            if (slide == null) return NotFound();
+
+            var vm = new AdminHeroSlideFormViewModel
+            {
+                N            = slide.N,
+                ImageUrl     = slide.ImageUrl,
+                EyebrowText  = slide.EyebrowText,
+                Title        = slide.Title,
+                Subtitle     = slide.Subtitle,
+                ButtonText   = slide.ButtonText,
+                ButtonUrl    = slide.ButtonUrl,
+                DisplayOrder = slide.DisplayOrder,
+                IsActive     = slide.IsActive,
+            };
+            ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
+            return View(vm);
+        }
+
+        [HttpPost("hero-slides/edit/{n}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HeroSlideEdit(AdminHeroSlideFormViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
+                return View(vm);
+            }
+
+            var slide = await _heroSlideRepo.GetByNAsync(vm.N);
+            if (slide == null) return NotFound();
+
+            slide.ImageUrl     = vm.ImageUrl;
+            slide.EyebrowText  = vm.EyebrowText;
+            slide.Title        = vm.Title;
+            slide.Subtitle     = vm.Subtitle;
+            slide.ButtonText   = vm.ButtonText;
+            slide.ButtonUrl    = vm.ButtonUrl;
+            slide.DisplayOrder = vm.DisplayOrder;
+            slide.IsActive     = vm.IsActive;
+
+            await _heroSlideRepo.UpdateAsync(slide);
+
+            TempData["Success"] = $"Слайдът \"{slide.Title}\" е обновен успешно.";
+            return RedirectToAction(nameof(HeroSlides));
+        }
+
+        [HttpPost("hero-slides/toggle/{n}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HeroSlideToggle(int n)
+        {
+            await _heroSlideRepo.ToggleActiveAsync(n);
+            TempData["Success"] = "Статусът на слайда е обновен.";
+            return RedirectToAction(nameof(HeroSlides));
+        }
+
+        [HttpPost("hero-slides/upload-image")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HeroSlideUploadImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Не е избран файл." });
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            if (!allowed.Contains(ext))
+                return BadRequest(new { error = "Позволени формати: JPG, PNG, GIF, WEBP." });
+
+            if (file.Length > 5 * 1024 * 1024)
+                return BadRequest(new { error = "Файлът е твърде голям (max 5 MB)." });
+
+            var dir = Path.Combine(_env.WebRootPath, "images", "uploads");
+            Directory.CreateDirectory(dir);
+
+            // If the file was already uploaded (e.g. user selected it from the uploads folder),
+            // reuse the existing file instead of creating a duplicate with a new GUID.
+            var originalName = Path.GetFileName(file.FileName);
+            var existingPath = Path.Combine(dir, originalName);
+            if (System.IO.File.Exists(existingPath))
+                return Ok(new { url = $"/images/uploads/{originalName}" });
+
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(dir, fileName);
+
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return Ok(new { url = $"/images/uploads/{fileName}" });
         }
 
         // ═══════════════════════════════════════════════════════════

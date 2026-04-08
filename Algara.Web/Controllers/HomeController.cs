@@ -10,15 +10,18 @@ namespace Algara.Web.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IHeroSlideRepository _heroSlideRepository;
 
         public HomeController(
             ILogger<HomeController> logger,
             IProductRepository productRepository,
-            ICategoryRepository categoryRepository)
+            ICategoryRepository categoryRepository,
+            IHeroSlideRepository heroSlideRepository)
         {
             _logger = logger;
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _heroSlideRepository = heroSlideRepository;
         }
 
         public async Task<IActionResult> Index()
@@ -28,6 +31,7 @@ namespace Algara.Web.Controllers
             {
                 Categories       = await _categoryRepository.GetAllAsync(),
                 FeaturedProducts = await _productRepository.GetFeaturedAsync(4),
+                HeroSlides       = await _heroSlideRepository.GetActiveOrderedAsync(),
             };
             return View(model);
         }

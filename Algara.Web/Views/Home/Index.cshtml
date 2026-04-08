@@ -5,18 +5,79 @@
 }
 
 <!-- ═══════════════════════════════════════════════════════════
-     HERO
+     HERO — Bootstrap 5 Carousel
 ═══════════════════════════════════════════════════════════ -->
-<section class="algara-hero">
-    <div class="algara-hero__overlay">
-        <div class="container">
-            <p class="algara-hero__eyebrow">Пролетна колекция 2026</p>
-            <h1 class="algara-hero__title">Обзавеждане,<br>което вдъхновява</h1>
-            <p class="algara-hero__subtitle">Скандинавски дизайн, качествени материали<br>и персонализирани решения за вашия дом.</p>
-            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-primary mt-2">Разгледай каталога</a>
+@if (Model.HeroSlides.Any())
+{
+    var slides = Model.HeroSlides.ToList();
+    <div id="algaraHeroCarousel" class="carousel slide algara-hero-carousel"
+         data-bs-ride="carousel" data-bs-interval="5000">
+
+        <!-- Dot indicators -->
+        <div class="carousel-indicators">
+            @for (int i = 0; i < slides.Count; i++)
+            {
+                <button type="button"
+                        data-bs-target="#algaraHeroCarousel"
+                        data-bs-slide-to="@i"
+                        class="@(i == 0 ? "active" : "")"
+                        aria-label="Слайд @(i + 1)"></button>
+            }
         </div>
+
+        <!-- Slides -->
+        <div class="carousel-inner">
+            @for (int i = 0; i < slides.Count; i++)
+            {
+                var s = slides[i];
+                <div class="carousel-item @(i == 0 ? "active" : "")">
+                    <a href="@s.ButtonUrl" class="algara-hero-slide"
+                       style="background-image: url('@s.ImageUrl')">
+                        <div class="algara-hero__overlay">
+                            <div class="container">
+                                @if (!string.IsNullOrWhiteSpace(s.EyebrowText))
+                                {
+                                    <p class="algara-hero__eyebrow">@s.EyebrowText</p>
+                                }
+                                <h1 class="algara-hero__title">@Html.Raw(s.Title.Replace("\n", "<br>"))</h1>
+                                @if (!string.IsNullOrWhiteSpace(s.Subtitle))
+                                {
+                                    <p class="algara-hero__subtitle">@s.Subtitle</p>
+                                }
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <!-- Controls -->
+        <button class="carousel-control-prev" type="button"
+                data-bs-target="#algaraHeroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Назад</span>
+        </button>
+        <button class="carousel-control-next" type="button"
+                data-bs-target="#algaraHeroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Напред</span>
+        </button>
     </div>
-</section>
+}
+else
+{
+    <!-- Fallback static hero when no active slides -->
+    <section class="algara-hero">
+        <div class="algara-hero__overlay">
+            <div class="container">
+                <p class="algara-hero__eyebrow">Пролетна колекция 2026</p>
+                <h1 class="algara-hero__title">Обзавеждане,<br>което вдъхновява</h1>
+                <p class="algara-hero__subtitle">Скандинавски дизайн, качествени материали<br>и персонализирани решения за вашия дом.</p>
+                <a asp-controller="Product" asp-action="Index" class="btn algara-btn-primary mt-2">Разгледай каталога</a>
+            </div>
+        </div>
+    </section>
+}
 
 <!-- ═══════════════════════════════════════════════════════════
      ПРЕПОРЪЧАНИ ПРОДУКТИ

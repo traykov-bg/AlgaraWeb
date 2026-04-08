@@ -1,0 +1,169 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminHeroSlideFormViewModel
+
+@{
+    var heroCategories = ViewBag.HeroSlideCategories as IEnumerable<Algara.Data.Models.Category>;
+}
+
+<!-- ── URL на изображение ── -->
+<div class="mb-3">
+    <label asp-for="ImageUrl" class="form-label fw-semibold"></label>
+    <div class="input-group">
+        <input asp-for="ImageUrl" class="form-control" placeholder="https://... или качете файл"
+               id="heroSlideImageUrl" oninput="updateHeroPreview(this.value)" />
+        <label class="btn btn-outline-secondary mb-0" for="heroSlideFileInput" title="Качи от компютъра">
+            <i class="bi bi-upload"></i>
+        </label>
+        <input type="file" id="heroSlideFileInput" class="d-none"
+               accept="image/jpeg,image/png,image/gif,image/webp"
+               onchange="uploadHeroImage(this)" />
+    </div>
+    <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+    <div id="heroUploadStatus" class="small mt-1 d-none"></div>
+    <div id="heroImgPreview" class="mt-2" style="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "display:none" : "")">
+        <img id="heroImgPreviewImg" src="@Model.ImageUrl" alt="preview"
+             class="rounded" style="height:80px;object-fit:cover;" />
+    </div>
+</div>
+
+<!-- ── Eyebrow ── -->
+<div class="mb-3">
+    <label asp-for="EyebrowText" class="form-label fw-semibold"></label>
+    <input asp-for="EyebrowText" class="form-control" placeholder="напр. Пролетна колекция 2026" />
+</div>
+
+<!-- ── Заглавие ── -->
+<div class="mb-3">
+    <label asp-for="Title" class="form-label fw-semibold"></label>
+    <input asp-for="Title" class="form-control" />
+    <span asp-validation-for="Title" class="text-danger small"></span>
+</div>
+
+<!-- ── Подзаглавие ── -->
+<div class="mb-3">
+    <label asp-for="Subtitle" class="form-label fw-semibold"></label>
+    <textarea asp-for="Subtitle" class="form-control" rows="2"></textarea>
+</div>
+
+<!-- ── URL при кликане (route picker) ── -->
+<div class="mb-3">
+    <label asp-for="ButtonUrl" class="form-label fw-semibold"></label>
+    <div class="input-group">
+        <input asp-for="ButtonUrl" class="form-control" id="heroButtonUrl"
+               placeholder="/Product или /kategorii/meka-mebel" />
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown" aria-expanded="false" title="Избери от списък">
+            <i class="bi bi-diagram-3"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" style="min-width:260px;max-height:340px;overflow-y:auto">
+            @if (heroCategories != null && heroCategories.Any())
+            {
+                <li><h6 class="dropdown-header"><i class="bi bi-tags me-1"></i>Категории</h6></li>
+                @foreach (var cat in heroCategories.Where(c => c.IsActive))
+                {
+                    <li>
+                        <a class="dropdown-item d-flex justify-content-between" href="#"
+                           onclick="setHeroUrl('/kategorii/@cat.Slug'); return false;">
+                            <span>@cat.Name</span>
+                            <small class="text-muted ms-2">/kategorii/@cat.Slug</small>
+                        </a>
+                    </li>
+                }
+                <li><hr class="dropdown-divider"></li>
+            }
+            <li><h6 class="dropdown-header"><i class="bi bi-file-earmark-text me-1"></i>Страници</h6></li>
+            <li>
+                <a class="dropdown-item d-flex justify-content-between" href="#"
+                   onclick="setHeroUrl('/Product'); return false;">
+                    <span>Каталог</span><small class="text-muted ms-2">/Product</small>
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item d-flex justify-content-between" href="#"
+                   onclick="setHeroUrl('/'); return false;">
+                    <span>Начало</span><small class="text-muted ms-2">/</small>
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item d-flex justify-content-between" href="#"
+                   onclick="setHeroUrl('/Home/About'); return false;">
+                    <span>За нас</span><small class="text-muted ms-2">/Home/About</small>
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item d-flex justify-content-between" href="#"
+                   onclick="setHeroUrl('/Home/Contact'); return false;">
+                    <span>Контакти</span><small class="text-muted ms-2">/Home/Contact</small>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <span asp-validation-for="ButtonUrl" class="text-danger small"></span>
+    <small class="text-muted">Изберете от списъка или въведете URL ръчно.</small>
+</div>
+
+<!-- ── Поредност + Активен ── -->
+<div class="row g-3 mb-3">
+    <div class="col-sm-4">
+        <label asp-for="DisplayOrder" class="form-label fw-semibold"></label>
+        <input asp-for="DisplayOrder" class="form-control" type="number" min="0" />
+    </div>
+    <div class="col-sm-8 d-flex align-items-end pb-1">
+        <div class="form-check">
+            <input class="form-check-input" asp-for="IsActive" />
+            <label class="form-check-label" asp-for="IsActive">Активен (видим на началната страница)</label>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateHeroPreview(url) {
+        var preview = document.getElementById('heroImgPreview');
+        var img = document.getElementById('heroImgPreviewImg');
+        if (url && url.trim()) {
+            img.src = url.trim();
+            preview.style.display = '';
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    function setHeroUrl(url) {
+        document.getElementById('heroButtonUrl').value = url;
+    }
+
+    async function uploadHeroImage(input) {
+        if (!input.files || !input.files[0]) return;
+
+        var statusEl = document.getElementById('heroUploadStatus');
+        statusEl.textContent = 'Качване…';
+        statusEl.className = 'small mt-1 text-muted';
+
+        var formData = new FormData();
+        formData.append('file', input.files[0]);
+
+        try {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var resp = await fetch('/admin/hero-slides/upload-image', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: formData
+            });
+            var data = await resp.json();
+
+            if (resp.ok) {
+                document.getElementById('heroSlideImageUrl').value = data.url;
+                updateHeroPreview(data.url);
+                statusEl.textContent = 'Качено успешно!';
+                statusEl.className = 'small mt-1 text-success';
+            } else {
+                statusEl.textContent = data.error || 'Грешка при качване.';
+                statusEl.className = 'small mt-1 text-danger';
+            }
+        } catch {
+            statusEl.textContent = 'Грешка при качване.';
+            statusEl.className = 'small mt-1 text-danger';
+        }
+
+        input.value = '';
+    }
+</script>

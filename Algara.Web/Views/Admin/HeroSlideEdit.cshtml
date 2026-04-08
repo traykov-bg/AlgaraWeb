@@ -1,0 +1,27 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminHeroSlideFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Редактиране на слайд";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+                {
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+                }
+                <form asp-action="HeroSlideEdit" asp-route-n="@Model.N" method="post">
+                    @await Html.PartialAsync("_HeroSlideFormFields", Model)
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-1"></i>Запиши
+                        </button>
+                        <a asp-action="HeroSlides" class="btn btn-outline-secondary">Откажи</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

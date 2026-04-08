@@ -1,0 +1,76 @@
+﻿@model IEnumerable<Algara.Data.Models.HeroSlide>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Слайдер";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="HeroSlideCreate" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Нов слайд
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:70px">Снимка</th>
+                    <th>Заглавие</th>
+                    <th>Eyebrow</th>
+                    <th class="text-center" style="width:80px">Ред</th>
+                    <th class="text-center" style="width:100px">Статус</th>
+                    <th class="text-end" style="width:100px">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr class="@(!s.IsActive ? "table-secondary text-muted" : "")">
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(s.ImageUrl))
+                            {
+                                <img src="@s.ImageUrl" alt="@s.Title"
+                                     style="width:60px;height:40px;object-fit:cover;border-radius:4px;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                        <td class="fw-semibold">@s.Title</td>
+                        <td class="small text-muted">@(s.EyebrowText ?? "—")</td>
+                        <td class="text-center small">@s.DisplayOrder</td>
+                        <td class="text-center">
+                            @if (s.IsActive)
+                            {
+                                <span class="badge bg-success">Активен</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Неактивен</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="HeroSlideEdit" asp-route-n="@s.N"
+                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="HeroSlideToggle" asp-route-n="@s.N" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-xs @(s.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
+                                        style="padding:.2rem .5rem;font-size:.78rem;"
+                                        title="@(s.IsActive ? "Деактивирай" : "Активирай")">
+                                    <i class="bi @(s.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Няма слайдове.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

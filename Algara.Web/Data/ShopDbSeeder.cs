@@ -72,6 +72,60 @@ namespace Algara.Web.Data
             };
             context.Products.AddRange(products);
             await context.SaveChangesAsync();
+
+            // ── Hero Slides ──
+            if (!context.HeroSlides.Any())
+            {
+                var slides = new List<Algara.Data.Models.HeroSlide>
+                {
+                    new()
+                    {
+                        ImageUrl     = Img("Пролетна колекция 2026"),
+                        EyebrowText  = "Пролетна колекция 2026",
+                        Title        = "Обзавеждане,\nкоето вдъхновява",
+                        Subtitle     = "Скандинавски дизайн, качествени материали и персонализирани решения за вашия дом.",
+                        ButtonText   = "Разгледай каталога",
+                        ButtonUrl    = "/Product",
+                        DisplayOrder = 1,
+                        IsActive     = true,
+                    },
+                    new()
+                    {
+                        ImageUrl     = Img("Мека мебел по поръчка"),
+                        EyebrowText  = "Направено за вас",
+                        Title        = "Мека мебел\nпо поръчка",
+                        Subtitle     = "Изберете размер, материал и цвят — правим дивани и кресла точно по вашите нужди.",
+                        ButtonText   = "Виж меката мебел",
+                        ButtonUrl    = "/kategorii/meka-mebel",
+                        DisplayOrder = 2,
+                        IsActive     = true,
+                    },
+                    new()
+                    {
+                        ImageUrl     = Img("Безплатна доставка"),
+                        EyebrowText  = "Специална оферта",
+                        Title        = "Безплатна доставка\nнад 500 €",
+                        Subtitle     = "Безплатна доставка и монтаж за поръчки над 500 € в цяла България.",
+                        ButtonText   = "Научи повече",
+                        ButtonUrl    = "/Home/About",
+                        DisplayOrder = 3,
+                        IsActive     = true,
+                    },
+                    new()
+                    {
+                        ImageUrl     = Img("Спалня"),
+                        EyebrowText  = "Ново",
+                        Title        = "Спалня на мечтите",
+                        Subtitle     = "Легла и спални комплекти от масивна дървесина.",
+                        ButtonText   = "Разгледай спалните",
+                        ButtonUrl    = "/kategorii/spalnya",
+                        DisplayOrder = 4,
+                        IsActive     = false, // inactive — демонстрира toggle функцията
+                    },
+                };
+                context.HeroSlides.AddRange(slides);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
