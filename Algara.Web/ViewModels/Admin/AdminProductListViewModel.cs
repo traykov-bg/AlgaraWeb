@@ -4,10 +4,12 @@ namespace Algara.Web.ViewModels.Admin
 {
     public class AdminProductListViewModel
     {
-        public IEnumerable<Product> Products    { get; set; } = [];
-        public int                  CurrentPage { get; set; }
-        public int                  TotalPages  { get; set; }
-        public int                  PageSize    { get; set; } = 20;
-        public string               Sort        { get; set; } = "name_asc";
+        public IEnumerable<Product> Products       { get; set; } = [];
+        public int                  CurrentPage    { get; set; }
+        public int                  TotalPages     { get; set; }
+        public int                  PageSize       { get; set; } = 20;
+        public string               Sort           { get; set; } = "name_asc";
+        public string               CategoryFilter { get; set; } = "";
+        public IList<Category>      AllCategories  { get; set; } = [];
     }
 }

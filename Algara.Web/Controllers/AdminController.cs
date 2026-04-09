@@ -75,10 +75,35 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("products")]
-        public async Task<IActionResult> Products(int page = 1, string sort = "name_asc")
+        public async Task<IActionResult> Products(int page = 1, string sort = "name_asc", string cats = "")
         {
             const int pageSize = 20;
-            var baseQuery = _shopDb.Products.Include(p => p.Category);
+
+            var allCategories = await _shopDb.Categories.OrderBy(c => c.Name).ToListAsync();
+
+            IQueryable<Product> baseQuery = _shopDb.Products.Include(p => p.Category);
+
+            // Apply category filter
+            if (!string.IsNullOrWhiteSpace(cats))
+            {
+                var catIds = cats.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => int.TryParse(s.Trim(), out var n) ? n : -1)
+                    .Where(n => n >= 0)
+                    .ToHashSet();
+
+                if (catIds.Count > 0)
+                {
+                    bool hasNull  = catIds.Contains(0);
+                    var  realIds  = catIds.Where(n => n > 0).ToHashSet();
+
+                    if (hasNull && realIds.Count > 0)
+                        baseQuery = baseQuery.Where(p => p.CategoryN == null || realIds.Contains(p.CategoryN!.Value));
+                    else if (hasNull)
+                        baseQuery = baseQuery.Where(p => p.CategoryN == null);
+                    else
+                        baseQuery = baseQuery.Where(p => p.CategoryN != null && realIds.Contains(p.CategoryN!.Value));
+                }
+            }
 
             // Apply multi-column sort
             IOrderedQueryable<Product>? ordered = null;
@@ -131,11 +156,13 @@ namespace Algara.Web.Controllers
 
             var vm = new AdminProductListViewModel
             {
-                Products    = items,
-                CurrentPage = page,
-                TotalPages  = (int)Math.Ceiling(total / (double)pageSize),
-                PageSize    = pageSize,
-                Sort        = sort,
+                Products       = items,
+                CurrentPage    = page,
+                TotalPages     = (int)Math.Ceiling(total / (double)pageSize),
+                PageSize       = pageSize,
+                Sort           = sort,
+                CategoryFilter = cats,
+                AllCategories  = allCategories,
             };
             return View(vm);
         }
