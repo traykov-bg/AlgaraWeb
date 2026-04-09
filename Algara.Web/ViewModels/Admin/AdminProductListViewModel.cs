@@ -8,5 +8,6 @@ namespace Algara.Web.ViewModels.Admin
         public int                  CurrentPage { get; set; }
         public int                  TotalPages  { get; set; }
         public int                  PageSize    { get; set; } = 20;
+        public string               Sort        { get; set; } = "name_asc";
     }
 }

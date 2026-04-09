@@ -75,13 +75,59 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("products")]
-        public async Task<IActionResult> Products(int page = 1)
+        public async Task<IActionResult> Products(int page = 1, string sort = "name_asc")
         {
             const int pageSize = 20;
-            var query = _shopDb.Products.Include(p => p.Category).OrderBy(p => p.Name);
+            var baseQuery = _shopDb.Products.Include(p => p.Category);
 
-            var total = await query.CountAsync();
-            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            // Apply multi-column sort
+            IOrderedQueryable<Product>? ordered = null;
+            foreach (var part in sort.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()))
+            {
+                var segments = part.Split('_');
+                var col      = segments[0];
+                var asc      = segments.Length < 2 || segments[1] != "desc";
+
+                if (ordered == null)
+                    ordered = (col, asc) switch
+                    {
+                        ("n",        true)  => baseQuery.OrderBy(p => p.N),
+                        ("n",        false) => baseQuery.OrderByDescending(p => p.N),
+                        ("name",     true)  => baseQuery.OrderBy(p => p.Name),
+                        ("name",     false) => baseQuery.OrderByDescending(p => p.Name),
+                        ("category", true)  => baseQuery.OrderBy(p => p.Category!.Name),
+                        ("category", false) => baseQuery.OrderByDescending(p => p.Category!.Name),
+                        ("price",    true)  => baseQuery.OrderBy(p => p.Price),
+                        ("price",    false) => baseQuery.OrderByDescending(p => p.Price),
+                        ("featured", true)  => baseQuery.OrderBy(p => p.IsFeatured),
+                        ("featured", false) => baseQuery.OrderByDescending(p => p.IsFeatured),
+                        ("status",   true)  => baseQuery.OrderBy(p => p.IsActive),
+                        ("status",   false) => baseQuery.OrderByDescending(p => p.IsActive),
+                        _                   => baseQuery.OrderBy(p => p.Name),
+                    };
+                else
+                    ordered = (col, asc) switch
+                    {
+                        ("n",        true)  => ordered.ThenBy(p => p.N),
+                        ("n",        false) => ordered.ThenByDescending(p => p.N),
+                        ("name",     true)  => ordered.ThenBy(p => p.Name),
+                        ("name",     false) => ordered.ThenByDescending(p => p.Name),
+                        ("category", true)  => ordered.ThenBy(p => p.Category!.Name),
+                        ("category", false) => ordered.ThenByDescending(p => p.Category!.Name),
+                        ("price",    true)  => ordered.ThenBy(p => p.Price),
+                        ("price",    false) => ordered.ThenByDescending(p => p.Price),
+                        ("featured", true)  => ordered.ThenBy(p => p.IsFeatured),
+                        ("featured", false) => ordered.ThenByDescending(p => p.IsFeatured),
+                        ("status",   true)  => ordered.ThenBy(p => p.IsActive),
+                        ("status",   false) => ordered.ThenByDescending(p => p.IsActive),
+                        _                   => ordered.ThenBy(p => p.Name),
+                    };
+            }
+
+            ordered ??= baseQuery.OrderBy(p => p.Name);
+
+            var total = await baseQuery.CountAsync();
+            var items = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
             var vm = new AdminProductListViewModel
             {
@@ -89,6 +135,7 @@ namespace Algara.Web.Controllers
                 CurrentPage = page,
                 TotalPages  = (int)Math.Ceiling(total / (double)pageSize),
                 PageSize    = pageSize,
+                Sort        = sort,
             };
             return View(vm);
         }

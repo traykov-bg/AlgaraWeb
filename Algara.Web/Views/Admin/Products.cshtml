@@ -11,17 +11,63 @@
     </a>
 </div>
 
+<style>
+    .sort-check {
+        border: 2px solid #0d6efd;
+        box-shadow: 0 0 0 2px rgba(13,110,253,.18);
+        cursor: pointer;
+    }
+    .sort-check:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13,110,253,.30);
+    }
+</style>
+
+<input type="hidden" id="currentSort" value="@Model.Sort" />
+<input type="hidden" id="baseUrl" value="@Url.Action("Products")" />
+
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover table-sm mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>#</th>
-                    <th>Наименование</th>
-                    <th>Категория</th>
-                    <th class="text-end">Цена</th>
-                    <th class="text-center">Препоръчан</th>
-                    <th class="text-center">Статус</th>
+                    <th data-col="n" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по #" />
+                        #
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
+                    <th data-col="name" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по наименование" />
+                        Наименование
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
+                    <th data-col="category" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по категория" />
+                        Категория
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
+                    <th data-col="price" class="text-end" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по цена" />
+                        Цена
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
+                    <th data-col="featured" class="text-center" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по препоръчан" />
+                        Препоръчан
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
+                    <th data-col="status" class="text-center" style="white-space:nowrap;">
+                        <input type="checkbox" class="sort-check form-check-input me-1" title="Сортирай по статус" />
+                        Статус
+                        <button class="sort-dir btn btn-link p-0 ms-1" style="font-size:.85rem;" title="Обърни посоката"><i class="bi bi-arrow-up text-primary"></i></button>
+                        <sup class="sort-badge fw-semibold text-primary" style="font-size:.6rem;"></sup>
+                    </th>
                     <th class="text-end">Действия</th>
                 </tr>
             </thead>
@@ -83,9 +129,84 @@
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
                 <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-action="Products" asp-route-page="@i">@i</a>
+                    <a class="page-link" asp-action="Products" asp-route-page="@i" asp-route-sort="@Model.Sort">@i</a>
                 </li>
             }
         </ul>
     </nav>
+}
+
+@section Scripts {
+<script>
+(function () {
+    var currentSort = document.getElementById('currentSort').value;
+    var baseUrl     = document.getElementById('baseUrl').value;
+
+    // Parse sort string into ordered array: [{col, dir}, ...]
+    var sortOrder = [];
+    if (currentSort) {
+        currentSort.split(',').forEach(function (part) {
+            var p = part.trim().split('_');
+            if (p[0]) sortOrder.push({ col: p[0], dir: p[1] === 'desc' ? 'desc' : 'asc' });
+        });
+    }
+
+    function refreshUI() {
+        document.querySelectorAll('th[data-col]').forEach(function (th) {
+            var col    = th.dataset.col;
+            var check  = th.querySelector('.sort-check');
+            var dirBtn = th.querySelector('.sort-dir');
+            var badge  = th.querySelector('.sort-badge');
+            var idx    = sortOrder.findIndex(function (s) { return s.col === col; });
+
+            if (idx !== -1) {
+                var entry = sortOrder[idx];
+                check.checked        = true;
+                dirBtn.style.display = '';
+                dirBtn.querySelector('i').className =
+                    'bi text-primary ' + (entry.dir === 'desc' ? 'bi-arrow-down' : 'bi-arrow-up');
+                badge.textContent    = sortOrder.length > 1 ? (idx + 1) : '';
+                badge.style.display  = sortOrder.length > 1 ? '' : 'none';
+            } else {
+                check.checked        = false;
+                dirBtn.style.display = 'none';
+                badge.style.display  = 'none';
+            }
+        });
+    }
+
+    function navigate() {
+        var sortStr = sortOrder.map(function (s) { return s.col + '_' + s.dir; }).join(',');
+        if (!sortStr) sortStr = 'name_asc';
+        window.location.href = baseUrl + '?page=1&sort=' + encodeURIComponent(sortStr);
+    }
+
+    document.querySelectorAll('th[data-col]').forEach(function (th) {
+        var col   = th.dataset.col;
+        var check = th.querySelector('.sort-check');
+        var btn   = th.querySelector('.sort-dir');
+
+        check.addEventListener('change', function (e) {
+            e.stopPropagation();
+            if (this.checked) {
+                sortOrder.push({ col: col, dir: 'asc' });
+            } else {
+                sortOrder = sortOrder.filter(function (s) { return s.col !== col; });
+            }
+            navigate();
+        });
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var entry = sortOrder.find(function (s) { return s.col === col; });
+            if (entry) {
+                entry.dir = entry.dir === 'asc' ? 'desc' : 'asc';
+                navigate();
+            }
+        });
+    });
+
+    refreshUI();
+}());
+</script>
 }
