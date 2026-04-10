@@ -9,7 +9,9 @@ namespace Algara.Data.Data
             : base(options) { }
 
         public DbSet<Category> Categories { get; set; }
+        public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductSubCategory> ProductSubCategories { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<HeroSlide> HeroSlides { get; set; }
@@ -38,6 +40,38 @@ namespace Algara.Data.Data
                  .WithMany(c => c.Products)
                  .HasForeignKey(p => p.CategoryN)
                  .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // --- SubCategory ---
+            modelBuilder.Entity<SubCategory>(b =>
+            {
+                b.HasKey(sc => sc.N);
+                b.Property(sc => sc.N).UseIdentityColumn();
+                b.ToTable("SubCategories");
+                b.Property(sc => sc.Name).IsRequired().HasMaxLength(200);
+                b.Property(sc => sc.Slug).IsRequired().HasMaxLength(200);
+
+                b.HasOne(sc => sc.Category)
+                 .WithMany(c => c.SubCategories)
+                 .HasForeignKey(sc => sc.CategoryN)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // --- ProductSubCategory ---
+            modelBuilder.Entity<ProductSubCategory>(b =>
+            {
+                b.HasKey(psc => new { psc.ProductN, psc.SubCategoryN });
+                b.ToTable("ProductSubCategories");
+
+                b.HasOne(psc => psc.Product)
+                 .WithMany(p => p.ProductSubCategories)
+                 .HasForeignKey(psc => psc.ProductN)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(psc => psc.SubCategory)
+                 .WithMany(sc => sc.ProductSubCategories)
+                 .HasForeignKey(psc => psc.SubCategoryN)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // --- Order ---

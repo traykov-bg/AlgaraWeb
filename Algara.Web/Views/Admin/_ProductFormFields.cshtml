@@ -22,11 +22,39 @@
     </div>
     <div class="col-sm-6">
         <label asp-for="CategoryN" class="form-label fw-semibold"></label>
-        <select asp-for="CategoryN"
+        <select asp-for="CategoryN" id="productCategorySelect"
                 asp-items="@(new SelectList(Model.Categories, "N", "Name", Model.CategoryN))"
                 class="form-select">
             <option value="">— Без категория —</option>
         </select>
+    </div>
+</div>
+
+@* Под-категории *@
+<div class="mb-3" id="subcategorySection">
+    <label class="form-label fw-semibold">Под-категории</label>
+    <div id="subcategoryCheckboxes" class="border rounded p-3 bg-light" style="min-height:50px;">
+        @if (Model.AvailableSubCategories.Any())
+        {
+            @foreach (var sub in Model.AvailableSubCategories)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                           name="SelectedSubCategoryNs" value="@sub.N"
+                           id="sub_@sub.N"
+                           @(Model.SelectedSubCategoryNs.Contains(sub.N) ? "checked" : "") />
+                    <label class="form-check-label" for="sub_@sub.N">@sub.Name</label>
+                </div>
+            }
+        }
+        else if (Model.CategoryN.HasValue)
+        {
+            <p class="text-muted small mb-0">Няма под-категории за тази категория.</p>
+        }
+        else
+        {
+            <p class="text-muted small mb-0">Изберете категория за да видите под-категориите.</p>
+        }
     </div>
 </div>
 
@@ -53,3 +81,41 @@
         <label class="form-check-label" asp-for="IsActive">Активен (видим в каталога)</label>
     </div>
 </div>
+
+<script>
+(function () {
+    var catSelect = document.getElementById('productCategorySelect');
+    var subsDiv   = document.getElementById('subcategoryCheckboxes');
+    if (!catSelect || !subsDiv) return;
+
+    catSelect.addEventListener('change', function () {
+        var catN = this.value;
+        if (!catN) {
+            subsDiv.innerHTML = '<p class="text-muted small mb-0">Изберете категория за да видите под-категориите.</p>';
+            return;
+        }
+        subsDiv.innerHTML = '<p class="text-muted small mb-0"><i class="bi bi-hourglass-split me-1"></i>Зареждане...</p>';
+
+        fetch('/admin/categories/' + catN + '/subcategories')
+            .then(function (r) { return r.json(); })
+            .then(function (subs) {
+                if (!subs || subs.length === 0) {
+                    subsDiv.innerHTML = '<p class="text-muted small mb-0">Няма под-категории за тази категория.</p>';
+                    return;
+                }
+                var html = '';
+                subs.forEach(function (sub) {
+                    html += '<div class="form-check">' +
+                        '<input class="form-check-input" type="checkbox" name="SelectedSubCategoryNs"' +
+                        ' value="' + sub.n + '" id="sub_' + sub.n + '" />' +
+                        '<label class="form-check-label" for="sub_' + sub.n + '">' + sub.name + '</label>' +
+                        '</div>';
+                });
+                subsDiv.innerHTML = html;
+            })
+            .catch(function () {
+                subsDiv.innerHTML = '<p class="text-danger small mb-0">Грешка при зареждане на под-категориите.</p>';
+            });
+    });
+})();
+</script>

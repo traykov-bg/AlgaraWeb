@@ -32,6 +32,11 @@ namespace Algara.Data.Repositories
             => await _context.Categories
                 .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive);
 
+        public async Task<Category?> GetBySlugWithSubCategoriesAsync(string slug)
+            => await _context.Categories
+                .Include(c => c.SubCategories.Where(sc => sc.IsActive))
+                .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive);
+
         public async Task AddAsync(Category category)
         {
             _context.Categories.Add(category);

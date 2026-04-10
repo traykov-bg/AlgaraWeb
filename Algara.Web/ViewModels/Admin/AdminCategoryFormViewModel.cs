@@ -26,5 +26,16 @@ namespace Algara.Web.ViewModels.Admin
 
         [Display(Name = "Активна")]
         public bool IsActive { get; set; } = true;
+
+        // Под-категориите — попълват се само при редактиране
+        public List<AdminSubCategoryViewModel> SubCategories { get; set; } = new();
+    }
+
+    public class AdminSubCategoryViewModel
+    {
+        public int N { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
     }
 }

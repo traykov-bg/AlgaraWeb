@@ -43,16 +43,35 @@ namespace Algara.Web.Controllers
         }
 
         // GET /kategorii/{slug}   напр. /kategorii/meka-mebel
+        // GET /kategorii/{slug}?sub={subSlug}   напр. /kategorii/meka-mebel?sub=sofas
         [Route("/kategorii/{slug}")]
-        public async Task<IActionResult> Category(string slug)
+        public async Task<IActionResult> Category(string slug, string? sub = null)
         {
-            var category = await _categoryRepository.GetBySlugAsync(slug);
+            var category = await _categoryRepository.GetBySlugWithSubCategoriesAsync(slug);
             if (category == null) return NotFound();
 
-            var products = await _productRepository.GetByCategoryAsync(category.N);
-            ViewBag.Categories = await _categoryRepository.GetAllAsync();
-            ViewBag.CategoryName = category.Name;
-            ViewBag.CategorySlug = category.Slug;
+            IEnumerable<Algara.Data.Models.Product> products;
+            Algara.Data.Models.SubCategory? activeSubCategory = null;
+
+            if (!string.IsNullOrEmpty(sub))
+            {
+                activeSubCategory = category.SubCategories
+                    .FirstOrDefault(sc => sc.Slug == sub && sc.IsActive);
+
+                products = activeSubCategory != null
+                    ? await _productRepository.GetBySubCategoryAsync(activeSubCategory.N)
+                    : await _productRepository.GetByCategoryAsync(category.N);
+            }
+            else
+            {
+                products = await _productRepository.GetByCategoryAsync(category.N);
+            }
+
+            ViewBag.Categories    = await _categoryRepository.GetAllAsync();
+            ViewBag.CategoryName  = category.Name;
+            ViewBag.CategorySlug  = category.Slug;
+            ViewBag.SubCategories = category.SubCategories.Where(sc => sc.IsActive).OrderBy(sc => sc.Name).ToList();
+            ViewBag.ActiveSubSlug = activeSubCategory?.Slug;
             return View("Index", products);
         }
 

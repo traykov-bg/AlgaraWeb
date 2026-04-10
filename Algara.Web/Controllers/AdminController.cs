@@ -184,6 +184,10 @@ namespace Algara.Web.Controllers
             if (!ModelState.IsValid)
             {
                 vm.Categories = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
+                if (vm.CategoryN.HasValue)
+                    vm.AvailableSubCategories = await _shopDb.SubCategories
+                        .Where(sc => sc.CategoryN == vm.CategoryN && sc.IsActive)
+                        .OrderBy(sc => sc.Name).ToListAsync();
                 return View(vm);
             }
 
@@ -198,7 +202,12 @@ namespace Algara.Web.Controllers
                 IsActive       = vm.IsActive,
                 CategoryN      = vm.CategoryN,
             };
-            await _productRepo.AddAsync(product);
+            _shopDb.Products.Add(product);
+            await _shopDb.SaveChangesAsync();
+
+            foreach (var subN in vm.SelectedSubCategoryNs ?? [])
+                _shopDb.ProductSubCategories.Add(new ProductSubCategory { ProductN = product.N, SubCategoryN = subN });
+            await _shopDb.SaveChangesAsync();
 
             TempData["Success"] = $"Продуктът \"{product.Name}\" е добавен успешно.";
             return RedirectToAction(nameof(Products));
@@ -207,22 +216,29 @@ namespace Algara.Web.Controllers
         [HttpGet("products/edit/{n}")]
         public async Task<IActionResult> ProductEdit(int n)
         {
-            var product = await _shopDb.Products.FindAsync(n);
+            var product = await _shopDb.Products
+                .Include(p => p.ProductSubCategories)
+                .FirstOrDefaultAsync(p => p.N == n);
             if (product == null) return NotFound();
 
             var vm = new AdminProductFormViewModel
             {
-                N              = product.N,
-                Name           = product.Name,
-                Description    = product.Description,
-                Price          = product.Price,
-                ImageUrl       = product.ImageUrl,
-                IsCustomizable = product.IsCustomizable,
-                IsFeatured     = product.IsFeatured,
-                IsActive       = product.IsActive,
-                CategoryN      = product.CategoryN,
-                Categories     = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync(),
+                N                     = product.N,
+                Name                  = product.Name,
+                Description           = product.Description,
+                Price                 = product.Price,
+                ImageUrl              = product.ImageUrl,
+                IsCustomizable        = product.IsCustomizable,
+                IsFeatured            = product.IsFeatured,
+                IsActive              = product.IsActive,
+                CategoryN             = product.CategoryN,
+                Categories            = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync(),
+                SelectedSubCategoryNs = product.ProductSubCategories.Select(psc => psc.SubCategoryN).ToList(),
             };
+            if (product.CategoryN.HasValue)
+                vm.AvailableSubCategories = await _shopDb.SubCategories
+                    .Where(sc => sc.CategoryN == product.CategoryN && sc.IsActive)
+                    .OrderBy(sc => sc.Name).ToListAsync();
             return View(vm);
         }
 
@@ -233,10 +249,16 @@ namespace Algara.Web.Controllers
             if (!ModelState.IsValid)
             {
                 vm.Categories = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
+                if (vm.CategoryN.HasValue)
+                    vm.AvailableSubCategories = await _shopDb.SubCategories
+                        .Where(sc => sc.CategoryN == vm.CategoryN && sc.IsActive)
+                        .OrderBy(sc => sc.Name).ToListAsync();
                 return View(vm);
             }
 
-            var product = await _shopDb.Products.FindAsync(vm.N);
+            var product = await _shopDb.Products
+                .Include(p => p.ProductSubCategories)
+                .FirstOrDefaultAsync(p => p.N == vm.N);
             if (product == null) return NotFound();
 
             product.Name           = vm.Name;
@@ -248,7 +270,17 @@ namespace Algara.Web.Controllers
             product.IsActive       = vm.IsActive;
             product.CategoryN      = vm.CategoryN;
 
-            await _productRepo.UpdateAsync(product);
+            // Обнови присвоените под-категории
+            var selectedNs = (vm.SelectedSubCategoryNs ?? []).ToHashSet();
+            var existingNs = product.ProductSubCategories.Select(psc => psc.SubCategoryN).ToHashSet();
+
+            var toRemove = product.ProductSubCategories.Where(psc => !selectedNs.Contains(psc.SubCategoryN)).ToList();
+            _shopDb.ProductSubCategories.RemoveRange(toRemove);
+
+            foreach (var subN in selectedNs.Where(sn => !existingNs.Contains(sn)))
+                _shopDb.ProductSubCategories.Add(new ProductSubCategory { ProductN = product.N, SubCategoryN = subN });
+
+            await _shopDb.SaveChangesAsync();
 
             TempData["Success"] = $"Продуктът \"{product.Name}\" е обновен успешно.";
             return RedirectToAction(nameof(Products));
@@ -315,17 +347,22 @@ namespace Algara.Web.Controllers
         [HttpGet("categories/edit/{n}")]
         public async Task<IActionResult> CategoryEdit(int n)
         {
-            var category = await _shopDb.Categories.FindAsync(n);
+            var category = await _shopDb.Categories
+                .Include(c => c.SubCategories.Where(sc => sc.IsActive))
+                .FirstOrDefaultAsync(c => c.N == n);
             if (category == null) return NotFound();
 
             var vm = new AdminCategoryFormViewModel
             {
-                N           = category.N,
-                Name        = category.Name,
-                Slug        = category.Slug,
-                Description = category.Description,
-                IsFeatured  = category.IsFeatured,
-                IsActive    = category.IsActive,
+                N             = category.N,
+                Name          = category.Name,
+                Slug          = category.Slug,
+                Description   = category.Description,
+                IsFeatured    = category.IsFeatured,
+                IsActive      = category.IsActive,
+                SubCategories = category.SubCategories
+                    .Select(sc => new AdminSubCategoryViewModel { N = sc.N, Name = sc.Name, Slug = sc.Slug })
+                    .ToList(),
             };
             return View(vm);
         }
@@ -338,7 +375,15 @@ namespace Algara.Web.Controllers
             if (string.IsNullOrWhiteSpace(vm.Slug))
                 vm.Slug = SlugHelper.Generate(vm.Name);
 
-            if (!ModelState.IsValid) return View(vm);
+            if (!ModelState.IsValid)
+            {
+                // Зареди под-категориите отново при грешка
+                vm.SubCategories = await _shopDb.SubCategories
+                    .Where(sc => sc.CategoryN == vm.N && sc.IsActive)
+                    .Select(sc => new AdminSubCategoryViewModel { N = sc.N, Name = sc.Name, Slug = sc.Slug })
+                    .ToListAsync();
+                return View(vm);
+            }
 
             var category = await _shopDb.Categories.FindAsync(vm.N);
             if (category == null) return NotFound();
@@ -353,6 +398,60 @@ namespace Algara.Web.Controllers
 
             TempData["Success"] = $"Категорията \"{category.Name}\" е обновена успешно.";
             return RedirectToAction(nameof(Categories));
+        }
+
+        [HttpPost("categories/{n}/subcategories/add")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubCategoryAdd(int n, string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["Error"] = "Наименованието на под-категорията е задължително.";
+                return RedirectToAction(nameof(CategoryEdit), new { n });
+            }
+
+            var category = await _shopDb.Categories.FindAsync(n);
+            if (category == null) return NotFound();
+
+            var slug = SlugHelper.Generate(name);
+            _shopDb.SubCategories.Add(new SubCategory
+            {
+                CategoryN = n,
+                Name      = name.Trim(),
+                Slug      = slug,
+                IsActive  = true,
+            });
+            await _shopDb.SaveChangesAsync();
+
+            TempData["Success"] = $"Под-категорията \"{name.Trim()}\" е добавена.";
+            return RedirectToAction(nameof(CategoryEdit), new { n });
+        }
+
+        [HttpPost("categories/subcategories/delete/{sn}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubCategoryDelete(int sn)
+        {
+            var sub = await _shopDb.SubCategories.FindAsync(sn);
+            if (sub == null) return NotFound();
+
+            int categoryN = sub.CategoryN;
+            sub.IsActive = false;
+            await _shopDb.SaveChangesAsync();
+
+            TempData["Success"] = $"Под-категорията \"{sub.Name}\" е премахната.";
+            return RedirectToAction(nameof(CategoryEdit), new { n = categoryN });
+        }
+
+        // AJAX: връща под-категориите за дадена категория (използва се от формата за продукт)
+        [HttpGet("categories/{n}/subcategories")]
+        public async Task<IActionResult> GetSubCategories(int n)
+        {
+            var subs = await _shopDb.SubCategories
+                .Where(sc => sc.CategoryN == n && sc.IsActive)
+                .OrderBy(sc => sc.Name)
+                .Select(sc => new { sc.N, sc.Name })
+                .ToListAsync();
+            return Json(subs);
         }
 
         [HttpPost("categories/toggle/{n}")]

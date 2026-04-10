@@ -37,5 +37,9 @@ namespace Algara.Web.ViewModels.Admin
 
         // Попълва се от контролера за dropdown-а
         public IEnumerable<Category> Categories { get; set; } = [];
+
+        // Под-категории
+        public List<int> SelectedSubCategoryNs { get; set; } = new();
+        public List<SubCategory> AvailableSubCategories { get; set; } = new();
     }
 }

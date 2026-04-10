@@ -35,6 +35,13 @@ namespace Algara.Data.Repositories
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
+        public async Task<IEnumerable<Product>> GetBySubCategoryAsync(int subCategoryN)
+            => await _context.Products
+                .Include(p => p.Category)
+                .Where(p => p.IsActive && p.ProductSubCategories.Any(psc => psc.SubCategoryN == subCategoryN))
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
         public async Task<Product?> GetByNAsync(int n)
             => await _context.Products
                 .Include(p => p.Category)
