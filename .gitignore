@@ -28,3 +28,4 @@
 # OS
 Thumbs.db
 .DS_Store
+.claude/settings.local.json

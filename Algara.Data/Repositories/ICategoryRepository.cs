@@ -5,6 +5,7 @@ namespace Algara.Data.Repositories
     public interface ICategoryRepository
     {
         Task<IEnumerable<Category>> GetAllAsync();
+        Task<IEnumerable<Category>> GetAllWithSubCategoriesAsync();
         Task<IEnumerable<Category>> GetFeaturedAsync();
         Task<Category?> GetByNAsync(int n);
         Task<Category?> GetBySlugAsync(string slug);

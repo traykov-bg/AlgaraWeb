@@ -1,4 +1,8 @@
-﻿<nav class="navbar navbar-expand-lg border-bottom algara-navbar">
+﻿@inject Algara.Data.Repositories.ICategoryRepository _catRepo
+@{
+    var navCategories = await _catRepo.GetAllWithSubCategoriesAsync();
+}
+<nav class="navbar navbar-expand-lg border-bottom algara-navbar">
     <div class="container-fluid px-3 px-lg-4">
 
         <!-- Hamburger -->
@@ -91,5 +95,41 @@
             </div>
 
         </div>
+    </div>
+</nav>
+
+<!-- ── Категорийна лента ── -->
+<nav class="algara-catbar">
+    <div class="container-fluid px-0 px-lg-4 py-0 algara-catbar-scroll">
+        <ul class="nav flex-nowrap flex-lg-wrap justify-content-lg-center">
+            @foreach (var cat in navCategories)
+            {
+                var subCats = cat.SubCategories.Where(sc => sc.IsActive).OrderBy(sc => sc.Name).ToList();
+                if (subCats.Any())
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="/kategorii/@cat.Slug">
+                            @cat.Name
+                        </a>
+                        <ul class="dropdown-menu">
+                            @foreach (var sub in subCats)
+                            {
+                                <li>
+                                    <a class="dropdown-item" href="/kategorii/@cat.Slug?sub=@sub.Slug">
+                                        @sub.Name
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategorii/@cat.Slug">@cat.Name</a>
+                    </li>
+                }
+            }
+        </ul>
     </div>
 </nav>

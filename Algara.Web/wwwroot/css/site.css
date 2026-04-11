@@ -17,6 +17,90 @@ body {
     color: var(--algara-text);
 }
 
+/* ───── Category bar (second nav row) ───── */
+.algara-catbar {
+    background: var(--algara-subtle);
+    border-bottom: 1px solid var(--algara-border);
+}
+.algara-catbar .nav {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .1rem;
+}
+.algara-catbar .nav-link {
+    color: var(--algara-text);
+    font-size: .82rem;
+    font-weight: 500;
+    padding: .45rem .8rem;
+    white-space: nowrap;
+    border-radius: 0;
+    transition: color .15s, background .15s;
+}
+.algara-catbar .nav-link:hover,
+.algara-catbar .nav-link:focus {
+    color: var(--algara-accent);
+    background: rgba(184,92,56,.07);
+}
+.algara-catbar .dropdown-menu {
+    border: 1px solid var(--algara-border);
+    border-radius: 4px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.1);
+    min-width: 200px;
+    padding: .35rem 0;
+}
+.algara-catbar .dropdown-item {
+    font-size: .82rem;
+    color: var(--algara-text);
+    padding: .4rem 1rem;
+    transition: background .12s, color .12s;
+}
+.algara-catbar .dropdown-item:hover {
+    background: var(--algara-subtle);
+    color: var(--algara-accent);
+}
+.algara-catbar .dropdown-toggle::after {
+    margin-left: .3em;
+    vertical-align: .18em;
+    border-top-width: .3em;
+}
+.algara-catbar .dropdown:hover > .dropdown-menu {
+    display: block;
+    margin-top: 0;
+}
+
+/* Mobile: horizontal scroll (overflow only on mobile — desktop has no overflow so dropdowns aren't clipped) */
+@media (max-width: 991.98px) {
+    .algara-catbar-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .algara-catbar-scroll::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 991.98px) {
+    .algara-catbar .nav-link {
+        padding: .4rem .7rem;
+        font-size: .8rem;
+    }
+    .algara-catbar .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: none;
+        border-top: 1px solid var(--algara-border);
+        border-radius: 0;
+        padding: 0;
+        background: var(--algara-bg);
+        display: none;
+    }
+    .algara-catbar .dropdown:hover > .dropdown-menu {
+        display: none; /* touch устройства нямат hover */
+    }
+    .algara-catbar .dropdown.is-open > .dropdown-menu {
+        display: block;
+    }
+}
+
 /* ───── Navbar ───── */
 .navbar {
     background: var(--algara-bg) !important;
