@@ -19,8 +19,8 @@ namespace Algara.Web.Controllers
             _logger = logger;
         }
 
-        // GET /Product  или  /Product?q=диван
-        public async Task<IActionResult> Index(string? q = null)
+        // GET /Product  или  /Product?q=диван&sort=newest
+        public async Task<IActionResult> Index(string? q = null, string? sort = null)
         {
             var allProducts = await _productRepository.GetAllAsync();
 
@@ -38,6 +38,8 @@ namespace Algara.Web.Controllers
                 products = allProducts;
             }
 
+            products = ApplySort(products, sort);
+            ViewBag.Sort = sort ?? "newest";
             ViewBag.Categories = await _categoryRepository.GetAllAsync();
             return View(products);
         }
@@ -45,7 +47,7 @@ namespace Algara.Web.Controllers
         // GET /kategorii/{slug}   напр. /kategorii/meka-mebel
         // GET /kategorii/{slug}?sub={subSlug}   напр. /kategorii/meka-mebel?sub=sofas
         [Route("/kategorii/{slug}")]
-        public async Task<IActionResult> Category(string slug, string? sub = null)
+        public async Task<IActionResult> Category(string slug, string? sub = null, string? sort = null)
         {
             var category = await _categoryRepository.GetBySlugWithSubCategoriesAsync(slug);
             if (category == null) return NotFound();
@@ -67,6 +69,8 @@ namespace Algara.Web.Controllers
                 products = await _productRepository.GetByCategoryAsync(category.N);
             }
 
+            products = ApplySort(products, sort);
+            ViewBag.Sort          = sort ?? "newest";
             ViewBag.Categories    = await _categoryRepository.GetAllAsync();
             ViewBag.CategoryName  = category.Name;
             ViewBag.CategorySlug  = category.Slug;
@@ -100,6 +104,16 @@ namespace Algara.Web.Controllers
 
             return Json(results);
         }
+
+        private static IEnumerable<Algara.Data.Models.Product> ApplySort(
+            IEnumerable<Algara.Data.Models.Product> products, string? sort) => sort switch
+        {
+            "name_asc"  => products.OrderBy(p => p.Name),
+            "name_desc" => products.OrderByDescending(p => p.Name),
+            "price_asc" => products.OrderBy(p => p.Price),
+            "price_desc"=> products.OrderByDescending(p => p.Price),
+            _           => products.OrderByDescending(p => p.CreatedAt), // newest (default)
+        };
 
         // GET /Product/Detail/{n}
         public async Task<IActionResult> Detail(int n)
