@@ -80,10 +80,9 @@
                 </div>
                 <script>
                 function algaraPromoFilter() {
-                    var q = document.getElementById('productSearch').value.toLowerCase();
-                    document.querySelectorAll('.product-row').forEach(function (row) {
-                        var name = row.querySelector('.promo-product-name').textContent.toLowerCase();
-                        row.style.display = name.includes(q) ? '' : 'none';
+                    var q = document.getElementById('productSearch').value.toLowerCase().trim();
+                    document.querySelectorAll('[data-product-name]').forEach(function (row) {
+                        row.style.display = row.getAttribute('data-product-name').includes(q) ? '' : 'none';
                     });
                 }
                 </script>
@@ -92,6 +91,7 @@
                     {
                         var isChecked = Model.SelectedProductNs.Contains(product.N);
                         <label class="product-row d-flex align-items-center gap-2 px-3 py-2 border-bottom"
+                               data-product-name="@product.Name.ToLower()"
                                style="cursor:pointer; @(isChecked ? "background:#fff8e1;" : "")">
                             <input type="checkbox" name="SelectedProductNs" value="@product.N"
                                    class="form-check-input product-checkbox flex-shrink-0"
