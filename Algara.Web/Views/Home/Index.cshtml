@@ -94,20 +94,43 @@ else
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
                 @foreach (var p in Model.FeaturedProducts)
                 {
+                    var discount   = p.GetActiveDiscount(DateTime.Now);
+                    var finalPrice = p.GetDiscountedPrice(DateTime.Now);
                     <div class="col">
                         <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
                            class="algara-product-card d-block text-decoration-none h-100">
-                            @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
-                            {
-                                <img src="@p.ImageUrl" alt="@p.Name" class="algara-product-card__img" />
-                            }
+                            <div class="position-relative">
+                                @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                                {
+                                    <img src="@p.ImageUrl" alt="@p.Name" class="algara-product-card__img" />
+                                }
+                                @if (discount.HasValue)
+                                {
+                                    <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center
+                                                 justify-content-center bg-danger text-white fw-bold
+                                                 rounded-circle shadow"
+                                          style="width:46px;height:46px;font-size:.8rem;z-index:1;">
+                                        -@discount.Value%
+                                    </span>
+                                }
+                            </div>
                             <div class="algara-product-card__body">
                                 @if (p.Category != null)
                                 {
                                     <span class="algara-product-card__cat">@p.Category.Name</span>
                                 }
                                 <div class="algara-product-card__name">@p.Name</div>
-                                <div class="algara-product-card__price">@p.Price.ToString("N0") €</div>
+                                @if (discount.HasValue)
+                                {
+                                    <div>
+                                        <span class="algara-product-card__price text-danger fw-bold">@finalPrice.ToString("N0") €</span>
+                                        <span class="text-muted text-decoration-line-through ms-1" style="font-size:.85rem;">@p.Price.ToString("N0") €</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="algara-product-card__price">@p.Price.ToString("N0") €</div>
+                                }
                                 @if (p.IsCustomizable)
                                 {
                                     <span class="algara-badge-custom">По поръчка</span>
