@@ -22,6 +22,7 @@ namespace Algara.Web.Controllers
         private readonly ICategoryRepository _categoryRepo;
         private readonly IOrderRepository    _orderRepo;
         private readonly IHeroSlideRepository _heroSlideRepo;
+        private readonly IPromotionRepository _promotionRepo;
         private readonly IUserService        _userService;
         private readonly ILogger<AdminController> _logger;
         private readonly IWebHostEnvironment _env;
@@ -33,6 +34,7 @@ namespace Algara.Web.Controllers
             ICategoryRepository categoryRepo,
             IOrderRepository orderRepo,
             IHeroSlideRepository heroSlideRepo,
+            IPromotionRepository promotionRepo,
             IUserService userService,
             ILogger<AdminController> logger,
             IWebHostEnvironment env)
@@ -43,6 +45,7 @@ namespace Algara.Web.Controllers
             _categoryRepo  = categoryRepo;
             _orderRepo     = orderRepo;
             _heroSlideRepo = heroSlideRepo;
+            _promotionRepo = promotionRepo;
             _userService   = userService;
             _logger        = logger;
             _env           = env;
@@ -704,6 +707,146 @@ namespace Algara.Web.Controllers
                 ? $"Ролята \"{vm.RoleName}\" е премахната от {vm.Username}."
                 : $"Неуспешно премахване на роля.";
             return RedirectToAction(nameof(Users));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  PROMOTIONS
+        // ═══════════════════════════════════════════════════════════
+
+        [HttpGet("promotions")]
+        public async Task<IActionResult> Promotions()
+        {
+            var promotions = await _promotionRepo.GetAllAsync();
+            return View(promotions);
+        }
+
+        [HttpGet("promotions/create")]
+        public async Task<IActionResult> PromotionCreate()
+        {
+            var vm = new AdminPromotionFormViewModel
+            {
+                AllProducts = await _shopDb.Products
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.Name)
+                    .ToListAsync(),
+            };
+            return View(vm);
+        }
+
+        [HttpPost("promotions/create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PromotionCreate(AdminPromotionFormViewModel vm)
+        {
+            if (vm.EndDate < vm.StartDate)
+                ModelState.AddModelError(nameof(vm.EndDate), "Крайната дата трябва да е след началната.");
+
+            if (!ModelState.IsValid)
+            {
+                vm.AllProducts = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
+                return View(vm);
+            }
+
+            var promotion = new Promotion
+            {
+                Name            = vm.Name,
+                StartDate       = vm.StartDate,
+                EndDate         = vm.EndDate,
+                DiscountPercent = vm.DiscountPercent,
+                IsActive        = vm.IsActive,
+            };
+            _shopDb.Promotions.Add(promotion);
+            await _shopDb.SaveChangesAsync();
+
+            foreach (var pn in vm.SelectedProductNs ?? [])
+                _shopDb.ProductPromotions.Add(new ProductPromotion { ProductN = pn, PromotionN = promotion.N });
+            await _shopDb.SaveChangesAsync();
+
+            TempData["Success"] = $"Промоцията \"{promotion.Name}\" е създадена успешно.";
+            return RedirectToAction(nameof(Promotions));
+        }
+
+        [HttpGet("promotions/edit/{n}")]
+        public async Task<IActionResult> PromotionEdit(int n)
+        {
+            var promotion = await _promotionRepo.GetByNWithProductsAsync(n);
+            if (promotion == null) return NotFound();
+
+            var vm = new AdminPromotionFormViewModel
+            {
+                N               = promotion.N,
+                Name            = promotion.Name,
+                StartDate       = promotion.StartDate,
+                EndDate         = promotion.EndDate,
+                DiscountPercent = promotion.DiscountPercent,
+                IsActive        = promotion.IsActive,
+                SelectedProductNs = promotion.ProductPromotions.Select(pp => pp.ProductN).ToList(),
+                AllProducts     = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync(),
+            };
+            return View(vm);
+        }
+
+        [HttpPost("promotions/edit/{n}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PromotionEdit(AdminPromotionFormViewModel vm)
+        {
+            if (vm.EndDate < vm.StartDate)
+                ModelState.AddModelError(nameof(vm.EndDate), "Крайната дата трябва да е след началната.");
+
+            if (!ModelState.IsValid)
+            {
+                vm.AllProducts = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
+                return View(vm);
+            }
+
+            var promotion = await _shopDb.Promotions
+                .Include(pr => pr.ProductPromotions)
+                .FirstOrDefaultAsync(pr => pr.N == vm.N);
+            if (promotion == null) return NotFound();
+
+            promotion.Name            = vm.Name;
+            promotion.StartDate       = vm.StartDate;
+            promotion.EndDate         = vm.EndDate;
+            promotion.DiscountPercent = vm.DiscountPercent;
+            promotion.IsActive        = vm.IsActive;
+
+            var selectedNs = (vm.SelectedProductNs ?? []).ToHashSet();
+            var existingNs = promotion.ProductPromotions.Select(pp => pp.ProductN).ToHashSet();
+
+            _shopDb.ProductPromotions.RemoveRange(
+                promotion.ProductPromotions.Where(pp => !selectedNs.Contains(pp.ProductN)));
+
+            foreach (var pn in selectedNs.Where(n => !existingNs.Contains(n)))
+                _shopDb.ProductPromotions.Add(new ProductPromotion { ProductN = pn, PromotionN = promotion.N });
+
+            await _shopDb.SaveChangesAsync();
+
+            TempData["Success"] = $"Промоцията \"{promotion.Name}\" е обновена успешно.";
+            return RedirectToAction(nameof(Promotions));
+        }
+
+        [HttpPost("promotions/toggle/{n}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PromotionToggle(int n)
+        {
+            var promotion = await _shopDb.Promotions.FindAsync(n);
+            if (promotion == null) return NotFound();
+
+            promotion.IsActive = !promotion.IsActive;
+            await _shopDb.SaveChangesAsync();
+
+            TempData["Success"] = promotion.IsActive
+                ? $"\"{promotion.Name}\" е активирана."
+                : $"\"{promotion.Name}\" е деактивирана.";
+            return RedirectToAction(nameof(Promotions));
+        }
+
+        [HttpPost("promotions/delete/{n}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PromotionDelete(int n)
+        {
+            await _promotionRepo.DeleteAsync(n);
+            TempData["Success"] = "Промоцията е изтрита.";
+            return RedirectToAction(nameof(Promotions));
         }
     }
 }

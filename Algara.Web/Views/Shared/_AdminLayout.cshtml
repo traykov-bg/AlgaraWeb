@@ -112,6 +112,12 @@
                     </a>
                 </li>
                 <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Promotion") == true ? "active" : "")"
+                       asp-controller="Admin" asp-action="Promotions">
+                        <i class="bi bi-tag"></i> Промоции
+                    </a>
+                </li>
+                <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Order") == true ? "active" : "")"
                        asp-controller="Admin" asp-action="Orders">
                         <i class="bi bi-bag-check"></i> Поръчки

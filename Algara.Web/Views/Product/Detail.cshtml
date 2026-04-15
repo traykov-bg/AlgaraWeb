@@ -2,6 +2,8 @@
 
 @{
     ViewData["Title"] = Model.Name;
+    var discount   = Model.GetActiveDiscount(DateTime.Now);
+    var finalPrice = Model.GetDiscountedPrice(DateTime.Now);
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -19,17 +21,27 @@
 
 <div class="row">
     <div class="col-md-5">
-        @if (!string.IsNullOrEmpty(Model.ImageUrl))
-        {
-            <img src="@Model.ImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Name" />
-        }
-        else
-        {
-            <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                 style="height: 350px;">
-                <span class="text-muted">Без снимка</span>
-            </div>
-        }
+        <div class="position-relative">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Name" />
+            }
+            else
+            {
+                <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                     style="height: 350px;">
+                    <span class="text-muted">Без снимка</span>
+                </div>
+            }
+            @if (discount.HasValue)
+            {
+                <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
+                             bg-danger text-white fw-bold rounded-circle shadow"
+                      style="width:54px;height:54px;font-size:.9rem;">
+                    -@discount.Value%
+                </span>
+            }
+        </div>
     </div>
     <div class="col-md-7">
         <h2>@Model.Name</h2>
@@ -43,7 +55,17 @@
         {
             <span class="badge bg-info mb-2">По поръчка</span>
         }
-        <h4 class="my-3">@Model.Price.ToString("N0") €</h4>
+        @if (discount.HasValue)
+        {
+            <div class="my-3">
+                <span class="h4 fw-bold text-danger me-2">@finalPrice.ToString("N0") €</span>
+                <span class="text-muted text-decoration-line-through">@Model.Price.ToString("N0") €</span>
+            </div>
+        }
+        else
+        {
+            <h4 class="my-3">@Model.Price.ToString("N0") €</h4>
+        }
         @if (!string.IsNullOrEmpty(Model.Description))
         {
             <p>@Model.Description</p>

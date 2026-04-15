@@ -13,38 +13,37 @@ namespace Algara.Data.Repositories
             _context = context;
         }
 
+        private static IQueryable<Product> WithPromotions(IQueryable<Product> q)
+            => q.Include(p => p.ProductPromotions)
+                    .ThenInclude(pp => pp.Promotion);
+
         public async Task<IEnumerable<Product>> GetAllAsync()
-            => await _context.Products
-                .Include(p => p.Category)
+            => await WithPromotions(_context.Products.Include(p => p.Category))
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetFeaturedAsync(int count = 4)
-            => await _context.Products
-                .Include(p => p.Category)
+            => await WithPromotions(_context.Products.Include(p => p.Category))
                 .Where(p => p.IsFeatured && p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetByCategoryAsync(int categoryN)
-            => await _context.Products
-                .Include(p => p.Category)
+            => await WithPromotions(_context.Products.Include(p => p.Category))
                 .Where(p => p.CategoryN == categoryN && p.IsActive)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetBySubCategoryAsync(int subCategoryN)
-            => await _context.Products
-                .Include(p => p.Category)
+            => await WithPromotions(_context.Products.Include(p => p.Category))
                 .Where(p => p.IsActive && p.ProductSubCategories.Any(psc => psc.SubCategoryN == subCategoryN))
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
         public async Task<Product?> GetByNAsync(int n)
-            => await _context.Products
-                .Include(p => p.Category)
+            => await WithPromotions(_context.Products.Include(p => p.Category))
                 .FirstOrDefaultAsync(p => p.N == n);
 
         public async Task AddAsync(Product product)

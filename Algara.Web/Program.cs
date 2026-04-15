@@ -65,6 +65,7 @@ try
     builder.Services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IHeroSlideRepository, HeroSlideRepository>();
+    builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
 
     builder.Services.Configure<IdentityOptions>(options =>
     {

@@ -15,6 +15,8 @@ namespace Algara.Data.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<HeroSlide> HeroSlides { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<ProductPromotion> ProductPromotions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -103,6 +105,32 @@ namespace Algara.Data.Data
                  .WithMany(p => p.OrderItems)
                  .HasForeignKey(oi => oi.ProductN)
                  .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // --- Promotion ---
+            modelBuilder.Entity<Promotion>(b =>
+            {
+                b.HasKey(pr => pr.N);
+                b.Property(pr => pr.N).UseIdentityColumn();
+                b.ToTable("Promotions");
+                b.Property(pr => pr.Name).IsRequired().HasMaxLength(300);
+            });
+
+            // --- ProductPromotion ---
+            modelBuilder.Entity<ProductPromotion>(b =>
+            {
+                b.HasKey(pp => new { pp.ProductN, pp.PromotionN });
+                b.ToTable("ProductPromotions");
+
+                b.HasOne(pp => pp.Product)
+                 .WithMany(p => p.ProductPromotions)
+                 .HasForeignKey(pp => pp.ProductN)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(pp => pp.Promotion)
+                 .WithMany(pr => pr.ProductPromotions)
+                 .HasForeignKey(pp => pp.PromotionN)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // --- HeroSlide ---

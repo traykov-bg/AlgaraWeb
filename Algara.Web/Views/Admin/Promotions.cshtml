@@ -1,0 +1,106 @@
+﻿@model IEnumerable<Algara.Data.Models.Promotion>
+@using Algara.Data.Models
+
+@{
+    ViewData["Title"] = "Промоции";
+    var now = DateTime.Now;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div></div>
+    <a asp-action="PromotionCreate" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Нова промоция
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-tag fs-2 d-block mb-2"></i>
+            Няма добавени промоции.
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Наименование</th>
+                        <th class="text-center">Отстъпка</th>
+                        <th>Период</th>
+                        <th class="text-center">Продукти</th>
+                        <th class="text-center">Статус</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pr in Model)
+                    {
+                        var isRunning = pr.IsActive && pr.StartDate <= now && pr.EndDate >= now;
+                        var isExpired = pr.EndDate < now;
+                        var isFuture  = pr.StartDate > now;
+
+                        <tr>
+                            <td class="text-muted small">@pr.N</td>
+                            <td><strong>@pr.Name</strong></td>
+                            <td class="text-center">
+                                <span class="badge bg-danger fs-6">-@pr.DiscountPercent%</span>
+                            </td>
+                            <td class="small">
+                                @pr.StartDate.ToString("dd.MM.yyyy") — @pr.EndDate.ToString("dd.MM.yyyy")
+                                @if (isRunning)
+                                {
+                                    <span class="badge bg-success ms-1">Тече</span>
+                                }
+                                else if (isExpired)
+                                {
+                                    <span class="badge bg-secondary ms-1">Изтекла</span>
+                                }
+                                else if (isFuture)
+                                {
+                                    <span class="badge bg-info ms-1">Предстояща</span>
+                                }
+                            </td>
+                            <td class="text-center">@pr.ProductPromotions.Count</td>
+                            <td class="text-center">
+                                @if (pr.IsActive)
+                                {
+                                    <span class="badge bg-success">Активна</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Неактивна</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="PromotionEdit" asp-route-n="@pr.N"
+                                   class="btn btn-outline-primary btn-sm me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="PromotionToggle" asp-route-n="@pr.N" method="post"
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm @(pr.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
+                                            title="@(pr.IsActive ? "Деактивирай" : "Активирай")">
+                                        <i class="bi @(pr.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                    </button>
+                                </form>
+                                <form asp-action="PromotionDelete" asp-route-n="@pr.N" method="post"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Изтриване на промоцията? Действието е необратимо.');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm ms-1">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

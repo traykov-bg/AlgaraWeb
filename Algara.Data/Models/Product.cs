@@ -17,5 +17,27 @@
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<ProductSubCategory> ProductSubCategories { get; set; } = new List<ProductSubCategory>();
+        public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
+
+        /// <summary>Връща активния процент отстъпка към дадения момент (най-висок, ако има повече от една промоция).</summary>
+        public int? GetActiveDiscount(DateTime now)
+        {
+            var best = ProductPromotions
+                .Where(pp => pp.Promotion != null &&
+                             pp.Promotion.IsActive &&
+                             pp.Promotion.StartDate <= now &&
+                             pp.Promotion.EndDate >= now)
+                .Select(pp => pp.Promotion.DiscountPercent)
+                .DefaultIfEmpty(0)
+                .Max();
+            return best > 0 ? best : null;
+        }
+
+        /// <summary>Изчислена цена след отстъпка. Ако няма активна промоция — стандартната цена.</summary>
+        public decimal GetDiscountedPrice(DateTime now)
+        {
+            var pct = GetActiveDiscount(now);
+            return pct.HasValue ? Math.Round(Price * (1 - pct.Value / 100m), 2) : Price;
+        }
     }
 }
