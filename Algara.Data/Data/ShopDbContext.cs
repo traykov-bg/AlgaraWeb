@@ -114,6 +114,7 @@ namespace Algara.Data.Data
                 b.Property(pr => pr.N).UseIdentityColumn();
                 b.ToTable("Promotions");
                 b.Property(pr => pr.Name).IsRequired().HasMaxLength(300);
+                b.Property(pr => pr.DiscountPercent).HasColumnType("decimal(5,3)");
             });
 
             // --- ProductPromotion ---

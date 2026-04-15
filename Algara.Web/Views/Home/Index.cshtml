@@ -94,8 +94,9 @@ else
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
                 @foreach (var p in Model.FeaturedProducts)
                 {
-                    var discount   = p.GetActiveDiscount(DateTime.Now);
-                    var finalPrice = p.GetDiscountedPrice(DateTime.Now);
+                    var discount      = p.GetActiveDiscount(DateTime.Now);
+                    var discountLabel = p.GetDiscountLabel(DateTime.Now);
+                    var finalPrice    = p.GetDiscountedPrice(DateTime.Now);
                     <div class="col">
                         <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
                            class="algara-product-card d-block text-decoration-none h-100">
@@ -110,7 +111,7 @@ else
                                                  justify-content-center bg-danger text-white fw-bold
                                                  rounded-circle shadow"
                                           style="width:46px;height:46px;font-size:.8rem;z-index:1;">
-                                        -@discount.Value%
+                                        @discountLabel
                                     </span>
                                 }
                             </div>

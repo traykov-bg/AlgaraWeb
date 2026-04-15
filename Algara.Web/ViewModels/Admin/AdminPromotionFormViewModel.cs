@@ -21,9 +21,9 @@ namespace Algara.Web.ViewModels.Admin
         public DateTime EndDate { get; set; } = DateTime.Today.AddDays(7);
 
         [Required(ErrorMessage = "Процентът е задължителен.")]
-        [Range(1, 99, ErrorMessage = "Процентът трябва да е между 1 и 99.")]
+        [Range(0.001, 99.999, ErrorMessage = "Процентът трябва да е между 0.001 и 99.999.")]
         [Display(Name = "Отстъпка (%)")]
-        public int DiscountPercent { get; set; }
+        public decimal DiscountPercent { get; set; }
 
         [Display(Name = "Активна")]
         public bool IsActive { get; set; } = true;

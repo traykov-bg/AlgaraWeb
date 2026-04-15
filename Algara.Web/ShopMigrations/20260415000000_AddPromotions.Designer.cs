@@ -257,8 +257,8 @@ namespace Algara.Web.ShopMigrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DiscountPercent")
-                        .HasColumnType("int");
+                    b.Property<decimal>("DiscountPercent")
+                        .HasColumnType("decimal(5,3)");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");

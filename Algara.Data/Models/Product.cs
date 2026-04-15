@@ -20,7 +20,7 @@
         public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
 
         /// <summary>Връща активния процент отстъпка към дадения момент (най-висок, ако има повече от една промоция).</summary>
-        public int? GetActiveDiscount(DateTime now)
+        public decimal? GetActiveDiscount(DateTime now)
         {
             var best = ProductPromotions
                 .Where(pp => pp.Promotion != null &&
@@ -38,6 +38,16 @@
         {
             var pct = GetActiveDiscount(now);
             return pct.HasValue ? Math.Round(Price * (1 - pct.Value / 100m), 2) : Price;
+        }
+
+        public string GetDiscountLabel(DateTime now)
+        {
+            var pct = GetActiveDiscount(now);
+            if (!pct.HasValue) return string.Empty;
+            // показва цяло число ако няма дробна част, иначе до 3 знака без trailing zeros
+            return "-" + (pct.Value == Math.Floor(pct.Value)
+                ? ((int)pct.Value).ToString()
+                : pct.Value.ToString("G29").TrimEnd('0').TrimEnd('.')) + "%";
         }
     }
 }

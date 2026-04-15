@@ -89,6 +89,7 @@ else
         @foreach (var product in Model)
         {
             var discount      = product.GetActiveDiscount(DateTime.Now);
+            var discountLabel = product.GetDiscountLabel(DateTime.Now);
             var finalPrice    = product.GetDiscountedPrice(DateTime.Now);
             <div class="col">
                 <div class="card h-100 shadow-sm">
@@ -110,7 +111,7 @@ else
                             <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
                                          bg-danger text-white fw-bold rounded-circle shadow"
                                   style="width:46px;height:46px;font-size:.8rem;">
-                                -@discount.Value%
+                                @discountLabel
                             </span>
                         }
                     </div>

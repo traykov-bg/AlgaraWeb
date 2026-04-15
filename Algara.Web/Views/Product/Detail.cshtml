@@ -2,8 +2,9 @@
 
 @{
     ViewData["Title"] = Model.Name;
-    var discount   = Model.GetActiveDiscount(DateTime.Now);
-    var finalPrice = Model.GetDiscountedPrice(DateTime.Now);
+    var discount      = Model.GetActiveDiscount(DateTime.Now);
+    var discountLabel = Model.GetDiscountLabel(DateTime.Now);
+    var finalPrice    = Model.GetDiscountedPrice(DateTime.Now);
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -38,7 +39,7 @@
                 <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
                              bg-danger text-white fw-bold rounded-circle shadow"
                       style="width:54px;height:54px;font-size:.9rem;">
-                    -@discount.Value%
+                    @discountLabel
                 </span>
             }
         </div>
