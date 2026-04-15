@@ -64,17 +64,26 @@
                 <span id="selectedCount" class="badge bg-primary ms-2">@Model.SelectedProductNs.Count избрани</span>
             </div>
             <div class="card-body p-2">
-                <div class="mb-2 px-2">
+                <div class="mb-2 px-2 d-flex gap-2">
                     <input type="text" id="productSearch" class="form-control form-control-sm"
                            placeholder="Търси продукт..."
-                           oninput="algaraPromoFilter(this.value)"
-                           onkeydown="if(event.key==='Enter'){event.preventDefault();}" />
+                           style="width:25%;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();algaraPromoFilter();}" />
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                            onclick="algaraPromoFilter()">
+                        <i class="bi bi-search"></i> Филтрирай
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            onclick="document.getElementById('productSearch').value='';algaraPromoFilter();">
+                        <i class="bi bi-x"></i>
+                    </button>
                 </div>
                 <script>
-                function algaraPromoFilter(q) {
-                    q = (q || '').toLowerCase();
+                function algaraPromoFilter() {
+                    var q = document.getElementById('productSearch').value.toLowerCase();
                     document.querySelectorAll('.product-row').forEach(function (row) {
-                        row.style.display = row.querySelector('.fw-semibold').textContent.toLowerCase().includes(q) ? '' : 'none';
+                        var name = row.querySelector('.promo-product-name').textContent.toLowerCase();
+                        row.style.display = name.includes(q) ? '' : 'none';
                     });
                 }
                 </script>
@@ -97,7 +106,7 @@
                                 <div style="width:36px;height:36px;background:#eee;border-radius:4px;flex-shrink:0;"></div>
                             }
                             <div class="flex-grow-1 overflow-hidden">
-                                <div class="fw-semibold text-truncate small">@product.Name</div>
+                                <div class="promo-product-name fw-semibold text-truncate small">@product.Name</div>
                                 <div class="text-muted" style="font-size:.75rem;">@product.Price.ToString("N0") €</div>
                             </div>
                         </label>
