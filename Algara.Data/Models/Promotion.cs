@@ -11,5 +11,12 @@
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
+
+        public string GetDiscountLabel()
+        {
+            return "-" + (DiscountPercent == Math.Floor(DiscountPercent)
+                ? ((int)DiscountPercent).ToString()
+                : DiscountPercent.ToString("G29").TrimEnd('0').TrimEnd('.')) + "%";
+        }
     }
 }
