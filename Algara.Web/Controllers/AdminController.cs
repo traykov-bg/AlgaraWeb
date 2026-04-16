@@ -725,10 +725,11 @@ namespace Algara.Web.Controllers
         {
             var vm = new AdminPromotionFormViewModel
             {
-                AllProducts = await _shopDb.Products
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync(),
+                ProductRows = await LoadProductRowsAsync(
+                    existing: new Dictionary<int, ProductPromotion>(),
+                    startDate: DateTime.Today,
+                    endDate:   DateTime.Today.AddDays(7),
+                    excludePromotionN: null),
             };
             return View(vm);
         }
@@ -737,28 +738,41 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PromotionCreate(AdminPromotionFormViewModel vm)
         {
-            if (vm.EndDate < vm.StartDate)
-                ModelState.AddModelError(nameof(vm.EndDate), "Крайната дата трябва да е след началната.");
+            await ValidatePromotionAsync(vm, excludePromotionN: null);
 
             if (!ModelState.IsValid)
             {
-                vm.AllProducts = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
+                await RehydrateProductRowsAsync(vm, existingMap: new Dictionary<int, ProductPromotion>(), excludePromotionN: null);
                 return View(vm);
             }
 
+            var currentUserN = await GetCurrentUserNAsync();
+
             var promotion = new Promotion
             {
-                Name            = vm.Name,
-                StartDate       = vm.StartDate,
-                EndDate         = vm.EndDate,
-                DiscountPercent = vm.DiscountPercent,
-                IsActive        = vm.IsActive,
+                Name        = vm.Name,
+                StartDate   = vm.StartDate,
+                EndDate     = vm.EndDate,
+                Type        = vm.Type,
+                IsActive    = vm.IsActive,
+                UserCreated = currentUserN,
+                CreatedAt   = DateTime.Now,
             };
             _shopDb.Promotions.Add(promotion);
             await _shopDb.SaveChangesAsync();
 
-            foreach (var pn in vm.SelectedProductNs ?? [])
-                _shopDb.ProductPromotions.Add(new ProductPromotion { ProductN = pn, PromotionN = promotion.N });
+            foreach (var row in vm.ProductRows.Where(r => r.Included))
+            {
+                _shopDb.ProductPromotions.Add(new ProductPromotion
+                {
+                    ProductN        = row.ProductN,
+                    PromotionN      = promotion.N,
+                    OriginalPrice   = row.OriginalPrice,
+                    PromoPrice      = row.PromoPrice,
+                    DiscountPercent = row.DiscountPercent,
+                    Note            = string.IsNullOrWhiteSpace(row.Note) ? null : row.Note.Trim(),
+                });
+            }
             await _shopDb.SaveChangesAsync();
 
             TempData["Success"] = $"Промоцията \"{promotion.Name}\" е създадена успешно.";
@@ -771,16 +785,17 @@ namespace Algara.Web.Controllers
             var promotion = await _promotionRepo.GetByNWithProductsAsync(n);
             if (promotion == null) return NotFound();
 
+            var existingMap = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
+
             var vm = new AdminPromotionFormViewModel
             {
-                N               = promotion.N,
-                Name            = promotion.Name,
-                StartDate       = promotion.StartDate,
-                EndDate         = promotion.EndDate,
-                DiscountPercent = promotion.DiscountPercent,
-                IsActive        = promotion.IsActive,
-                SelectedProductNs = promotion.ProductPromotions.Select(pp => pp.ProductN).ToList(),
-                AllProducts     = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync(),
+                N           = promotion.N,
+                Name        = promotion.Name,
+                StartDate   = promotion.StartDate,
+                EndDate     = promotion.EndDate,
+                Type        = promotion.Type,
+                IsActive    = promotion.IsActive,
+                ProductRows = await LoadProductRowsAsync(existingMap, promotion.StartDate, promotion.EndDate, promotion.N),
             };
             return View(vm);
         }
@@ -789,34 +804,57 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PromotionEdit(AdminPromotionFormViewModel vm)
         {
-            if (vm.EndDate < vm.StartDate)
-                ModelState.AddModelError(nameof(vm.EndDate), "Крайната дата трябва да е след началната.");
-
-            if (!ModelState.IsValid)
-            {
-                vm.AllProducts = await _shopDb.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
-                return View(vm);
-            }
+            await ValidatePromotionAsync(vm, excludePromotionN: vm.N);
 
             var promotion = await _shopDb.Promotions
                 .Include(pr => pr.ProductPromotions)
                 .FirstOrDefaultAsync(pr => pr.N == vm.N);
             if (promotion == null) return NotFound();
 
-            promotion.Name            = vm.Name;
-            promotion.StartDate       = vm.StartDate;
-            promotion.EndDate         = vm.EndDate;
-            promotion.DiscountPercent = vm.DiscountPercent;
-            promotion.IsActive        = vm.IsActive;
+            if (!ModelState.IsValid)
+            {
+                var existingMap = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
+                await RehydrateProductRowsAsync(vm, existingMap, excludePromotionN: vm.N);
+                return View(vm);
+            }
 
-            var selectedNs = (vm.SelectedProductNs ?? []).ToHashSet();
-            var existingNs = promotion.ProductPromotions.Select(pp => pp.ProductN).ToHashSet();
+            promotion.Name      = vm.Name;
+            promotion.StartDate = vm.StartDate;
+            promotion.EndDate   = vm.EndDate;
+            promotion.Type      = vm.Type;
+            promotion.IsActive  = vm.IsActive;
 
-            _shopDb.ProductPromotions.RemoveRange(
-                promotion.ProductPromotions.Where(pp => !selectedNs.Contains(pp.ProductN)));
+            var incomingByProductN = vm.ProductRows.Where(r => r.Included).ToDictionary(r => r.ProductN);
+            var existingByProductN = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
 
-            foreach (var pn in selectedNs.Where(n => !existingNs.Contains(n)))
-                _shopDb.ProductPromotions.Add(new ProductPromotion { ProductN = pn, PromotionN = promotion.N });
+            // Изтрий премахнатите
+            foreach (var pp in existingByProductN.Values.Where(pp => !incomingByProductN.ContainsKey(pp.ProductN)).ToList())
+                _shopDb.ProductPromotions.Remove(pp);
+
+            // Обнови или добави
+            foreach (var row in incomingByProductN.Values)
+            {
+                var note = string.IsNullOrWhiteSpace(row.Note) ? null : row.Note.Trim();
+                if (existingByProductN.TryGetValue(row.ProductN, out var pp))
+                {
+                    pp.OriginalPrice   = row.OriginalPrice;
+                    pp.PromoPrice      = row.PromoPrice;
+                    pp.DiscountPercent = row.DiscountPercent;
+                    pp.Note            = note;
+                }
+                else
+                {
+                    _shopDb.ProductPromotions.Add(new ProductPromotion
+                    {
+                        ProductN        = row.ProductN,
+                        PromotionN      = promotion.N,
+                        OriginalPrice   = row.OriginalPrice,
+                        PromoPrice      = row.PromoPrice,
+                        DiscountPercent = row.DiscountPercent,
+                        Note            = note,
+                    });
+                }
+            }
 
             await _shopDb.SaveChangesAsync();
 
@@ -847,6 +885,191 @@ namespace Algara.Web.Controllers
             await _promotionRepo.DeleteAsync(n);
             TempData["Success"] = "Промоцията е изтрита.";
             return RedirectToAction(nameof(Promotions));
+        }
+
+        // ─── Помощни методи за промоции ──────────────────────────
+
+        /// <summary>Валидира периода, редовете и припокриването на промоция.</summary>
+        private async Task ValidatePromotionAsync(AdminPromotionFormViewModel vm, int? excludePromotionN)
+        {
+            if (vm.EndDate < vm.StartDate)
+                ModelState.AddModelError(nameof(vm.EndDate), "Крайната дата трябва да е след началната.");
+
+            var included = vm.ProductRows.Where(r => r.Included).ToList();
+            if (included.Count == 0)
+                ModelState.AddModelError(string.Empty, "Изберете поне един продукт.");
+
+            // PromoPrice > 0 AND PromoPrice < OriginalPrice
+            for (int i = 0; i < vm.ProductRows.Count; i++)
+            {
+                var row = vm.ProductRows[i];
+                if (!row.Included) continue;
+
+                if (row.OriginalPrice <= 0)
+                {
+                    ModelState.AddModelError($"ProductRows[{i}].OriginalPrice",
+                        "Оригиналната цена трябва да е положителна.");
+                }
+                if (row.PromoPrice <= 0)
+                {
+                    ModelState.AddModelError($"ProductRows[{i}].PromoPrice",
+                        "Крайната цена трябва да е по-голяма от 0 €.");
+                }
+                else if (row.PromoPrice >= row.OriginalPrice)
+                {
+                    ModelState.AddModelError($"ProductRows[{i}].PromoPrice",
+                        "Крайната цена трябва да е по-малка от оригиналната.");
+                }
+            }
+
+            if (included.Count > 0 && vm.EndDate >= vm.StartDate)
+            {
+                var productNs = included.Select(r => r.ProductN).ToList();
+                var overlaps  = await GetOverlappingPromotionsAsync(productNs, vm.StartDate, vm.EndDate, excludePromotionN);
+
+                foreach (var (productN, promoName) in overlaps)
+                {
+                    var idx = vm.ProductRows.FindIndex(r => r.ProductN == productN);
+                    if (idx >= 0)
+                    {
+                        ModelState.AddModelError($"ProductRows[{idx}].Included",
+                            $"Продуктът вече е в активна промоция \"{promoName}\" през този период.");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// За списък от продукти връща двойки (ProductN, PromotionName) — първата активна промоция
+        /// (различна от excludePromotionN), която се припокрива с [start, end].
+        /// </summary>
+        private async Task<List<(int ProductN, string PromotionName)>> GetOverlappingPromotionsAsync(
+            IEnumerable<int> productNs, DateTime start, DateTime end, int? excludePromotionN)
+        {
+            var set = productNs.ToHashSet();
+            var rows = await _shopDb.ProductPromotions
+                .Include(pp => pp.Promotion)
+                .Where(pp => set.Contains(pp.ProductN)
+                          && pp.Promotion.IsActive
+                          && (excludePromotionN == null || pp.PromotionN != excludePromotionN)
+                          && pp.Promotion.StartDate <= end
+                          && pp.Promotion.EndDate   >= start)
+                .Select(pp => new { pp.ProductN, pp.Promotion.Name })
+                .ToListAsync();
+
+            return rows
+                .GroupBy(r => r.ProductN)
+                .Select(g => (g.Key, g.First().Name))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Строи списъка с редове от ВСИЧКИ активни продукти — markирайки вече включените в текущата
+        /// промоция (existing) и показвайки warning за продукти, попадащи в друга припокриваща промоция.
+        /// </summary>
+        private async Task<List<AdminPromotionProductRowViewModel>> LoadProductRowsAsync(
+            IDictionary<int, ProductPromotion> existing,
+            DateTime startDate,
+            DateTime endDate,
+            int? excludePromotionN)
+        {
+            var products = await _shopDb.Products
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            var overlaps = (await GetOverlappingPromotionsAsync(
+                products.Select(p => p.N), startDate, endDate, excludePromotionN))
+                .ToDictionary(x => x.ProductN, x => x.PromotionName);
+
+            return products.Select(p =>
+            {
+                var row = new AdminPromotionProductRowViewModel
+                {
+                    ProductN     = p.N,
+                    ProductName  = p.Name,
+                    ImageUrl     = p.ImageUrl,
+                    CurrentPrice = p.Price,
+                };
+
+                if (existing.TryGetValue(p.N, out var pp))
+                {
+                    row.Included        = true;
+                    row.OriginalPrice   = pp.OriginalPrice;
+                    row.PromoPrice      = pp.PromoPrice;
+                    row.DiscountPercent = pp.DiscountPercent;
+                    row.Note            = pp.Note;
+                }
+                else
+                {
+                    row.OriginalPrice = p.Price;
+                }
+
+                if (overlaps.TryGetValue(p.N, out var otherName))
+                    row.OverlappingPromotionName = otherName;
+
+                return row;
+            }).ToList();
+        }
+
+        /// <summary>
+        /// След неуспешен POST — попълва в ProductRows прозводните полета (ProductName, ImageUrl,
+        /// CurrentPrice, OverlappingPromotionName), които не се пост-ват обратно от формата.
+        /// </summary>
+        private async Task RehydrateProductRowsAsync(
+            AdminPromotionFormViewModel vm,
+            IDictionary<int, ProductPromotion> existingMap,
+            int? excludePromotionN)
+        {
+            var products = await _shopDb.Products
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            var byN = products.ToDictionary(p => p.N);
+            var postedByN = vm.ProductRows.ToDictionary(r => r.ProductN);
+
+            var overlaps = (await GetOverlappingPromotionsAsync(
+                products.Select(p => p.N), vm.StartDate, vm.EndDate, excludePromotionN))
+                .ToDictionary(x => x.ProductN, x => x.PromotionName);
+
+            var rebuilt = new List<AdminPromotionProductRowViewModel>(products.Count);
+            foreach (var p in products)
+            {
+                AdminPromotionProductRowViewModel row;
+                if (postedByN.TryGetValue(p.N, out var posted))
+                {
+                    row = posted;
+                }
+                else
+                {
+                    row = new AdminPromotionProductRowViewModel
+                    {
+                        ProductN      = p.N,
+                        OriginalPrice = p.Price,
+                    };
+                }
+
+                row.ProductName  = p.Name;
+                row.ImageUrl     = p.ImageUrl;
+                row.CurrentPrice = p.Price;
+
+                if (overlaps.TryGetValue(p.N, out var otherName))
+                    row.OverlappingPromotionName = otherName;
+
+                rebuilt.Add(row);
+            }
+            vm.ProductRows = rebuilt;
+        }
+
+        /// <summary>Връща N на текущо логнатия админ; 1 при неуспех (safe fallback).</summary>
+        private async Task<int> GetCurrentUserNAsync()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return 1;
+
+            var user = await _userService.GetUserByUsernameAsync(username);
+            return user?.N ?? 1;
         }
     }
 }

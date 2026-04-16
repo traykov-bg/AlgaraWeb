@@ -19,35 +19,40 @@
         public ICollection<ProductSubCategory> ProductSubCategories { get; set; } = new List<ProductSubCategory>();
         public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
 
-        /// <summary>Връща активния процент отстъпка към дадения момент (най-висок, ако има повече от една промоция).</summary>
-        public decimal? GetActiveDiscount(DateTime now)
+        /// <summary>
+        /// Връща активния ProductPromotion за дадения момент —
+        /// този, който дава най-ниска крайна цена (най-голяма отстъпка).
+        /// </summary>
+        public ProductPromotion? GetActivePromotion(DateTime now)
         {
-            var best = ProductPromotions
+            return ProductPromotions
                 .Where(pp => pp.Promotion != null &&
                              pp.Promotion.IsActive &&
                              pp.Promotion.StartDate <= now &&
                              pp.Promotion.EndDate >= now)
-                .Select(pp => pp.Promotion.DiscountPercent)
-                .DefaultIfEmpty(0)
-                .Max();
-            return best > 0 ? best : null;
+                .OrderBy(pp => pp.PromoPrice)
+                .FirstOrDefault();
         }
 
-        /// <summary>Изчислена цена след отстъпка. Ако няма активна промоция — стандартната цена.</summary>
+        /// <summary>Активния процент отстъпка (за показване на баджа). null ако няма активна промоция.</summary>
+        public decimal? GetActiveDiscount(DateTime now)
+        {
+            var pp = GetActivePromotion(now);
+            return pp != null ? pp.DiscountPercent : null;
+        }
+
+        /// <summary>Крайната цена след отстъпка — чете се директно от ProductPromotion.PromoPrice.</summary>
         public decimal GetDiscountedPrice(DateTime now)
         {
-            var pct = GetActiveDiscount(now);
-            return pct.HasValue ? Math.Round(Price * (1 - pct.Value / 100m), 2) : Price;
+            var pp = GetActivePromotion(now);
+            return pp != null ? pp.PromoPrice : Price;
         }
 
+        /// <summary>Етикет "-X%" или "-X €" според типа на активната промоция.</summary>
         public string GetDiscountLabel(DateTime now)
         {
-            var pct = GetActiveDiscount(now);
-            if (!pct.HasValue) return string.Empty;
-            // показва цяло число ако няма дробна част, иначе до 3 знака без trailing zeros
-            return "-" + (pct.Value == Math.Floor(pct.Value)
-                ? ((int)pct.Value).ToString()
-                : pct.Value.ToString("G29").TrimEnd('0').TrimEnd('.')) + "%";
+            var pp = GetActivePromotion(now);
+            return pp != null ? pp.GetDiscountLabel() : string.Empty;
         }
     }
 }

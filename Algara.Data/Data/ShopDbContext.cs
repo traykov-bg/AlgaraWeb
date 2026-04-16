@@ -114,7 +114,7 @@ namespace Algara.Data.Data
                 b.Property(pr => pr.N).UseIdentityColumn();
                 b.ToTable("Promotions");
                 b.Property(pr => pr.Name).IsRequired().HasMaxLength(300);
-                b.Property(pr => pr.DiscountPercent).HasColumnType("decimal(5,3)");
+                b.Property(pr => pr.Type).HasConversion<int>();
             });
 
             // --- ProductPromotion ---
@@ -122,6 +122,12 @@ namespace Algara.Data.Data
             {
                 b.HasKey(pp => new { pp.ProductN, pp.PromotionN });
                 b.ToTable("ProductPromotions");
+
+                b.Property(pp => pp.OriginalPrice).HasColumnType("decimal(18,2)");
+                b.Property(pp => pp.PromoPrice).HasColumnType("decimal(18,2)");
+                b.Property(pp => pp.DiscountPercent).HasColumnType("decimal(5,3)");
+                b.Property(pp => pp.Note).HasMaxLength(500);
+                b.Ignore(pp => pp.DiscountAmount);
 
                 b.HasOne(pp => pp.Product)
                  .WithMany(p => p.ProductPromotions)

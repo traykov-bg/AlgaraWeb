@@ -1,6 +1,6 @@
 ﻿@model Algara.Web.ViewModels.Admin.AdminPromotionFormViewModel
+@using Algara.Data.Models
 
-<div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" style="display:none;"></div>
 <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
 
 @Html.HiddenFor(m => m.N)
@@ -18,25 +18,30 @@
         </div>
     </div>
 
-    @* Отстъпка и период *@
+    @* Тип, Период, Активна *@
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body py-3">
                 <div class="d-flex flex-wrap align-items-end gap-4">
 
-                    @* Отстъпка *@
+                    @* Режим *@
                     <div>
-                        <label asp-for="DiscountPercent" class="form-label text-muted small mb-1"></label>
-                        <div class="input-group" style="width:130px;">
-                            <input asp-for="DiscountPercent" type="number" min="0.001" max="99.999" step="0.001"
-                                   class="form-control form-control-lg fw-bold text-center border-0 bg-light"
-                                   style="font-size:1.4rem;" placeholder="0" />
-                            <span class="input-group-text bg-light border-0 fw-bold text-muted">%</span>
+                        <label class="form-label text-muted small mb-1">Режим</label>
+                        <div class="btn-group" role="group" id="promoTypeSwitch">
+                            <input type="radio" class="btn-check" name="Type" id="typePercent" value="@((int)PromotionType.Percent)"
+                                   autocomplete="off" @(Model.Type == PromotionType.Percent ? "checked" : "") />
+                            <label class="btn btn-outline-primary" for="typePercent">
+                                <i class="bi bi-percent me-1"></i>Процент
+                            </label>
+
+                            <input type="radio" class="btn-check" name="Type" id="typeAmount" value="@((int)PromotionType.Amount)"
+                                   autocomplete="off" @(Model.Type == PromotionType.Amount ? "checked" : "") />
+                            <label class="btn btn-outline-primary" for="typeAmount">
+                                <i class="bi bi-currency-euro me-1"></i>Сума
+                            </label>
                         </div>
-                        <span asp-validation-for="DiscountPercent" class="text-danger small"></span>
                     </div>
 
-                    @* Разделител *@
                     <div class="vr d-none d-md-block my-1" style="height:52px;"></div>
 
                     @* Период *@
@@ -64,7 +69,6 @@
                         </div>
                     </div>
 
-                    @* Разделител *@
                     <div class="vr d-none d-md-block my-1" style="height:52px;"></div>
 
                     @* Активна *@
@@ -87,7 +91,6 @@
         var end   = document.getElementById('endDate');
         if (!start || !end) return;
 
-        // След избор на начална дата → отвори крайната (ако е празна или е преди началната)
         start.addEventListener('change', function () {
             if (end.min !== this.value) end.min = this.value;
             if (!end.value || end.value < this.value) {
@@ -96,7 +99,6 @@
             end.showPicker && end.showPicker();
         });
 
-        // Ако крайната се фокусира без начална → отвори началната
         end.addEventListener('focus', function () {
             if (!start.value) {
                 start.focus();
@@ -106,14 +108,49 @@
     }());
     </script>
 
-    @* Избор на продукти *@
+    <style>
+        .promo-readonly {
+            background-color: #e2e5e9 !important;
+            color: #6c757d !important;
+            cursor: not-allowed;
+        }
+        .promo-readonly + .input-group-text {
+            background-color: #d8dbdf !important;
+            color: #6c757d !important;
+        }
+    </style>
+
+    @* Продукти в промоцията *@
     <div class="col-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-box-seam me-1"></i>
-                Продукти в промоцията
-                <span id="selectedCount" class="badge bg-primary ms-2">@Model.SelectedProductNs.Count избрани</span>
+            <div class="card-header fw-semibold d-flex flex-wrap gap-2 align-items-center">
+                <div>
+                    <i class="bi bi-box-seam me-1"></i>
+                    Продукти в промоцията
+                    <span id="selectedCount" class="badge bg-primary ms-2">0 избрани</span>
+                </div>
+
+                @* Bulk toolbar *@
+                <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-group input-group-sm" style="width:auto;">
+                        <input type="number" id="bulkValue" class="form-control" step="0.01" min="0"
+                               placeholder="напр. 10" style="width:90px;" />
+                        <span class="input-group-text" id="bulkUnit">%</span>
+                        <button type="button" class="btn btn-outline-primary" id="bulkApply">
+                            Приложи към избраните
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="bulkReset"
+                            title="Изчиства отстъпката за избраните редове (връща оригиналната цена)">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Премахни отстъпките
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="bulkRefresh"
+                            title="Презаписва „Преди отстъпка" с текущата цена на продукта">
+                        <i class="bi bi-arrow-repeat me-1"></i>По ценоразпис
+                    </button>
+                </div>
             </div>
+
             <div class="card-body p-2">
                 <div class="mb-2 px-2 d-flex gap-2">
                     <i class="bi bi-search text-muted ms-1"></i>
@@ -127,64 +164,335 @@
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
-                <script>
-                    function algaraPromoFilter() {
-                        var q = document.getElementById('productSearch').value.toLowerCase().trim();
-                        document.querySelectorAll('[data-product-name]').forEach(function (row) {
-                            row.classList.toggle('d-none', !(row.getAttribute('data-product-name') || '').includes(q));
-                        });
-                    }
-                </script>
-                <div style="max-height: 340px; overflow-y: auto; border-top: 1px solid #dee2e6;">
-                    @foreach (var product in Model.AllProducts)
-                    {
-                        var isChecked = Model.SelectedProductNs.Contains(product.N);
-                        <label class="product-row d-flex align-items-center gap-2 px-3 py-2 border-bottom"
-                               data-product-name="@product.Name.ToLower()"
-                               style="cursor:pointer; @(isChecked ? "background:#fff8e1;" : "")">
-                            <input type="checkbox" name="SelectedProductNs" value="@product.N"
-                                   class="form-check-input product-checkbox flex-shrink-0"
-                                   @(isChecked ? "checked" : "") />
-                            @if (!string.IsNullOrEmpty(product.ImageUrl))
-                            {
-                                <img src="@product.ImageUrl" alt="" width="36" height="36"
-                                     style="object-fit:cover; border-radius:4px; flex-shrink:0;" />
-                            }
-                            else
-                            {
-                                <div style="width:36px;height:36px;background:#eee;border-radius:4px;flex-shrink:0;"></div>
-                            }
-                            <div class="flex-grow-1 overflow-hidden">
-                                <div class="promo-product-name fw-semibold text-truncate small">@product.Name</div>
-                                <div class="text-muted" style="font-size:.75rem;">@product.Price.ToString("N0") €</div>
-                            </div>
-                        </label>
-                    }
+
+                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                    <table class="table table-sm align-middle mb-0" id="promoTable">
+                        <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                            <tr>
+                                <th style="width:36px;">
+                                    <input type="checkbox" id="checkAll" class="form-check-input" title="Избери всички видими" />
+                                </th>
+                                <th>Продукт</th>
+                                <th class="text-end" style="width:120px;">Текуща цена</th>
+                                <th class="text-end" style="width:140px;">Преди отстъпка</th>
+                                <th class="text-center" style="width:140px;">Отстъпка (%)</th>
+                                <th class="text-center" style="width:140px;">Отстъпка (€)</th>
+                                <th class="text-end" style="width:140px;">Нова цена</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @for (int i = 0; i < Model.ProductRows.Count; i++)
+                        {
+                            var row = Model.ProductRows[i];
+                            <tr class="promo-row"
+                                data-product-name="@row.ProductName.ToLower()"
+                                data-current-price="@row.CurrentPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+
+                                <input type="hidden" name="ProductRows[@i].ProductN" value="@row.ProductN" />
+
+                                <td>
+                                    <input type="checkbox" name="ProductRows[@i].Included" value="true"
+                                           class="form-check-input row-include"
+                                           @(row.Included ? "checked" : "") />
+                                    <input type="hidden" name="ProductRows[@i].Included" value="false" />
+                                </td>
+
+                                <td>
+                                    <div class="d-flex align-items-start gap-2">
+                                        @if (!string.IsNullOrEmpty(row.ImageUrl))
+                                        {
+                                            <img src="@row.ImageUrl" width="32" height="32"
+                                                 style="object-fit:cover; border-radius:4px; flex-shrink:0;" />
+                                        }
+                                        else
+                                        {
+                                            <div style="width:32px;height:32px;background:#eee;border-radius:4px;flex-shrink:0;"></div>
+                                        }
+                                        <div class="flex-grow-1" style="min-width:0; max-width:360px;">
+                                            <div class="fw-semibold small text-truncate">@row.ProductName</div>
+                                            @if (!string.IsNullOrEmpty(row.OverlappingPromotionName))
+                                            {
+                                                <div class="small text-warning text-truncate" title="Участва в промоция „@row.OverlappingPromotionName"">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                    В промоция „<span class="fw-semibold">@row.OverlappingPromotionName</span>"
+                                                </div>
+                                            }
+                                            <input type="text" maxlength="500"
+                                                   name="ProductRows[@i].Note"
+                                                   value="@row.Note"
+                                                   placeholder="Бележка (напр. „+2 табуретки безплатно")"
+                                                   class="form-control form-control-sm mt-1 row-note"
+                                                   style="font-size:.8rem;" />
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-end text-muted small">
+                                    <span class="row-current">@row.CurrentPrice.ToString("0.00")</span> €
+                                </td>
+
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                            <input type="number" step="1" min="0"
+                                               name="ProductRows[@i].OriginalPrice"
+                                               value="@row.OriginalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                               class="form-control form-control-sm text-end row-original" />
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" step="0.001" min="0" max="99.999"
+                                               name="ProductRows[@i].DiscountPercent"
+                                               value="@row.DiscountPercent.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)"
+                                               class="form-control form-control-sm text-end row-percent" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" step="0.01" min="0"
+                                               value="@((row.OriginalPrice - row.PromoPrice).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                                               class="form-control form-control-sm text-end row-amount" />
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" step="0.01" min="0"
+                                               name="ProductRows[@i].PromoPrice"
+                                               value="@row.PromoPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                               class="form-control form-control-sm text-end fw-bold row-promo" />
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
+    @* Конфликти — изброява маркирани продукти, попадащи в друга активна промоция *@
+    @{
+        var overlapErrors = Model.ProductRows
+            .Where(r => r.Included && !string.IsNullOrEmpty(r.OverlappingPromotionName))
+            .ToList();
+    }
+    @if (overlapErrors.Any())
+    {
+        <div class="col-12">
+            <div class="alert alert-danger mb-0">
+                <div class="fw-bold mb-2">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Конфликт с други активни промоции — не може да се запази:
+                </div>
+                <ul class="mb-0 ps-4">
+                    @foreach (var err in overlapErrors)
+                    {
+                        <li>
+                            <strong>@err.ProductName</strong>
+                            вече участва в промоция „<strong>@err.OverlappingPromotionName</strong>"
+                            през избрания период.
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+
 </div>
 
 <script>
-    function algaraPromoUpdateCount() {
-        var n = document.querySelectorAll('.product-checkbox:checked').length;
+(function () {
+    // ── Утилити ──────────────────────────────────────────────
+    function parseNum(v) {
+        if (v === null || v === undefined || v === '') return 0;
+        var n = parseFloat(String(v).replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+    }
+    function round2(n)  { return Math.round(n * 100) / 100; }
+    function round3(n)  { return Math.round(n * 1000) / 1000; }
+
+    function getMode() {
+        return document.getElementById('typeAmount').checked ? 'amount' : 'percent';
+    }
+
+    // ── Двупосочно преизчисление при писане в един ред ───────
+    function recalcFromPercent(tr) {
+        var orig = parseNum(tr.querySelector('.row-original').value);
+        var pct  = parseNum(tr.querySelector('.row-percent').value);
+        var promo = round2(orig * (1 - pct / 100));
+        if (promo < 0) promo = 0;
+        tr.querySelector('.row-promo').value  = promo.toFixed(2);
+        tr.querySelector('.row-amount').value = round2(orig - promo).toFixed(2);
+    }
+    function recalcFromPromo(tr) {
+        var orig  = parseNum(tr.querySelector('.row-original').value);
+        var promo = parseNum(tr.querySelector('.row-promo').value);
+        var amt   = round2(orig - promo);
+        var pct   = orig > 0 ? round3((amt / orig) * 100) : 0;
+        tr.querySelector('.row-amount').value  = amt.toFixed(2);
+        tr.querySelector('.row-percent').value = pct.toFixed(3).replace(/\.?0+$/, '') || '0';
+    }
+    function recalcFromAmount(tr) {
+        var orig = parseNum(tr.querySelector('.row-original').value);
+        var amt  = parseNum(tr.querySelector('.row-amount').value);
+        var promo = round2(orig - amt);
+        if (promo < 0) promo = 0;
+        var pct = orig > 0 ? round3((amt / orig) * 100) : 0;
+        tr.querySelector('.row-promo').value   = promo.toFixed(2);
+        tr.querySelector('.row-percent').value = pct.toFixed(3).replace(/\.?0+$/, '') || '0';
+    }
+    function recalcFromOriginal(tr) {
+        // Original се смени → преизчислява според активния режим
+        if (getMode() === 'percent') recalcFromPercent(tr);
+        else                          recalcFromAmount(tr);
+    }
+
+    // Маркиране на ред: гарантира Original = текуща цена (ако е 0)
+    // и преизчислява Нова цена според въведената досега отстъпка.
+    function handleInclude(tr) {
+        var origIn = tr.querySelector('.row-original');
+        var orig   = parseNum(origIn.value);
+        if (orig <= 0) {
+            var cur = parseNum(tr.getAttribute('data-current-price'));
+            origIn.value = cur.toFixed(2);
+        }
+        // В режим „сума" полето за € отстъпка може да съдържа стар display-value
+        // (Original − Promo от сървъра), който би дал 100% отстъпка при маркиране.
+        // Зануляваме го, за да започнем от „без отстъпка" и да приложим само
+        // реално въведена от потребителя стойност (няма такава при default).
+        if (getMode() === 'amount') {
+            tr.querySelector('.row-amount').value = '0.00';
+        }
+        recalcFromOriginal(tr);
+    }
+
+    // ── UI състояние според режима ───────────────────────────
+    function applyModeToUi() {
+        var mode = getMode();
+        document.getElementById('bulkUnit').textContent = (mode === 'percent' ? '%' : '€');
+        document.querySelectorAll('#promoTable tbody tr').forEach(function (tr) {
+            var pctIn = tr.querySelector('.row-percent');
+            var promoIn = tr.querySelector('.row-promo');
+            var amtIn = tr.querySelector('.row-amount');
+
+            if (mode === 'percent') {
+                pctIn.readOnly   = false;
+                promoIn.readOnly = true;
+                amtIn.readOnly   = true;
+                pctIn.classList.remove('promo-readonly');
+                promoIn.classList.add('promo-readonly');
+                amtIn.classList.add('promo-readonly');
+            } else {
+                pctIn.readOnly   = true;
+                promoIn.readOnly = false;
+                amtIn.readOnly   = false;
+                pctIn.classList.add('promo-readonly');
+                promoIn.classList.remove('promo-readonly');
+                amtIn.classList.remove('promo-readonly');
+            }
+        });
+    }
+
+    // ── Брояч избрани ────────────────────────────────────────
+    function updateCount() {
+        var n = document.querySelectorAll('.row-include:checked').length;
         document.getElementById('selectedCount').textContent = n + ' избрани';
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        // Автоматично филтриране при писане
-        document.getElementById('productSearch').addEventListener('input', algaraPromoFilter);
+    // ── Филтър по име ────────────────────────────────────────
+    window.algaraPromoFilter = function () {
+        var q = document.getElementById('productSearch').value.toLowerCase().trim();
+        document.querySelectorAll('.promo-row').forEach(function (tr) {
+            tr.classList.toggle('d-none', !(tr.getAttribute('data-product-name') || '').includes(q));
+        });
+    };
 
-        // Checkbox: обнови брояча и фона
-        document.querySelectorAll('.product-checkbox').forEach(function (cb) {
-            cb.addEventListener('change', function () {
-                this.closest('.product-row').style.background = this.checked ? '#fff8e1' : '';
-                algaraPromoUpdateCount();
+    // ── Bulk действия ────────────────────────────────────────
+    function selectedRows() {
+        return Array.from(document.querySelectorAll('.promo-row'))
+            .filter(function (tr) {
+                return !tr.classList.contains('d-none')
+                    && tr.querySelector('.row-include').checked;
+            });
+    }
+    function applyBulk() {
+        var v = parseNum(document.getElementById('bulkValue').value);
+        if (v <= 0) return;
+        var mode = getMode();
+        selectedRows().forEach(function (tr) {
+            if (mode === 'percent') {
+                tr.querySelector('.row-percent').value = v;
+                recalcFromPercent(tr);
+            } else {
+                tr.querySelector('.row-amount').value = v;
+                recalcFromAmount(tr);
+            }
+        });
+    }
+    function resetSelectedToOriginal() {
+        selectedRows().forEach(function (tr) {
+            var orig = parseNum(tr.querySelector('.row-original').value);
+            tr.querySelector('.row-percent').value = '0';
+            tr.querySelector('.row-amount').value  = '0.00';
+            tr.querySelector('.row-promo').value   = orig.toFixed(2);
+        });
+    }
+    function refreshOriginalToCurrent() {
+        selectedRows().forEach(function (tr) {
+            var cur = parseNum(tr.getAttribute('data-current-price'));
+            tr.querySelector('.row-original').value = cur.toFixed(2);
+            recalcFromOriginal(tr);
+        });
+    }
+
+    // ── Event wiring ─────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('productSearch').addEventListener('input', window.algaraPromoFilter);
+
+        // Ред: промени на отделните полета
+        document.querySelectorAll('#promoTable tbody tr').forEach(function (tr) {
+            tr.querySelector('.row-original').addEventListener('input', function () { recalcFromOriginal(tr); });
+            tr.querySelector('.row-percent').addEventListener('input',  function () { recalcFromPercent(tr); });
+            tr.querySelector('.row-promo').addEventListener('input',    function () { recalcFromPromo(tr); });
+            tr.querySelector('.row-amount').addEventListener('input',   function () { recalcFromAmount(tr); });
+            tr.querySelector('.row-include').addEventListener('change', function () {
+                if (this.checked) handleInclude(tr);
+                updateCount();
             });
         });
 
-        algaraPromoUpdateCount();
+        // Режим (radio)
+        document.getElementById('typePercent').addEventListener('change', applyModeToUi);
+        document.getElementById('typeAmount').addEventListener('change', applyModeToUi);
+
+        // Bulk бутони
+        document.getElementById('bulkApply').addEventListener('click', applyBulk);
+        document.getElementById('bulkReset').addEventListener('click', resetSelectedToOriginal);
+        document.getElementById('bulkRefresh').addEventListener('click', refreshOriginalToCurrent);
+
+        // Check all видими
+        document.getElementById('checkAll').addEventListener('change', function () {
+            var checked = this.checked;
+            document.querySelectorAll('.promo-row:not(.d-none) .row-include').forEach(function (cb) {
+                var wasChecked = cb.checked;
+                cb.checked = checked;
+                if (checked && !wasChecked) {
+                    handleInclude(cb.closest('tr'));
+                }
+            });
+            updateCount();
+        });
+
+        applyModeToUi();
+        updateCount();
     });
+}());
 </script>

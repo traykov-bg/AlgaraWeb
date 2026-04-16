@@ -31,6 +31,7 @@ else
                     <tr>
                         <th>#</th>
                         <th>Наименование</th>
+                        <th class="text-center">Тип</th>
                         <th class="text-center">Отстъпка</th>
                         <th>Период</th>
                         <th class="text-center">Продукти</th>
@@ -49,7 +50,31 @@ else
                             <td class="text-muted small">@pr.N</td>
                             <td><strong>@pr.Name</strong></td>
                             <td class="text-center">
-                                <span class="badge bg-danger fs-6">@pr.GetDiscountLabel()</span>
+                                @if (pr.Type == PromotionType.Percent)
+                                {
+                                    <span class="badge bg-light text-dark border" title="Режим: процент">
+                                        <i class="bi bi-percent"></i>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark border" title="Режим: сума">
+                                        <i class="bi bi-currency-euro"></i>
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @{
+                                    var label = pr.GetDiscountRangeLabel();
+                                }
+                                @if (!string.IsNullOrEmpty(label))
+                                {
+                                    <span class="badge bg-danger fs-6">@label</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
                             </td>
                             <td class="small">
                                 @pr.StartDate.ToString("dd.MM.yyyy") — @pr.EndDate.ToString("dd.MM.yyyy")

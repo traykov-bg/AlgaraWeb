@@ -79,6 +79,18 @@
     </script>
 }
 
+<style>
+    .promo-note-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+    }
+</style>
+
 @if (!Model.Any())
 {
     <p class="text-muted">Няма намерени продукти.</p>
@@ -88,9 +100,11 @@ else
     <div class="row row-cols-1 row-cols-md-3 g-4">
         @foreach (var product in Model)
         {
+            var activePromo   = product.GetActivePromotion(DateTime.Now);
             var discount      = product.GetActiveDiscount(DateTime.Now);
             var discountLabel = product.GetDiscountLabel(DateTime.Now);
             var finalPrice    = product.GetDiscountedPrice(DateTime.Now);
+            var promoNote     = activePromo?.Note;
             <div class="col">
                 <div class="card h-100 shadow-sm">
                     <div class="position-relative">
@@ -127,6 +141,13 @@ else
                                 @(product.Description.Length > 80
                                     ? product.Description[..80] + "…"
                                     : product.Description)
+                            </p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(promoNote))
+                        {
+                            <p class="card-text small fw-bold text-danger mb-0 promo-note-clamp"
+                               title="@promoNote">
+                                @promoNote
                             </p>
                         }
                     </div>

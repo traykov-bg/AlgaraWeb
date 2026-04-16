@@ -20,18 +20,15 @@ namespace Algara.Web.ViewModels.Admin
         [Display(Name = "Край")]
         public DateTime EndDate { get; set; } = DateTime.Today.AddDays(7);
 
-        [Required(ErrorMessage = "Процентът е задължителен.")]
-        [Range(0.001, 99.999, ErrorMessage = "Процентът трябва да е между 0.001 и 99.999.")]
-        [Display(Name = "Отстъпка (%)")]
-        public decimal DiscountPercent { get; set; }
+        [Display(Name = "Режим")]
+        public PromotionType Type { get; set; } = PromotionType.Percent;
 
         [Display(Name = "Активна")]
         public bool IsActive { get; set; } = true;
 
-        // IDs на избраните продукти
-        public List<int> SelectedProductNs { get; set; } = new();
-
-        // За попълване на списъка с продукти
-        public List<Product> AllProducts { get; set; } = new();
+        /// <summary>
+        /// Всички продукти като редове. Маркираните (Included=true) ще се запишат в ProductPromotions.
+        /// </summary>
+        public List<AdminPromotionProductRowViewModel> ProductRows { get; set; } = new();
     }
 }
