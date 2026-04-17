@@ -89,6 +89,15 @@
         text-overflow: ellipsis;
         word-break: break-word;
     }
+
+    .product-card-link {
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .product-card-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12) !important;
+    }
 </style>
 
 @if (!Model.Any())
@@ -97,7 +106,7 @@
 }
 else
 {
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         @foreach (var product in Model)
         {
             var activePromo   = product.GetActivePromotion(DateTime.Now);
@@ -106,7 +115,8 @@ else
             var finalPrice    = product.GetDiscountedPrice(DateTime.Now);
             var promoNote     = activePromo?.Note;
             <div class="col">
-                <div class="card h-100 shadow-sm">
+                <a asp-action="Detail" asp-route-n="@product.N"
+                   class="card h-100 shadow-sm text-decoration-none text-reset product-card-link">
                     <div class="position-relative">
                         @if (!string.IsNullOrEmpty(product.ImageUrl))
                         {
@@ -163,15 +173,12 @@ else
                                 <strong>@product.Price.ToString("N0") €</strong>
                             }
                         </div>
-                        <div>
-                            @if (product.IsCustomizable)
-                            {
-                                <span class="badge bg-info me-1">По поръчка</span>
-                            }
-                            <a asp-action="Detail" asp-route-n="@product.N" class="btn btn-primary btn-sm">Детайли</a>
-                        </div>
+                        @if (product.IsCustomizable)
+                        {
+                            <span class="badge bg-info">По поръчка</span>
+                        }
                     </div>
-                </div>
+                </a>
             </div>
         }
     </div>
