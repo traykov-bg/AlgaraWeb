@@ -1,0 +1,168 @@
+﻿@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var tokens = Antiforgery.GetAndStoreTokens(Context);
+}
+
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content algara-login-modal">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="loginModalLabel">Вход в акаунт</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Затвори"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <div id="loginModalAlert" class="alert alert-danger d-none" role="alert"></div>
+
+                <form id="loginModalForm" method="post" action="/Account/Login" novalidate>
+                    <input type="hidden" name="__RequestVerificationToken" value="@tokens.RequestToken" />
+                    <input type="hidden" name="TimeZoneOffset" id="loginModalTzOffset" />
+
+                    <div class="mb-3">
+                        <label for="loginModalEmail" class="form-label">Имейл</label>
+                        <input type="email" class="form-control" id="loginModalEmail" name="Email"
+                               autocomplete="email" required />
+                        <div class="invalid-feedback" data-field-error="Email"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="loginModalPassword" class="form-label">Парола</label>
+                        <div class="input-group has-validation algara-password-group">
+                            <input type="password" class="form-control" id="loginModalPassword" name="Password"
+                                   autocomplete="current-password" required />
+                            <button type="button" tabindex="-1" class="btn algara-password-toggle"
+                                    data-password-toggle="#loginModalPassword"
+                                    aria-label="Покажи паролата">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <div class="invalid-feedback" data-field-error="Password"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="loginModalRemember"
+                                   name="RememberMe" value="true" />
+                            <label class="form-check-label" for="loginModalRemember">Запомни ме</label>
+                        </div>
+                        <a asp-controller="Account" asp-action="ForgotPassword" class="algara-link-accent small">
+                            Забравена парола?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn algara-btn-primary w-100" id="loginModalSubmit">
+                        Вход
+                    </button>
+                </form>
+
+                <div class="text-center mt-3 pt-3 border-top">
+                    <span class="text-muted small">Нямаш акаунт?</span>
+                    <a asp-controller="Account" asp-action="Register" class="algara-link-accent">Регистрирай се</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('loginModalForm');
+        if (!form) return;
+
+        var modalEl = document.getElementById('loginModal');
+        var alertBox = document.getElementById('loginModalAlert');
+        var submitBtn = document.getElementById('loginModalSubmit');
+        var tzField = document.getElementById('loginModalTzOffset');
+
+        function setOffset() {
+            // getTimezoneOffset() връща минути ЗАД UTC (UTC+2 → -120); негираме.
+            tzField.value = -new Date().getTimezoneOffset();
+        }
+        setOffset();
+
+        function clearErrors() {
+            alertBox.classList.add('d-none');
+            alertBox.textContent = '';
+            form.querySelectorAll('.is-invalid').forEach(function (el) {
+                el.classList.remove('is-invalid');
+            });
+            form.querySelectorAll('[data-field-error]').forEach(function (el) {
+                el.textContent = '';
+            });
+        }
+
+        function showErrors(errors) {
+            var generalMessages = [];
+            Object.keys(errors).forEach(function (field) {
+                var messages = errors[field];
+                var input = form.querySelector('[name="' + field + '"]');
+                var errEl = form.querySelector('[data-field-error="' + field + '"]');
+                if (input && errEl) {
+                    input.classList.add('is-invalid');
+                    errEl.textContent = messages.join(' ');
+                } else {
+                    generalMessages = generalMessages.concat(messages);
+                }
+            });
+            if (generalMessages.length > 0) {
+                alertBox.textContent = generalMessages.join(' ');
+                alertBox.classList.remove('d-none');
+            }
+        }
+
+        form.querySelectorAll('[data-password-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var target = document.querySelector(btn.getAttribute('data-password-toggle'));
+                if (!target) return;
+                var showing = target.type === 'text';
+                target.type = showing ? 'password' : 'text';
+                var icon = btn.querySelector('i');
+                if (icon) icon.className = showing ? 'bi bi-eye' : 'bi bi-eye-slash';
+                btn.setAttribute('aria-label', showing ? 'Покажи паролата' : 'Скрий паролата');
+            });
+        });
+
+        modalEl.addEventListener('shown.bs.modal', function () {
+            setOffset();
+            var emailInput = document.getElementById('loginModalEmail');
+            if (emailInput) emailInput.focus();
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            clearErrors();
+            form.reset();
+        });
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            clearErrors();
+            setOffset();
+            submitBtn.disabled = true;
+
+            var formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(function (data) {
+                    if (data.success) {
+                        window.location.href = data.redirectUrl || '/';
+                    } else {
+                        showErrors(data.errors || {});
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(function () {
+                    alertBox.textContent = 'Възникна грешка. Моля, опитайте отново.';
+                    alertBox.classList.remove('d-none');
+                    submitBtn.disabled = false;
+                });
+        });
+    })();
+</script>

@@ -4,26 +4,131 @@
     ViewData["Title"] = "Регистрация";
 }
 
-<h2>Регистрация</h2>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <h2 class="mb-4">Регистрация</h2>
 
-<form asp-action="Register" method="post">
-    <div class="form-group">
-        <label asp-for="Email"></label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+            <form asp-action="Register" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label asp-for="FirstName" class="form-label"></label>
+                        <input asp-for="FirstName" class="form-control" autocomplete="given-name" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="LastName" class="form-label"></label>
+                        <input asp-for="LastName" class="form-control" autocomplete="family-name" />
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="PhoneNumber" class="form-label">Телефон <span class="text-muted small">(по желание)</span></label>
+                    <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" placeholder="+359 ..." />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="row g-3 mt-0">
+                    <div class="col-sm-6">
+                        <label asp-for="Password" class="form-label"></label>
+                        <div class="input-group has-validation algara-password-group">
+                            <input asp-for="Password" class="form-control" type="password"
+                                   id="regPassword" autocomplete="new-password" />
+                            <button type="button" tabindex="-1" class="btn algara-password-toggle"
+                                    data-password-toggle="#regPassword" aria-label="Покажи паролата">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="ConfirmPassword" class="form-label"></label>
+                        <div class="input-group has-validation algara-password-group">
+                            <input asp-for="ConfirmPassword" class="form-control" type="password"
+                                   id="regConfirmPassword" autocomplete="new-password" />
+                            <button type="button" tabindex="-1" class="btn algara-password-toggle"
+                                    data-password-toggle="#regConfirmPassword" aria-label="Покажи паролата">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="form-check mb-2">
+                    <input asp-for="AgeConfirmed" class="form-check-input" />
+                    <label asp-for="AgeConfirmed" class="form-check-label">
+                        Потвърждавам, че съм навършил 18 години.
+                    </label>
+                    <div>
+                        <span asp-validation-for="AgeConfirmed" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="form-check mb-2">
+                    <input asp-for="TermsAccepted" class="form-check-input" />
+                    <label asp-for="TermsAccepted" class="form-check-label">
+                        Прочетох и се съгласявам с
+                        <a asp-controller="Home" asp-action="Terms" target="_blank" class="algara-link-accent">Общите условия</a>
+                        и
+                        <a asp-controller="Home" asp-action="Privacy" target="_blank" class="algara-link-accent">Политиката за поверителност</a>.
+                    </label>
+                    <div>
+                        <span asp-validation-for="TermsAccepted" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="MarketingConsent" class="form-check-input" />
+                    <label asp-for="MarketingConsent" class="form-check-label">
+                        Искам и се съгласявам да получавам известия по имейл от Мебели Алгара
+                        (промоции, новини, специални оферти). Може да се откажа по всяко време.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn algara-btn-primary">Регистрация</button>
+
+                <div class="mt-3">
+                    <span class="text-muted small">Вече имаш акаунт?</span>
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" class="algara-link-accent">Влез</a>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="form-group">
-        <label asp-for="Password"></label>
-        <input asp-for="Password" class="form-control" type="password" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // jQuery unobtrusive adapter за MustBeTrueAttribute — вградения range не разбира bool.
+        if (typeof $ !== 'undefined' && $.validator && $.validator.unobtrusive) {
+            $.validator.addMethod('mustbetrue', function (value, element) {
+                return element.type === 'checkbox' ? element.checked : value === 'true';
+            });
+            $.validator.unobtrusive.adapters.addBool('mustbetrue');
+        }
 
-    <div class="form-group">
-        <label asp-for="ConfirmPassword"></label>
-        <input asp-for="ConfirmPassword" class="form-control" type="password" />
-        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Регистрация</button>
-</form>
+        document.querySelectorAll('[data-password-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var target = document.querySelector(btn.getAttribute('data-password-toggle'));
+                if (!target) return;
+                var showing = target.type === 'text';
+                target.type = showing ? 'password' : 'text';
+                var icon = btn.querySelector('i');
+                if (icon) icon.className = showing ? 'bi bi-eye' : 'bi bi-eye-slash';
+                btn.setAttribute('aria-label', showing ? 'Покажи паролата' : 'Скрий паролата');
+            });
+        });
+    </script>
+}

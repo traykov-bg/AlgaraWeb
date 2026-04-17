@@ -88,7 +88,8 @@
                     }
                     else
                     {
-                        <a class="btn btn-sm algara-btn-ghost" asp-controller="Account" asp-action="Login">Вход</a>
+                        <button type="button" class="btn btn-sm algara-btn-ghost"
+                                data-bs-toggle="modal" data-bs-target="#loginModal">Вход</button>
                         <a class="btn btn-sm algara-btn-primary-sm" asp-controller="Account" asp-action="Register">Регистрация</a>
                     }
                 </div>
@@ -97,6 +98,11 @@
         </div>
     </div>
 </nav>
+
+@if (User.Identity?.IsAuthenticated != true)
+{
+    @await Html.PartialAsync("_LoginModalPartial")
+}
 
 <!-- ── Категорийна лента ── -->
 <nav class="algara-catbar">

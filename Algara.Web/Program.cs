@@ -94,6 +94,8 @@ try
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.Cookie.Name = "AlgaraAuth";
         options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true;
         options.Events.OnValidatePrincipal = async context =>

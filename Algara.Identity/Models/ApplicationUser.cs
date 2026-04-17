@@ -6,6 +6,16 @@ namespace Algara.Identity.Models
     public class ApplicationUser : IdentityUser
     {
         public string FullName { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? PhoneNumber { get; set; }
+
+        /// <summary>
+        /// Текущо състояние на marketing съгласието — за бърз lookup и opt-out.
+        /// Историята на дадените/оттеглените съгласия се пази в UserConsents таблицата.
+        /// </summary>
+        public bool MarketingConsent { get; set; } = false;
+
         public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
 
         /// <summary>

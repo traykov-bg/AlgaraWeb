@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Algara.Web.ViewModels
 {
@@ -10,6 +11,7 @@ namespace Algara.Web.ViewModels
 
         [Required(ErrorMessage = "Паролата е задължителна")]
         [DataType(DataType.Password)]
+        [DisplayName("Парола")]
         public string Password { get; set; } = string.Empty;
 
         public bool RememberMe { get; set; } = false;

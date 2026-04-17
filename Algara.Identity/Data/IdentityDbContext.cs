@@ -12,6 +12,7 @@ namespace Algara.Identity.Data
         public DbSet<ApplicationRole> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
+        public DbSet<UserConsent> UserConsents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +55,23 @@ namespace Algara.Identity.Data
                 .WithMany(u => u.UserSessions)
                 .HasForeignKey(us => us.UserN)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserConsent>()
+                .HasKey(uc => uc.Id);
+
+            modelBuilder.Entity<UserConsent>()
+                .HasOne(uc => uc.User)
+                .WithMany()
+                .HasForeignKey(uc => uc.UserN)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserConsent>()
+                .HasIndex(uc => new { uc.UserN, uc.ConsentType });
+
+            modelBuilder.Entity<UserConsent>()
+                .Property(uc => uc.ConsentType)
+                .HasMaxLength(32)
+                .IsRequired();
 
             base.OnModelCreating(modelBuilder);
         }

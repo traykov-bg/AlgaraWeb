@@ -419,6 +419,57 @@ body {
 }
 .algara-link-accent:hover { color: var(--algara-accent-dk); text-decoration: underline; }
 
+/* ───── Login modal ───── */
+.algara-login-modal {
+    border: 1px solid var(--algara-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.15);
+    background: #fff;
+}
+.algara-login-modal .modal-title {
+    font-weight: 600;
+    color: var(--algara-text);
+}
+.algara-login-modal .form-label {
+    font-size: .9rem;
+    color: var(--algara-muted);
+    margin-bottom: .35rem;
+}
+.algara-login-modal .form-control:focus {
+    border-color: var(--algara-accent);
+    box-shadow: 0 0 0 .2rem rgba(184,92,56,.15);
+}
+.algara-login-modal .algara-btn-primary {
+    padding: .55rem 1rem;
+    font-weight: 500;
+}
+
+/* ───── Password reveal toggle ───── */
+.algara-password-group .form-control {
+    border-right: 0;
+}
+.algara-password-toggle {
+    background: #fff;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-left: 0;
+    color: var(--algara-muted);
+    padding: .375rem .75rem;
+    display: flex;
+    align-items: center;
+    transition: color .15s, background .15s;
+}
+.algara-password-toggle:hover,
+.algara-password-toggle:focus {
+    color: var(--algara-accent);
+    background: var(--algara-subtle);
+}
+.algara-password-group .form-control:focus {
+    z-index: 3;
+}
+.algara-password-group .form-control.is-invalid ~ .algara-password-toggle {
+    border-color: var(--bs-form-invalid-border-color, #dc3545);
+}
+
 /* ───── Section titles ───── */
 .algara-section-title {
     font-size: 1.5rem;

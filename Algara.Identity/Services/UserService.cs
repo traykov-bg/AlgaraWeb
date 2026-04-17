@@ -57,6 +57,57 @@ namespace Algara.Identity.Services
             return true;
         }
 
+        public async Task<ApplicationUser?> RegisterUserAsync(RegistrationData data)
+        {
+            if (await _context.Users.AnyAsync(u => u.UserName == data.Email || u.Email == data.Email))
+                return null;
+
+            string salt = GenerateSalt();
+            string passwordHash = HashPassword(data.Password, salt);
+
+            var fullName = $"{data.FirstName} {data.LastName}".Trim();
+            var user = new ApplicationUser
+            {
+                UserName = data.Email,
+                DisplayName = fullName,
+                Email = data.Email,
+                PasswordHash = passwordHash,
+                Salt = salt,
+                FullName = fullName,
+                FirstName = data.FirstName,
+                LastName = data.LastName,
+                PhoneNumber = string.IsNullOrWhiteSpace(data.PhoneNumber) ? null : data.PhoneNumber.Trim(),
+                MarketingConsent = data.MarketingConsent
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(); // записваме, за да получим user.N
+
+            var consents = new List<UserConsent>
+            {
+                BuildConsent(user.N, ConsentTypes.Terms,    granted: true,                     data),
+                BuildConsent(user.N, ConsentTypes.Privacy,  granted: true,                     data),
+                BuildConsent(user.N, ConsentTypes.Age18,    granted: true,                     data),
+                BuildConsent(user.N, ConsentTypes.Marketing, granted: data.MarketingConsent,    data)
+            };
+            _context.UserConsents.AddRange(consents);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Регистриран нов потребител {Email} с consent audit trail ({Count} записа)", data.Email, consents.Count);
+            return user;
+        }
+
+        private static UserConsent BuildConsent(int userN, string type, bool granted, RegistrationData data) => new()
+        {
+            UserN = userN,
+            ConsentType = type,
+            Granted = granted,
+            PolicyVersion = data.PolicyVersion,
+            IpAddress = data.IpAddress,
+            UserAgent = data.UserAgent,
+            ConsentedAt = DateTime.UtcNow
+        };
+
         public async Task<bool> ValidateUserAsync(string username, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);

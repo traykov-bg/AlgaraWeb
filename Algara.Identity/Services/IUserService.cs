@@ -1,5 +1,6 @@
 ﻿using Algara.Identity.Data;
 using Algara.Identity.Models;
+using Algara.Identity.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -9,6 +10,7 @@ public interface IUserService
     // Автентикация
     Task<ApplicationUser?> GetUserByUsernameAsync(string username);
     Task<bool> RegisterUserAsync(string username, string email, string password);
+    Task<ApplicationUser?> RegisterUserAsync(RegistrationData data);
     Task<bool> ValidateUserAsync(string username, string password);
     Task ValidateSecurityStampAsync(CookieValidatePrincipalContext context);
     Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe, int? timeZoneOffset = null);
