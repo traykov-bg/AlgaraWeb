@@ -1,0 +1,185 @@
+﻿@model Algara.Web.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Моят профил";
+}
+
+<div class="algara-profile py-4 py-lg-5">
+    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-end mb-4">
+        <div>
+            <h1 class="h3 mb-1">Моят профил</h1>
+            <p class="text-muted mb-0">Управление на лични данни, доставка, поръчки и настройки за поверителност.</p>
+        </div>
+        <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">
+            <i class="bi bi-bag me-1"></i>Към каталога
+        </a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="algara-profile-panel">
+                <div class="algara-profile-panel__header">
+                    <h2 class="h5 mb-0">Лични данни и адрес</h2>
+                    <span class="text-muted small">Имейлът не може да се променя от профила.</span>
+                </div>
+                <form asp-action="UpdateProfile" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Details.FirstName" class="form-label"></label>
+                        <input asp-for="Details.FirstName" class="form-control" autocomplete="given-name" />
+                        <span asp-validation-for="Details.FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Details.LastName" class="form-label"></label>
+                        <input asp-for="Details.LastName" class="form-control" autocomplete="family-name" />
+                        <span asp-validation-for="Details.LastName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Details.PhoneNumber" class="form-label"></label>
+                        <input asp-for="Details.PhoneNumber" class="form-control" autocomplete="tel" />
+                        <span asp-validation-for="Details.PhoneNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Details.Email" class="form-label"></label>
+                        <input asp-for="Details.Email" class="form-control" disabled />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Details.AddressLine1" class="form-label"></label>
+                        <input asp-for="Details.AddressLine1" class="form-control" autocomplete="address-line1" />
+                        <span asp-validation-for="Details.AddressLine1" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Details.AddressLine2" class="form-label"></label>
+                        <input asp-for="Details.AddressLine2" class="form-control" autocomplete="address-line2" />
+                        <span asp-validation-for="Details.AddressLine2" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="Details.City" class="form-label"></label>
+                        <input asp-for="Details.City" class="form-control" autocomplete="address-level2" />
+                        <span asp-validation-for="Details.City" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Details.PostalCode" class="form-label"></label>
+                        <input asp-for="Details.PostalCode" class="form-control" autocomplete="postal-code" />
+                        <span asp-validation-for="Details.PostalCode" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Details.Country" class="form-label"></label>
+                        <input asp-for="Details.Country" class="form-control" autocomplete="country-name" />
+                        <span asp-validation-for="Details.Country" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn algara-btn-primary">
+                            <i class="bi bi-check2 me-1"></i>Запази промените
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <section class="algara-profile-panel mb-4">
+                <div class="algara-profile-panel__header">
+                    <h2 class="h5 mb-0">Смяна на парола</h2>
+                </div>
+                <form asp-action="ChangePassword" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-12">
+                        <label asp-for="Password.CurrentPassword" class="form-label"></label>
+                        <input asp-for="Password.CurrentPassword" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Password.CurrentPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Password.NewPassword" class="form-label"></label>
+                        <input asp-for="Password.NewPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Password.NewPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Password.ConfirmPassword" class="form-label"></label>
+                        <input asp-for="Password.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Password.ConfirmPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn algara-btn-outline">
+                            <i class="bi bi-key me-1"></i>Смени паролата
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="algara-profile-panel">
+                <div class="algara-profile-panel__header">
+                    <h2 class="h5 mb-0">Поверителност</h2>
+                </div>
+                <div class="d-flex justify-content-between gap-3 align-items-start pb-3 border-bottom">
+                    <div>
+                        <div class="fw-semibold">Marketing consent</div>
+                        <div class="text-muted small">
+                            @(Model.MarketingConsent ? "В момента получавате маркетинг съобщения." : "Съгласието е оттеглено.")
+                        </div>
+                    </div>
+                    @if (Model.MarketingConsent)
+                    {
+                        <form asp-action="WithdrawMarketingConsent" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Оттегли</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Оттеглено</span>
+                    }
+                </div>
+
+                <form asp-action="DeleteAccount" method="post" class="pt-3">
+                    @Html.AntiForgeryToken()
+                    <div class="fw-semibold text-danger mb-1">Изтриване на акаунта</div>
+                    <p class="text-muted small mb-3">
+                        Акаунтът ще бъде деактивиран и личните данни ще бъдат анонимизирани. Историята на поръчките се запазва за счетоводни и гаранционни цели.
+                    </p>
+                    <label asp-for="DeleteAccount.Password" class="form-label"></label>
+                    <input asp-for="DeleteAccount.Password" class="form-control mb-1" autocomplete="current-password" />
+                    <span asp-validation-for="DeleteAccount.Password" class="text-danger small"></span>
+                    <div class="form-check mt-3">
+                        <input asp-for="DeleteAccount.ConfirmDeletion" class="form-check-input" />
+                        <label asp-for="DeleteAccount.ConfirmDeletion" class="form-check-label">
+                            Разбирам, че достъпът до акаунта ще бъде прекратен.
+                        </label>
+                    </div>
+                    <span asp-validation-for="DeleteAccount.ConfirmDeletion" class="text-danger small d-block"></span>
+                    <button type="submit" class="btn btn-outline-danger mt-3">
+                        <i class="bi bi-trash3 me-1"></i>Изтрий акаунта
+                    </button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <section class="algara-profile-panel mt-4">
+        <div class="algara-profile-panel__header">
+            <h2 class="h5 mb-0">Текущи поръчки</h2>
+        </div>
+        @await Html.PartialAsync("_ProfileOrdersTable", Model.CurrentOrders)
+    </section>
+
+    <section class="algara-profile-panel mt-4">
+        <div class="algara-profile-panel__header">
+            <h2 class="h5 mb-0">История на поръчките</h2>
+        </div>
+        @await Html.PartialAsync("_ProfileOrdersTable", Model.OrderHistory)
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -261,9 +261,66 @@ body {
 
 /* ───── Navbar user / auth buttons ───── */
 .algara-nav-user {
-    font-size: .85rem;
-    color: var(--algara-muted);
+    position: relative;
     white-space: nowrap;
+}
+.algara-nav-user__trigger {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--algara-text);
+    border-radius: 4px;
+    padding: .3rem .55rem;
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    max-width: 220px;
+}
+.algara-nav-user__trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.algara-nav-user:hover .algara-nav-user__trigger,
+.algara-nav-user:focus-within .algara-nav-user__trigger {
+    background: var(--algara-subtle);
+    border-color: var(--algara-border);
+}
+.algara-nav-user__menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 180px;
+    background: #fff;
+    border: 1px solid var(--algara-border);
+    border-radius: 6px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+    padding: .35rem;
+    z-index: 1060;
+}
+.algara-nav-user:hover .algara-nav-user__menu,
+.algara-nav-user:focus-within .algara-nav-user__menu {
+    display: block;
+}
+.algara-nav-user__item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    color: var(--algara-text);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    padding: .5rem .65rem;
+    font-size: .86rem;
+    text-align: left;
+    text-decoration: none;
+}
+.algara-nav-user__item:hover,
+.algara-nav-user__item:focus {
+    background: var(--algara-subtle);
+    color: var(--algara-accent);
+}
+.algara-nav-user__item--button {
+    cursor: pointer;
 }
 .algara-btn-ghost {
     color: var(--algara-text);
@@ -297,6 +354,69 @@ body {
     transition: background .15s, color .15s;
 }
 .algara-btn-outline-sm:hover { background: var(--algara-accent); color: #fff; }
+
+/* ───── Profile ───── */
+.algara-profile-panel {
+    background: #fff;
+    border: 1px solid var(--algara-border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,.04);
+}
+.algara-profile-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: .85rem;
+    border-bottom: 1px solid var(--algara-border);
+}
+.algara-profile .form-label {
+    font-size: .88rem;
+    color: var(--algara-muted);
+    margin-bottom: .35rem;
+}
+.algara-profile .form-control:focus,
+.algara-profile .form-check-input:focus {
+    border-color: var(--algara-accent);
+    box-shadow: 0 0 0 .2rem rgba(184,92,56,.15);
+}
+.algara-order-stat {
+    border: 1px solid var(--algara-border);
+    border-radius: 6px;
+    padding: .85rem;
+    background: var(--algara-subtle);
+}
+.algara-order-stat span,
+.algara-order-stat strong {
+    display: block;
+}
+.algara-order-stat strong {
+    margin-top: .2rem;
+    font-size: 1.05rem;
+}
+
+@media (max-width: 991.98px) {
+    .algara-nav-user,
+    .algara-nav-user__trigger {
+        width: 100%;
+    }
+    .algara-nav-user__trigger {
+        justify-content: flex-start;
+        max-width: none;
+    }
+    .algara-nav-user__menu {
+        position: static;
+        width: 100%;
+        margin-top: .25rem;
+        box-shadow: none;
+    }
+    .algara-profile-panel__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
 
 /* ───── Hero (static fallback) ───── */
 .algara-hero {

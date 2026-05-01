@@ -1,0 +1,84 @@
+﻿@model Algara.Web.ViewModels.ProfileOrderDetailViewModel
+@{
+    ViewData["Title"] = $"Поръчка #{Model.Order.N}";
+}
+
+<div class="algara-profile py-4 py-lg-5">
+    <div class="mb-3">
+        <a asp-action="Profile" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Обратно към профила
+        </a>
+    </div>
+
+    <div class="algara-profile-panel mb-4">
+        <div class="algara-profile-panel__header">
+            <div>
+                <h1 class="h4 mb-1">Поръчка #@Model.Order.N</h1>
+                <div class="text-muted small">@Model.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+            </div>
+            <span class="badge @Model.StatusCssClass">@Model.StatusLabel</span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="algara-order-stat">
+                    <span class="text-muted small">Обща сума</span>
+                    <strong>@Model.Order.TotalAmount.ToString("N0") €</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="algara-order-stat">
+                    <span class="text-muted small">Артикули</span>
+                    <strong>@Model.Order.OrderItems.Sum(i => i.Quantity)</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="algara-order-stat">
+                    <span class="text-muted small">Последна промяна</span>
+                    <strong>@(Model.Order.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "няма")</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="algara-profile-panel">
+        <div class="algara-profile-panel__header">
+            <h2 class="h5 mb-0">Артикули</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Продукт</th>
+                        <th class="text-center">Количество</th>
+                        <th class="text-end">Ед. цена</th>
+                        <th class="text-end">Сума</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Order.OrderItems)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@(item.Product?.Name ?? $"Продукт #{item.ProductN}")</div>
+                                @if (!string.IsNullOrWhiteSpace(item.Product?.ImageUrl))
+                                {
+                                    <div class="text-muted small">Каталожен артикул</div>
+                                }
+                            </td>
+                            <td class="text-center">@item.Quantity</td>
+                            <td class="text-end">@item.UnitPrice.ToString("N0") €</td>
+                            <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end fw-semibold">Общо:</td>
+                        <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N0") €</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+</div>

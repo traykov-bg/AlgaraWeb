@@ -9,6 +9,11 @@ namespace Algara.Identity.Models
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? PhoneNumber { get; set; }
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? City { get; set; }
+        public string? PostalCode { get; set; }
+        public string? Country { get; set; }
 
         /// <summary>
         /// Текущо състояние на marketing съгласието — за бърз lookup и opt-out.

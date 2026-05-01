@@ -26,6 +26,20 @@ namespace Algara.Data.Repositories
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.N == n);
 
+        public async Task<IEnumerable<Order>> GetByUserNAsync(int userN)
+            => await _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Where(o => o.UserN == userN)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+        public async Task<Order?> GetByNForUserAsync(int n, int userN)
+            => await _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.N == n && o.UserN == userN);
+
         public async Task UpdateStatusAsync(int n, OrderStatus status)
         {
             var order = await _context.Orders.FindAsync(n);

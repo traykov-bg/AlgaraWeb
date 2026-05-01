@@ -116,6 +116,11 @@ namespace Algara.Identity.Services
                 _logger.LogWarning($"Неуспешен опит за вход с несъществуващо потребителско име: {username}");
                 return false;
             }
+            if (!user.IsActive)
+            {
+                _logger.LogWarning($"Опит за вход в деактивиран акаунт: {username}");
+                return false;
+            }
 
             // Проверяваме дали акаунтът е заключен
             if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.Now)
@@ -191,6 +196,16 @@ namespace Algara.Identity.Services
             return true;
         }
 
+        public async Task<bool> VerifyPasswordAsync(string username, string password)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
+            if (user == null || !user.IsActive)
+                return false;
+
+            string hashedPassword = HashPassword(password, user.Salt);
+            return hashedPassword == user.PasswordHash;
+        }
+
         public async Task ValidateSecurityStampAsync(CookieValidatePrincipalContext context)
         {
             var userId = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -250,6 +265,7 @@ namespace Algara.Identity.Services
                 new Claim(ClaimTypes.NameIdentifier, user.Id), // UserId
                 new Claim(ClaimTypes.Name, user.UserName), // Username
                 new Claim(ClaimTypes.Email, user.Email), // Email
+                new Claim("DisplayName", GetDisplayName(user)),
                 new Claim("SecurityStamp", user.SecurityStamp), // SecurityStamp за валидация
                 new Claim("SessionId", session.SessionId) // Добавяме SessionId
             };
@@ -376,6 +392,7 @@ namespace Algara.Identity.Services
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim("DisplayName", GetDisplayName(user)),
                 new Claim("SecurityStamp", user.SecurityStamp ?? ""),
                 new Claim("SessionId", user.LastLoginSessionId??"") // 
             };
@@ -390,6 +407,22 @@ namespace Algara.Identity.Services
         {
             return await _context.UserSessions
                 .FirstOrDefaultAsync(us => us.UserN == userN && us.SessionId == sessionId && us.IsActive);
+        }
+
+        private static string GetDisplayName(ApplicationUser user)
+        {
+            var fullNameFromParts = $"{user.FirstName} {user.LastName}".Trim();
+            if (!string.IsNullOrWhiteSpace(fullNameFromParts))
+                return fullNameFromParts;
+
+            if (!string.IsNullOrWhiteSpace(user.FullName) &&
+                !string.Equals(user.FullName, user.Email, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(user.FullName, user.UserName, StringComparison.OrdinalIgnoreCase))
+            {
+                return user.FullName;
+            }
+
+            return user.UserName;
         }
 
         public async Task ForceSignOutAllSessionsAsync(string userId)

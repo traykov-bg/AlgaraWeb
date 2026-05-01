@@ -19,6 +19,7 @@ public interface IUserService
     Task ForceSignOutAllSessionsAsync(string userId);
 
     // Пароли
+    Task<bool> VerifyPasswordAsync(string username, string password);
     Task<bool> ChangePasswordAsync(string username, string newPassword);
 
     // Роли
