@@ -1,13 +1,18 @@
 ﻿@model Algara.Web.ViewModels.ProfileViewModel
+@using System.Text.Encodings.Web
 @{
     ViewData["Title"] = "Моят профил";
+    var activeTab = Model.ActiveTab;
+    string Active(string tab) => activeTab == tab ? "active" : "";
+    string Selected(string tab) => activeTab == tab ? "true" : "false";
+    string Show(string tab) => activeTab == tab ? "show active" : "";
 }
 
 <div class="algara-profile py-4 py-lg-5">
     <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-end mb-4">
         <div>
             <h1 class="h3 mb-1">Моят профил</h1>
-            <p class="text-muted mb-0">Управление на лични данни, доставка, поръчки и настройки за поверителност.</p>
+            <p class="text-muted mb-0">Поръчки, адреси, лични данни и настройки за поверителност.</p>
         </div>
         <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">
             <i class="bi bi-bag me-1"></i>Към каталога
@@ -23,14 +28,122 @@
         <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <section class="algara-profile-panel">
+    <ul class="nav algara-profile-tabs" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("current")" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-pane" type="button" role="tab" aria-controls="current-pane" aria-selected="@Selected("current")">
+                Текущи поръчки
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("history")" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="@Selected("history")">
+                История на поръчките
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("addresses")" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses-pane" type="button" role="tab" aria-controls="addresses-pane" aria-selected="@Selected("addresses")">
+                Моите адреси
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("details")" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-pane" type="button" role="tab" aria-controls="details-pane" aria-selected="@Selected("details")">
+                Лични данни
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("password")" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab" aria-controls="password-pane" aria-selected="@Selected("password")">
+                Смяна на паролата
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @Active("privacy")" id="privacy-tab" data-bs-toggle="tab" data-bs-target="#privacy-pane" type="button" role="tab" aria-controls="privacy-pane" aria-selected="@Selected("privacy")">
+                Поверителност
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content algara-profile-tab-content">
+        <section class="tab-pane fade @Show("current")" id="current-pane" role="tabpanel" aria-labelledby="current-tab" tabindex="0">
+            <div class="algara-profile-panel">
                 <div class="algara-profile-panel__header">
-                    <h2 class="h5 mb-0">Лични данни и адрес</h2>
+                    <h2 class="h5 mb-0">Текущи поръчки</h2>
+                </div>
+                @await Html.PartialAsync("_ProfileOrdersTable", Model.CurrentOrders)
+            </div>
+        </section>
+
+        <section class="tab-pane fade @Show("history")" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+            <div class="algara-profile-panel">
+                <div class="algara-profile-panel__header">
+                    <h2 class="h5 mb-0">История на поръчките</h2>
+                </div>
+                @await Html.PartialAsync("_ProfileOrdersTable", Model.OrderHistory)
+            </div>
+        </section>
+
+        <section class="tab-pane fade @Show("addresses")" id="addresses-pane" role="tabpanel" aria-labelledby="addresses-tab" tabindex="0">
+            <div class="algara-address-grid">
+                @foreach (var address in Model.Addresses)
+                {
+                    <article class="algara-address-card @(address.IsDefault ? "is-default" : "")">
+                        <div class="algara-address-card__actions">
+                            <button type="button"
+                                    class="btn btn-sm btn-link algara-icon-action js-address-edit"
+                                    title="Редактирай"
+                                    data-address-n="@address.N"
+                                    data-address-first-name="@address.FirstName"
+                                    data-address-last-name="@address.LastName"
+                                    data-address-phone="@address.PhoneNumber"
+                                    data-address-email="@address.Email"
+                                    data-address-line1="@address.AddressLine1"
+                                    data-address-line2="@address.AddressLine2"
+                                    data-address-city="@address.City"
+                                    data-address-postal="@address.PostalCode"
+                                    data-address-country="@address.Country"
+                                    data-address-default="@address.IsDefault.ToString().ToLowerInvariant()">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form asp-action="DeleteAddress" method="post" class="d-inline js-delete-address">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="n" value="@address.N" />
+                                <button type="submit" class="btn btn-sm btn-link algara-icon-action text-danger" title="Изтрий">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        @if (address.IsDefault)
+                        {
+                            <span class="algara-address-card__badge">Основен</span>
+                        }
+                        <dl class="mb-0">
+                            <dt>Имейл:</dt>
+                            <dd>@address.Email</dd>
+                            <dt>Телефон:</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(address.PhoneNumber) ? "—" : address.PhoneNumber)</dd>
+                            <dt>Име:</dt>
+                            <dd>@address.FirstName</dd>
+                            <dt>Фамилия:</dt>
+                            <dd>@address.LastName</dd>
+                            <dt>Адрес:</dt>
+                            <dd>@address.AddressText</dd>
+                        </dl>
+                    </article>
+                }
+
+                <button type="button" class="algara-address-card algara-address-card--add js-address-add">
+                    <span class="algara-address-add-icon"><i class="bi bi-plus-lg"></i></span>
+                    <span>Добави нов</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="tab-pane fade @Show("details")" id="details-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
+            <div class="algara-profile-panel">
+                <div class="algara-profile-panel__header">
+                    <h2 class="h5 mb-0">Лични данни</h2>
                     <span class="text-muted small">Имейлът не може да се променя от профила.</span>
                 </div>
-                <form asp-action="UpdateProfile" method="post" class="row g-3">
+                <form asp-action="UpdateProfile" method="post" class="row g-3 algara-profile-form algara-profile-form--details">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
 
@@ -54,57 +167,32 @@
                         <input asp-for="Details.Email" class="form-control" disabled />
                     </div>
                     <div class="col-12">
-                        <label asp-for="Details.AddressLine1" class="form-label"></label>
-                        <input asp-for="Details.AddressLine1" class="form-control" autocomplete="address-line1" />
-                        <span asp-validation-for="Details.AddressLine1" class="text-danger small"></span>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="Details.AddressLine2" class="form-label"></label>
-                        <input asp-for="Details.AddressLine2" class="form-control" autocomplete="address-line2" />
-                        <span asp-validation-for="Details.AddressLine2" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-5">
-                        <label asp-for="Details.City" class="form-label"></label>
-                        <input asp-for="Details.City" class="form-control" autocomplete="address-level2" />
-                        <span asp-validation-for="Details.City" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-3">
-                        <label asp-for="Details.PostalCode" class="form-label"></label>
-                        <input asp-for="Details.PostalCode" class="form-control" autocomplete="postal-code" />
-                        <span asp-validation-for="Details.PostalCode" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="Details.Country" class="form-label"></label>
-                        <input asp-for="Details.Country" class="form-control" autocomplete="country-name" />
-                        <span asp-validation-for="Details.Country" class="text-danger small"></span>
-                    </div>
-                    <div class="col-12">
                         <button type="submit" class="btn algara-btn-primary">
                             <i class="bi bi-check2 me-1"></i>Запази промените
                         </button>
                     </div>
                 </form>
-            </section>
-        </div>
+            </div>
+        </section>
 
-        <div class="col-lg-5">
-            <section class="algara-profile-panel mb-4">
+        <section class="tab-pane fade @Show("password")" id="password-pane" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
+            <div class="algara-profile-panel">
                 <div class="algara-profile-panel__header">
                     <h2 class="h5 mb-0">Смяна на парола</h2>
                 </div>
-                <form asp-action="ChangePassword" method="post" class="row g-3">
+                <form asp-action="ChangePassword" method="post" class="row g-3 algara-profile-form algara-profile-form--password">
                     @Html.AntiForgeryToken()
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <label asp-for="Password.CurrentPassword" class="form-label"></label>
                         <input asp-for="Password.CurrentPassword" class="form-control" autocomplete="current-password" />
                         <span asp-validation-for="Password.CurrentPassword" class="text-danger small"></span>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <label asp-for="Password.NewPassword" class="form-label"></label>
                         <input asp-for="Password.NewPassword" class="form-control" autocomplete="new-password" />
                         <span asp-validation-for="Password.NewPassword" class="text-danger small"></span>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <label asp-for="Password.ConfirmPassword" class="form-label"></label>
                         <input asp-for="Password.ConfirmPassword" class="form-control" autocomplete="new-password" />
                         <span asp-validation-for="Password.ConfirmPassword" class="text-danger small"></span>
@@ -115,15 +203,17 @@
                         </button>
                     </div>
                 </form>
-            </section>
+            </div>
+        </section>
 
-            <section class="algara-profile-panel">
+        <section class="tab-pane fade @Show("privacy")" id="privacy-pane" role="tabpanel" aria-labelledby="privacy-tab" tabindex="0">
+            <div class="algara-profile-panel">
                 <div class="algara-profile-panel__header">
                     <h2 class="h5 mb-0">Поверителност</h2>
                 </div>
                 <div class="d-flex justify-content-between gap-3 align-items-start pb-3 border-bottom">
                     <div>
-                        <div class="fw-semibold">Marketing consent</div>
+                        <div class="fw-semibold">Маркетинг съгласие</div>
                         <div class="text-muted small">
                             @(Model.MarketingConsent ? "В момента получавате маркетинг съобщения." : "Съгласието е оттеглено.")
                         </div>
@@ -141,15 +231,17 @@
                     }
                 </div>
 
-                <form asp-action="DeleteAccount" method="post" class="pt-3">
+                <form asp-action="DeleteAccount" method="post" class="pt-3 algara-profile-form algara-profile-form--privacy">
                     @Html.AntiForgeryToken()
                     <div class="fw-semibold text-danger mb-1">Изтриване на акаунта</div>
                     <p class="text-muted small mb-3">
                         Акаунтът ще бъде деактивиран и личните данни ще бъдат анонимизирани. Историята на поръчките се запазва за счетоводни и гаранционни цели.
                     </p>
-                    <label asp-for="DeleteAccount.Password" class="form-label"></label>
-                    <input asp-for="DeleteAccount.Password" class="form-control mb-1" autocomplete="current-password" />
-                    <span asp-validation-for="DeleteAccount.Password" class="text-danger small"></span>
+                    <div class="algara-privacy-password-field">
+                        <label asp-for="DeleteAccount.Password" class="form-label"></label>
+                        <input asp-for="DeleteAccount.Password" class="form-control mb-1" autocomplete="current-password" />
+                        <span asp-validation-for="DeleteAccount.Password" class="text-danger small"></span>
+                    </div>
                     <div class="form-check mt-3">
                         <input asp-for="DeleteAccount.ConfirmDeletion" class="form-check-input" />
                         <label asp-for="DeleteAccount.ConfirmDeletion" class="form-check-label">
@@ -161,25 +253,166 @@
                         <i class="bi bi-trash3 me-1"></i>Изтрий акаунта
                     </button>
                 </form>
-            </section>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content algara-login-modal">
+            <form asp-action="SaveAddress" method="post" class="modal-body">
+                @Html.AntiForgeryToken()
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <h2 class="h5 mb-0" id="addressModalTitle">Нов адрес</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Затвори"></button>
+                </div>
+
+                <input asp-for="Address.N" type="hidden" />
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Address.FirstName" class="form-label"></label>
+                        <input asp-for="Address.FirstName" class="form-control" autocomplete="given-name" />
+                        <span asp-validation-for="Address.FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Address.LastName" class="form-label"></label>
+                        <input asp-for="Address.LastName" class="form-control" autocomplete="family-name" />
+                        <span asp-validation-for="Address.LastName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Address.PhoneNumber" class="form-label"></label>
+                        <input asp-for="Address.PhoneNumber" class="form-control" autocomplete="tel" />
+                        <span asp-validation-for="Address.PhoneNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Address.Email" class="form-label"></label>
+                        <input asp-for="Address.Email" class="form-control" autocomplete="email" />
+                        <span asp-validation-for="Address.Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Address.AddressLine1" class="form-label"></label>
+                        <input asp-for="Address.AddressLine1" class="form-control" autocomplete="address-line1" />
+                        <span asp-validation-for="Address.AddressLine1" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Address.AddressLine2" class="form-label"></label>
+                        <input asp-for="Address.AddressLine2" class="form-control" autocomplete="address-line2" />
+                        <span asp-validation-for="Address.AddressLine2" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="Address.City" class="form-label"></label>
+                        <input asp-for="Address.City" class="form-control" autocomplete="address-level2" />
+                        <span asp-validation-for="Address.City" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Address.PostalCode" class="form-label"></label>
+                        <input asp-for="Address.PostalCode" class="form-control" autocomplete="postal-code" />
+                        <span asp-validation-for="Address.PostalCode" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Address.Country" class="form-label"></label>
+                        <input asp-for="Address.Country" class="form-control" autocomplete="country-name" />
+                        <span asp-validation-for="Address.Country" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input asp-for="Address.IsDefault" class="form-check-input" />
+                            <label asp-for="Address.IsDefault" class="form-check-label"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Откажи</button>
+                    <button type="submit" class="btn algara-btn-primary">
+                        <i class="bi bi-check2 me-1"></i>Запази адреса
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <section class="algara-profile-panel mt-4">
-        <div class="algara-profile-panel__header">
-            <h2 class="h5 mb-0">Текущи поръчки</h2>
-        </div>
-        @await Html.PartialAsync("_ProfileOrdersTable", Model.CurrentOrders)
-    </section>
-
-    <section class="algara-profile-panel mt-4">
-        <div class="algara-profile-panel__header">
-            <h2 class="h5 mb-0">История на поръчките</h2>
-        </div>
-        @await Html.PartialAsync("_ProfileOrdersTable", Model.OrderHistory)
-    </section>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var modalEl = document.getElementById('addressModal');
+            if (!modalEl || !window.bootstrap) return;
+
+            var modal = new bootstrap.Modal(modalEl);
+            var title = document.getElementById('addressModalTitle');
+            var fields = {
+                n: document.getElementById('Address_N'),
+                firstName: document.getElementById('Address_FirstName'),
+                lastName: document.getElementById('Address_LastName'),
+                phone: document.getElementById('Address_PhoneNumber'),
+                email: document.getElementById('Address_Email'),
+                line1: document.getElementById('Address_AddressLine1'),
+                line2: document.getElementById('Address_AddressLine2'),
+                city: document.getElementById('Address_City'),
+                postal: document.getElementById('Address_PostalCode'),
+                country: document.getElementById('Address_Country'),
+                isDefault: document.getElementById('Address_IsDefault')
+            };
+
+            function setField(field, value) {
+                if (field) field.value = value || '';
+            }
+
+            function resetAddressForm() {
+                title.textContent = 'Нов адрес';
+                setField(fields.n, '');
+                setField(fields.firstName, '@JavaScriptEncoder.Default.Encode(Model.Details.FirstName)');
+                setField(fields.lastName, '@JavaScriptEncoder.Default.Encode(Model.Details.LastName)');
+                setField(fields.phone, '@JavaScriptEncoder.Default.Encode(Model.Details.PhoneNumber ?? "")');
+                setField(fields.email, '@JavaScriptEncoder.Default.Encode(Model.Details.Email)');
+                setField(fields.line1, '');
+                setField(fields.line2, '');
+                setField(fields.city, '');
+                setField(fields.postal, '');
+                setField(fields.country, 'България');
+                if (fields.isDefault) fields.isDefault.checked = @((!Model.Addresses.Any()).ToString().ToLowerInvariant());
+            }
+
+            document.querySelectorAll('.js-address-add').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    resetAddressForm();
+                    modal.show();
+                });
+            });
+
+            document.querySelectorAll('.js-address-edit').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    title.textContent = 'Редакция на адрес';
+                    setField(fields.n, button.dataset.addressN);
+                    setField(fields.firstName, button.dataset.addressFirstName);
+                    setField(fields.lastName, button.dataset.addressLastName);
+                    setField(fields.phone, button.dataset.addressPhone);
+                    setField(fields.email, button.dataset.addressEmail);
+                    setField(fields.line1, button.dataset.addressLine1);
+                    setField(fields.line2, button.dataset.addressLine2);
+                    setField(fields.city, button.dataset.addressCity);
+                    setField(fields.postal, button.dataset.addressPostal);
+                    setField(fields.country, button.dataset.addressCountry);
+                    if (fields.isDefault) fields.isDefault.checked = button.dataset.addressDefault === 'true';
+                    modal.show();
+                });
+            });
+
+            document.querySelectorAll('.js-delete-address').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!confirm('Сигурни ли сте, че искате да изтриете този адрес?')) {
+                        event.preventDefault();
+                    }
+                });
+            });
+
+            if (@Model.ShowAddressModal.ToString().ToLowerInvariant()) {
+                title.textContent = fields.n && fields.n.value ? 'Редакция на адрес' : 'Нов адрес';
+                modal.show();
+            }
+        })();
+    </script>
 }

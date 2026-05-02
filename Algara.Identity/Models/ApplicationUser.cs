@@ -42,5 +42,6 @@ namespace Algara.Identity.Models
         public string? PreferredTimeZoneId { get; set; }
 
         public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
+        public ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
     }
 }

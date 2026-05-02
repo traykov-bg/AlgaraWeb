@@ -13,6 +13,7 @@ namespace Algara.Identity.Data
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
         public DbSet<UserConsent> UserConsents { get; set; }
+        public DbSet<UserAddress> UsersAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -72,6 +73,28 @@ namespace Algara.Identity.Data
                 .Property(uc => uc.ConsentType)
                 .HasMaxLength(32)
                 .IsRequired();
+
+            modelBuilder.Entity<UserAddress>(b =>
+            {
+                b.ToTable("UsersAddresses");
+                b.HasKey(ua => ua.N);
+
+                b.HasOne(ua => ua.User)
+                    .WithMany(u => u.Addresses)
+                    .HasForeignKey(ua => ua.UserN)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(ua => ua.UserN);
+                b.Property(ua => ua.FirstName).HasMaxLength(100).IsRequired();
+                b.Property(ua => ua.LastName).HasMaxLength(100).IsRequired();
+                b.Property(ua => ua.PhoneNumber).HasMaxLength(40);
+                b.Property(ua => ua.Email).HasMaxLength(256).IsRequired();
+                b.Property(ua => ua.AddressLine1).HasMaxLength(250).IsRequired();
+                b.Property(ua => ua.AddressLine2).HasMaxLength(250);
+                b.Property(ua => ua.City).HasMaxLength(100).IsRequired();
+                b.Property(ua => ua.PostalCode).HasMaxLength(20);
+                b.Property(ua => ua.Country).HasMaxLength(100).IsRequired();
+            });
 
             base.OnModelCreating(modelBuilder);
         }

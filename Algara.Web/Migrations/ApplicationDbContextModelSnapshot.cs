@@ -233,6 +233,75 @@ namespace Algara.Web.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Algara.Identity.Models.UserAddress", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("AddressLine1")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserN")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("UserN");
+
+                    b.ToTable("UsersAddresses");
+                });
+
             modelBuilder.Entity("Algara.Identity.Data.UserConsent", b =>
                 {
                     b.HasOne("Algara.Identity.Models.ApplicationUser", "User")
@@ -274,8 +343,21 @@ namespace Algara.Web.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Algara.Identity.Models.UserAddress", b =>
+                {
+                    b.HasOne("Algara.Identity.Models.ApplicationUser", "User")
+                        .WithMany("Addresses")
+                        .HasForeignKey("UserN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Algara.Identity.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("Addresses");
+
                     b.Navigation("UserSessions");
                 });
 #pragma warning restore 612, 618

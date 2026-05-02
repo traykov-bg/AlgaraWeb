@@ -396,6 +396,132 @@ body {
     margin-top: .2rem;
     font-size: 1.05rem;
 }
+.algara-profile-tabs {
+    display: flex;
+    gap: .45rem;
+    margin-bottom: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: .15rem;
+    border-bottom: 1px solid var(--algara-border);
+}
+.algara-profile-tabs .nav-link {
+    min-height: 3rem;
+    border: 1px solid var(--algara-border);
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    background: #f1f2f4;
+    color: var(--algara-text);
+    white-space: nowrap;
+    font-weight: 500;
+}
+.algara-profile-tabs .nav-link.active {
+    background: #fff;
+    color: var(--algara-accent);
+    border-color: var(--algara-border);
+}
+.algara-profile-tab-content {
+    min-height: 22rem;
+}
+.algara-profile-form {
+    max-width: 50rem;
+}
+.algara-profile-form--details,
+.algara-profile-form--password {
+    max-width: 42rem;
+}
+.algara-profile-form--privacy {
+    max-width: none;
+}
+.algara-privacy-password-field {
+    max-width: 18rem;
+}
+.algara-address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.algara-address-card {
+    position: relative;
+    min-height: 10.5rem;
+    background: #fff;
+    border: 1px solid var(--algara-border);
+    border-radius: 8px;
+    padding: 1.35rem 3rem 1.35rem 1.35rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
+    text-align: left;
+    color: var(--algara-text);
+}
+.algara-address-card.is-default {
+    border-color: #2f8f0f;
+    box-shadow: 0 4px 14px rgba(47,143,15,.12);
+}
+.algara-address-card__actions {
+    position: absolute;
+    top: .55rem;
+    right: .55rem;
+    display: flex;
+    gap: .1rem;
+}
+.algara-address-card__badge {
+    display: inline-flex;
+    margin-bottom: .7rem;
+    padding: .15rem .5rem;
+    border-radius: 4px;
+    background: rgba(47,143,15,.1);
+    color: #2f6f12;
+    font-size: .75rem;
+    font-weight: 600;
+}
+.algara-address-card dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: .3rem;
+    row-gap: .12rem;
+    line-height: 1.4;
+}
+.algara-address-card dt,
+.algara-address-card dd {
+    margin: 0;
+    min-width: 0;
+}
+.algara-address-card dt {
+    font-weight: 600;
+}
+.algara-address-card dd {
+    overflow-wrap: anywhere;
+}
+.algara-icon-action {
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--algara-text);
+    text-decoration: none;
+}
+.algara-icon-action:hover,
+.algara-icon-action:focus {
+    color: var(--algara-accent);
+}
+.algara-address-card--add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    padding: 1.35rem;
+    cursor: pointer;
+}
+.algara-address-add-icon {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #d71920;
+    color: #fff;
+}
 
 @media (max-width: 991.98px) {
     .algara-nav-user,
@@ -415,6 +541,9 @@ body {
     .algara-profile-panel__header {
         flex-direction: column;
         align-items: stretch;
+    }
+    .algara-address-grid {
+        grid-template-columns: 1fr;
     }
 }
 
