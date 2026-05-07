@@ -524,20 +524,6 @@ body {
 }
 
 @media (max-width: 991.98px) {
-    .algara-nav-user,
-    .algara-nav-user__trigger {
-        width: 100%;
-    }
-    .algara-nav-user__trigger {
-        justify-content: flex-start;
-        max-width: none;
-    }
-    .algara-nav-user__menu {
-        position: static;
-        width: 100%;
-        margin-top: .25rem;
-        box-shadow: none;
-    }
     .algara-profile-panel__header {
         flex-direction: column;
         align-items: stretch;
