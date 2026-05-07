@@ -1,23 +1,16 @@
-﻿@model IEnumerable<Algara.Data.Models.Product>
+﻿@model Algara.Web.ViewModels.CatalogViewModel
 
 @{
-    var searchQuery    = ViewBag.SearchQuery as string;
-    var categoryName   = ViewBag.CategoryName as string;
-    var categorySlug   = ViewBag.CategorySlug as string;
-    var subCategories  = ViewBag.SubCategories as List<Algara.Data.Models.SubCategory>;
-    var activeSubSlug  = ViewBag.ActiveSubSlug as string;
-    var currentSort    = ViewBag.Sort as string ?? "newest";
-    ViewData["Title"]  = categoryName ?? "Каталог";
-    var categories     = ViewBag.Categories as IEnumerable<Algara.Data.Models.Category>;
+    ViewData["Title"] = Model.CategoryName ?? "Каталог";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-0">@ViewData["Title"]</h2>
-        @if (!string.IsNullOrWhiteSpace(searchQuery))
+        @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
         {
             <p class="text-muted small mt-1">
-                Резултати за: <strong>@searchQuery</strong> &nbsp;
+                Резултати за: <strong>@Model.SearchQuery</strong> &nbsp;
                 <a asp-action="Index" class="text-muted"><i class="bi bi-x-circle"></i> Изчисти</a>
             </p>
         }
@@ -25,59 +18,128 @@
 </div>
 
 @* Бутони за категории *@
-@if (categories != null && categories.Any())
+@if (Model.Categories.Any())
 {
     <div class="mb-3">
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-1">Всички</a>
-        @foreach (var cat in categories)
+        @foreach (var cat in Model.Categories)
         {
             <a asp-action="Category" asp-route-slug="@cat.Slug"
-               class="btn btn-sm me-1 @(categorySlug == cat.Slug ? "btn-primary" : "btn-outline-primary")">
+               class="btn btn-sm me-1 @(Model.CategorySlug == cat.Slug ? "btn-primary" : "btn-outline-primary")">
                 @cat.Name
             </a>
         }
     </div>
 }
 
-@* Под-категории — показват се само когато сме в контекста на категория *@
-@if (subCategories != null && subCategories.Any() && categorySlug != null)
+@* Под-категории *@
+@if (Model.SubCategories?.Any() == true && Model.CategorySlug != null)
 {
     <div class="mb-4 d-flex flex-wrap align-items-center gap-1">
         <span class="text-muted small me-1 fw-semibold">Под-категория:</span>
-        <a href="/kategorii/@categorySlug"
-           class="btn btn-sm me-1 @(activeSubSlug == null ? "btn-secondary" : "btn-outline-secondary")">
+        <a href="/kategorii/@Model.CategorySlug@(BuildQuery(Model, sub: null, page: 1))"
+           class="btn btn-sm me-1 @(Model.ActiveSubSlug == null ? "btn-secondary" : "btn-outline-secondary")">
             Всички
         </a>
-        @foreach (var sub in subCategories)
+        @foreach (var sub in Model.SubCategories)
         {
-            <a href="/kategorii/@categorySlug?sub=@sub.Slug"
-               class="btn btn-sm me-1 @(activeSubSlug == sub.Slug ? "btn-primary" : "btn-outline-primary")">
+            <a href="/kategorii/@Model.CategorySlug@(BuildQuery(Model, sub: sub.Slug, page: 1))"
+               class="btn btn-sm me-1 @(Model.ActiveSubSlug == sub.Slug ? "btn-primary" : "btn-outline-primary")">
                 @sub.Name
             </a>
         }
     </div>
 }
 
-<div class="d-flex justify-content-end align-items-center gap-2 mb-3">
-    <label class="form-label mb-0 text-muted small text-nowrap">Сортиране:</label>
-    <select id="sortSelect" class="form-select form-select-sm w-auto"
-            onchange="applySortOrder(this.value)">
-        <!option value="newest"    @(currentSort == "newest"    ? "selected" : "")>Най-нови</!option>
-        <!option value="name_asc"  @(currentSort == "name_asc"  ? "selected" : "")>Азбучен ред (А→Я)</!option>
-        <!option value="name_desc" @(currentSort == "name_desc" ? "selected" : "")>Азбучен ред (Я→А)</!option>
-        <!option value="price_asc" @(currentSort == "price_asc" ? "selected" : "")>Най-ниска цена</!option>
-        <!option value="price_desc"@(currentSort == "price_desc"? "selected" : "")>Най-висока цена</!option>
-    </select>
-</div>
-@section Scripts {
-    <script>
-        function applySortOrder(sort) {
-            var url = new URL(window.location.href);
-            url.searchParams.set('sort', sort);
-            window.location.href = url.toString();
+@* Филтри: цена + сортиране + продукти на страница *@
+<form method="get" id="filterForm" class="mb-4">
+    @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+    {
+        <input type="hidden" name="q" value="@Model.SearchQuery" />
+    }
+    @if (Model.CategorySlug != null && Model.ActiveSubSlug != null)
+    {
+        <input type="hidden" name="sub" value="@Model.ActiveSubSlug" />
+    }
+    <input type="hidden" name="page" value="1" />
+
+    <div class="card border-0 bg-light rounded-3 px-3 py-2">
+        <div class="d-flex flex-wrap align-items-end gap-3">
+
+            @* Цена От *@
+            <div>
+                <label class="form-label mb-1 small text-muted fw-semibold">Цена от (€)</label>
+                <input type="number" name="minPrice" id="minPrice" class="form-control form-control-sm"
+                       style="width:100px" min="0" step="1"
+                       value="@(Model.MinPrice.HasValue ? Model.MinPrice.Value.ToString("F0") : "")"
+                       placeholder="@Model.RangeMin.ToString("F0")" />
+            </div>
+
+            @* Цена До *@
+            <div>
+                <label class="form-label mb-1 small text-muted fw-semibold">Цена до (€)</label>
+                <input type="number" name="maxPrice" id="maxPrice" class="form-control form-control-sm"
+                       style="width:100px" min="0" step="1"
+                       value="@(Model.MaxPrice.HasValue ? Model.MaxPrice.Value.ToString("F0") : "")"
+                       placeholder="@Model.RangeMax.ToString("F0")" />
+            </div>
+
+            @* Бутони Приложи / Изчисти *@
+            <div class="d-flex gap-2 align-items-end">
+                <button type="submit" class="btn btn-primary btn-sm">Приложи</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                        onclick="document.getElementById('minPrice').value='';document.getElementById('maxPrice').value='';document.getElementById('filterForm').submit()">
+                    <i class="bi bi-x"></i> Изчисти
+                </button>
+            </div>
+
+            @* Разделител *@
+            <div class="vr d-none d-md-block align-self-stretch my-1"></div>
+
+            @* Сортиране *@
+            <div class="ms-md-auto">
+                <label class="form-label mb-1 small text-muted fw-semibold">Сортиране</label>
+                <select name="sort" class="form-select form-select-sm" style="width:auto"
+                        onchange="this.form.submit()">
+                    <!option value="newest"    @(Model.Sort == "newest"    ? "selected" : "")>Най-нови</!option>
+                    <!option value="name_asc"  @(Model.Sort == "name_asc"  ? "selected" : "")>Азбучен ред (А→Я)</!option>
+                    <!option value="name_desc" @(Model.Sort == "name_desc" ? "selected" : "")>Азбучен ред (Я→А)</!option>
+                    <!option value="price_asc" @(Model.Sort == "price_asc" ? "selected" : "")>Най-ниска цена</!option>
+                    <!option value="price_desc"@(Model.Sort == "price_desc"? "selected" : "")>Най-висока цена</!option>
+                </select>
+            </div>
+
+            @* Продукти на страница *@
+            <div>
+                <label class="form-label mb-1 small text-muted fw-semibold">На страница</label>
+                <select name="pageSize" class="form-select form-select-sm" style="width:auto"
+                        onchange="this.form.submit()">
+                    @foreach (var ps in Algara.Web.ViewModels.CatalogViewModel.PageSizeOptions)
+                    {
+                        <!option value="@ps" @(Model.PageSize == ps ? "selected" : "")>@ps</!option>
+                    }
+                </select>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@* Брой резултати *@
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Няма намерени продукти.</span>
         }
-    </script>
-}
+        else
+        {
+            var from = (Model.Page - 1) * Model.PageSize + 1;
+            var to   = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
+            <span>Показани @from–@to от <strong>@Model.TotalCount</strong> продукта</span>
+        }
+    </span>
+</div>
 
 <style>
     .promo-note-clamp {
@@ -100,14 +162,14 @@
     }
 </style>
 
-@if (!Model.Any())
+@if (!Model.Products.Any())
 {
     <p class="text-muted">Няма намерени продукти.</p>
 }
 else
 {
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-        @foreach (var product in Model)
+        @foreach (var product in Model.Products)
         {
             var activePromo   = product.GetActivePromotion(DateTime.Now);
             var discount      = product.GetActiveDiscount(DateTime.Now);
@@ -182,4 +244,90 @@ else
             </div>
         }
     </div>
+
+    @* Пагинация *@
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Навигация по страници">
+            <ul class="pagination justify-content-center flex-wrap">
+
+                @* Предишна *@
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link" href="@PageUrl(Model, Model.Page - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @* Номера на страници *@
+                @{
+                    int startPage = Math.Max(1, Model.Page - 2);
+                    int endPage   = Math.Min(Model.TotalPages, Model.Page + 2);
+                }
+                @if (startPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@PageUrl(Model, 1)">1</a>
+                    </li>
+                    @if (startPage > 2)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                }
+                @for (int p = startPage; p <= endPage; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@PageUrl(Model, p)">@p</a>
+                    </li>
+                }
+                @if (endPage < Model.TotalPages)
+                {
+                    @if (endPage < Model.TotalPages - 1)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                    <li class="page-item">
+                        <a class="page-link" href="@PageUrl(Model, Model.TotalPages)">@Model.TotalPages</a>
+                    </li>
+                }
+
+                @* Следваща *@
+                <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@PageUrl(Model, Model.Page + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    }
+}
+
+@functions {
+    string PageUrl(Algara.Web.ViewModels.CatalogViewModel m, int page)
+        => BuildQuery(m, page: page);
+
+    string BuildQuery(
+        Algara.Web.ViewModels.CatalogViewModel m,
+        int?    page = null,
+        string? sub  = null)
+    {
+        var qs = new System.Text.StringBuilder("?");
+        void Append(string key, string? value) {
+            if (!string.IsNullOrEmpty(value)) qs.Append($"{key}={Uri.EscapeDataString(value)}&");
+        }
+
+        var subValue = sub ?? m.ActiveSubSlug;
+        Append("sub", subValue);
+        Append("q",    m.SearchQuery);
+        if (m.Sort != "newest") Append("sort", m.Sort);
+        if (m.PageSize != 20) qs.Append($"pageSize={m.PageSize}&");
+        if (m.MinPrice.HasValue) qs.Append($"minPrice={m.MinPrice.Value:F0}&");
+        if (m.MaxPrice.HasValue) qs.Append($"maxPrice={m.MaxPrice.Value:F0}&");
+
+        var p = page ?? m.Page;
+        if (p > 1) qs.Append($"page={p}&");
+
+        var result = qs.ToString().TrimEnd('&').TrimEnd('?');
+        return string.IsNullOrEmpty(result) ? "" : result;
+    }
 }

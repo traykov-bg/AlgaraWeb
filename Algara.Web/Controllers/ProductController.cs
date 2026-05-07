@@ -1,11 +1,13 @@
-﻿using Algara.Data.Repositories;
+﻿using Algara.Data.Models;
+using Algara.Data.Repositories;
+using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Algara.Web.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly IProductRepository _productRepository;
+        private readonly IProductRepository  _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<ProductController> _logger;
 
@@ -14,69 +16,81 @@ namespace Algara.Web.Controllers
             ICategoryRepository categoryRepository,
             ILogger<ProductController> logger)
         {
-            _productRepository = productRepository;
+            _productRepository  = productRepository;
             _categoryRepository = categoryRepository;
-            _logger = logger;
+            _logger             = logger;
         }
 
-        // GET /Product  или  /Product?q=диван&sort=newest
-        public async Task<IActionResult> Index(string? q = null, string? sort = null)
+        // GET /Product  или  /Product?q=диван&sort=newest&page=2&pageSize=40&minPrice=100&maxPrice=500
+        public async Task<IActionResult> Index(
+            string? q        = null,
+            string? sort     = null,
+            int     page     = 1,
+            int     pageSize = 20,
+            decimal? minPrice = null,
+            decimal? maxPrice = null)
         {
-            var allProducts = await _productRepository.GetAllAsync();
+            var all = await _productRepository.GetAllAsync();
 
-            IEnumerable<Algara.Data.Models.Product> products;
+            IEnumerable<Product> filtered = all;
             if (!string.IsNullOrWhiteSpace(q))
-            {
-                products = allProducts.Where(p =>
+                filtered = filtered.Where(p =>
                     p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     (p.Category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
-                ViewBag.SearchQuery = q;
-            }
-            else
-            {
-                products = allProducts;
-            }
 
-            products = ApplySort(products, sort);
-            ViewBag.Sort = sort ?? "newest";
-            ViewBag.Categories = await _categoryRepository.GetAllAsync();
-            return View(products);
+            var now = DateTime.Now;
+            var vm = BuildViewModel(filtered, now,
+                page: page, pageSize: pageSize,
+                sort: sort, minPrice: minPrice, maxPrice: maxPrice,
+                searchQuery: q,
+                categories: await _categoryRepository.GetAllAsync());
+
+            return View(vm);
         }
 
-        // GET /kategorii/{slug}   напр. /kategorii/meka-mebel
-        // GET /kategorii/{slug}?sub={subSlug}   напр. /kategorii/meka-mebel?sub=sofas
+        // GET /kategorii/{slug}   напр. /kategorii/meka-mebel?sub=sofas&sort=newest&page=1&pageSize=40
         [Route("/kategorii/{slug}")]
-        public async Task<IActionResult> Category(string slug, string? sub = null, string? sort = null)
+        public async Task<IActionResult> Category(
+            string  slug,
+            string? sub      = null,
+            string? sort     = null,
+            int     page     = 1,
+            int     pageSize = 20,
+            decimal? minPrice = null,
+            decimal? maxPrice = null)
         {
             var category = await _categoryRepository.GetBySlugWithSubCategoriesAsync(slug);
             if (category == null) return NotFound();
 
-            IEnumerable<Algara.Data.Models.Product> products;
-            Algara.Data.Models.SubCategory? activeSubCategory = null;
+            SubCategory? activeSubCategory = null;
+            IEnumerable<Product> filtered;
 
             if (!string.IsNullOrEmpty(sub))
             {
                 activeSubCategory = category.SubCategories
                     .FirstOrDefault(sc => sc.Slug == sub && sc.IsActive);
 
-                products = activeSubCategory != null
+                filtered = activeSubCategory != null
                     ? await _productRepository.GetBySubCategoryAsync(activeSubCategory.N)
                     : await _productRepository.GetByCategoryAsync(category.N);
             }
             else
             {
-                products = await _productRepository.GetByCategoryAsync(category.N);
+                filtered = await _productRepository.GetByCategoryAsync(category.N);
             }
 
-            products = ApplySort(products, sort);
-            ViewBag.Sort          = sort ?? "newest";
-            ViewBag.Categories    = await _categoryRepository.GetAllAsync();
-            ViewBag.CategoryName  = category.Name;
-            ViewBag.CategorySlug  = category.Slug;
-            ViewBag.SubCategories = category.SubCategories.Where(sc => sc.IsActive).OrderBy(sc => sc.Name).ToList();
-            ViewBag.ActiveSubSlug = activeSubCategory?.Slug;
-            return View("Index", products);
+            var now = DateTime.Now;
+            var vm = BuildViewModel(filtered, now,
+                page: page, pageSize: pageSize,
+                sort: sort, minPrice: minPrice, maxPrice: maxPrice,
+                categories: await _categoryRepository.GetAllAsync(),
+                categorySlug: category.Slug,
+                categoryName: category.Name,
+                subCategories: category.SubCategories.Where(sc => sc.IsActive).OrderBy(sc => sc.Name).ToList(),
+                activeSubSlug: activeSubCategory?.Slug);
+
+            return View("Index", vm);
         }
 
         // GET /Product/Search?q=диван  (JSON — за live search dropdown)
@@ -105,16 +119,6 @@ namespace Algara.Web.Controllers
             return Json(results);
         }
 
-        private static IEnumerable<Algara.Data.Models.Product> ApplySort(
-            IEnumerable<Algara.Data.Models.Product> products, string? sort) => sort switch
-        {
-            "name_asc"  => products.OrderBy(p => p.Name),
-            "name_desc" => products.OrderByDescending(p => p.Name),
-            "price_asc" => products.OrderBy(p => p.Price),
-            "price_desc"=> products.OrderByDescending(p => p.Price),
-            _           => products.OrderByDescending(p => p.CreatedAt), // newest (default)
-        };
-
         // GET /Product/Detail/{n}
         public async Task<IActionResult> Detail(int n)
         {
@@ -122,5 +126,73 @@ namespace Algara.Web.Controllers
             if (product == null) return NotFound();
             return View(product);
         }
+
+        // ── helpers ──────────────────────────────────────────────────────────
+
+        private static CatalogViewModel BuildViewModel(
+            IEnumerable<Product> source,
+            DateTime             now,
+            int                  page,
+            int                  pageSize,
+            string?              sort,
+            decimal?             minPrice,
+            decimal?             maxPrice,
+            IEnumerable<Category> categories,
+            string?              searchQuery   = null,
+            string?              categorySlug  = null,
+            string?              categoryName  = null,
+            List<SubCategory>?   subCategories = null,
+            string?              activeSubSlug = null)
+        {
+            pageSize = CatalogViewModel.PageSizeOptions.Contains(pageSize) ? pageSize : CatalogViewModel.PageSizeOptions[0];
+            page     = page < 1 ? 1 : page;
+
+            // Изчисляваме ефективната цена (след промоции) за всеки продукт веднъж
+            var withPrice = source
+                .Select(p => (product: p, effective: p.GetDiscountedPrice(now)))
+                .ToList();
+
+            // Диапазон за целия (нефилтриран по цена) резултат
+            var rangeMin = withPrice.Count > 0 ? (decimal)Math.Floor((double)withPrice.Min(x => x.effective)) : 0m;
+            var rangeMax = withPrice.Count > 0 ? (decimal)Math.Ceiling((double)withPrice.Max(x => x.effective)) : 0m;
+
+            // Филтър по цена
+            if (minPrice.HasValue) withPrice = withPrice.Where(x => x.effective >= minPrice.Value).ToList();
+            if (maxPrice.HasValue) withPrice = withPrice.Where(x => x.effective <= maxPrice.Value).ToList();
+
+            // Сортиране
+            var sorted = ApplySort(withPrice.Select(x => x.product), sort);
+
+            var totalCount = sorted.Count();
+            var products   = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            return new CatalogViewModel
+            {
+                Products      = products,
+                TotalCount    = totalCount,
+                Page          = page,
+                PageSize      = pageSize,
+                Sort          = sort ?? "newest",
+                MinPrice      = minPrice,
+                MaxPrice      = maxPrice,
+                RangeMin      = rangeMin,
+                RangeMax      = rangeMax,
+                SearchQuery   = searchQuery,
+                Categories    = categories,
+                CategorySlug  = categorySlug,
+                CategoryName  = categoryName,
+                SubCategories = subCategories,
+                ActiveSubSlug = activeSubSlug,
+            };
+        }
+
+        private static IEnumerable<Product> ApplySort(IEnumerable<Product> products, string? sort) => sort switch
+        {
+            "name_asc"   => products.OrderBy(p => p.Name),
+            "name_desc"  => products.OrderByDescending(p => p.Name),
+            "price_asc"  => products.OrderBy(p => p.Price),
+            "price_desc" => products.OrderByDescending(p => p.Price),
+            _            => products.OrderByDescending(p => p.CreatedAt),
+        };
     }
 }
