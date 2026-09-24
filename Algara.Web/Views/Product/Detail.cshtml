@@ -15,7 +15,7 @@
         @if (Model.Category != null)
         {
             <li class="breadcrumb-item">
-                <a asp-action="Category" asp-route-n="@Model.Category.N">@Model.Category.Name</a>
+                <a asp-action="Category" asp-route-slug="@Model.Category.Slug">@Model.Category.Name</a>
             </li>
         }
         <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
@@ -51,7 +51,7 @@
         @if (Model.Category != null)
         {
             <p class="text-muted">
-                <a asp-action="Category" asp-route-n="@Model.Category.N">@Model.Category.Name</a>
+                <a asp-action="Category" asp-route-slug="@Model.Category.Slug">@Model.Category.Name</a>
             </p>
         }
         @if (Model.IsCustomizable)
