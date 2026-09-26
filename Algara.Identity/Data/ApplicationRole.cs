@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNet.Identity;
-
-namespace Algara.Identity.Data
+﻿namespace Algara.Identity.Data
 {
-    public class ApplicationRole : IRole
+    public class ApplicationRole
     {
         public int N { get; set; }
         public string Id { get; set; } = Guid.NewGuid().ToString();

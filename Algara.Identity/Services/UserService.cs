@@ -208,9 +208,9 @@ namespace Algara.Identity.Services
 
         public async Task ValidateSecurityStampAsync(CookieValidatePrincipalContext context)
         {
-            var userId = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var securityStamp = context.Principal.FindFirst("SecurityStamp")?.Value;
-            var sessionId = context.Principal.FindFirst("SessionId")?.Value;
+            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var securityStamp = context.Principal?.FindFirst("SecurityStamp")?.Value;
+            var sessionId = context.Principal?.FindFirst("SessionId")?.Value;
 
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(securityStamp) || string.IsNullOrEmpty(sessionId))
             {
@@ -220,10 +220,17 @@ namespace Algara.Identity.Services
             }
 
             var userStore = context.HttpContext.RequestServices.GetRequiredService<IUserStore<ApplicationUser>>();
-            var user = await userStore.FindByIdAsync(userId, CancellationToken.None); 
+            var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
+            if (user == null)
+            {
+                await context.HttpContext.SignOutAsync();
+                context.RejectPrincipal();
+                return;
+            }
+
             var session = await _context.UserSessions.FirstOrDefaultAsync(us => us.UserN == user.N && us.SessionId == sessionId && us.IsActive);
 
-            if (user == null || user.SecurityStamp != securityStamp || session == null)
+            if (user.SecurityStamp != securityStamp || session == null)
             {
                 await context.HttpContext.SignOutAsync();
                 context.RejectPrincipal();

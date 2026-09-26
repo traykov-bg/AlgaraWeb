@@ -36,7 +36,7 @@ namespace Algara.Identity.Services
             return result > 0 ? IdentityResult.Success : IdentityResult.Failed();
         }
 
-        public async Task<ApplicationUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
+        public async Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -44,7 +44,7 @@ namespace Algara.Identity.Services
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { Id = userId });
         }
 
-        public async Task<ApplicationUser> FindByNAsync(int userN, CancellationToken cancellationToken)
+        public async Task<ApplicationUser?> FindByNAsync(int userN, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -52,7 +52,7 @@ namespace Algara.Identity.Services
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { N = userN });
         }
 
-        public async Task<ApplicationUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
+        public async Task<ApplicationUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -62,49 +62,61 @@ namespace Algara.Identity.Services
 
         public async Task<string> GetUserIdAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(user.Id);
         }
 
         public async Task<int> GetUserNAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(user.N);
         }
 
-        public async Task<string> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<string?> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(user.UserName);
         }
 
-        public async Task SetUserNameAsync(ApplicationUser user, string userName, CancellationToken cancellationToken)
+        public async Task SetUserNameAsync(ApplicationUser user, string? userName, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentNullException.ThrowIfNull(userName);
             user.UserName = userName;
             await Task.CompletedTask;
         }
 
-        public async Task<string> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(user.UserName.ToLower());
         }
 
-        public async Task SetNormalizedUserNameAsync(ApplicationUser user, string normalizedName, CancellationToken cancellationToken)
+        public async Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentNullException.ThrowIfNull(normalizedName);
             user.UserName = normalizedName.ToLower();
             await Task.CompletedTask;
         }
 
-        public async Task SetPasswordHashAsync(ApplicationUser user, string passwordHash, CancellationToken cancellationToken)
+        public async Task SetPasswordHashAsync(ApplicationUser user, string? passwordHash, CancellationToken cancellationToken)
         {
-            user.PasswordHash = passwordHash;
+            cancellationToken.ThrowIfCancellationRequested();
+            // The column is required; an empty hash represents a user without a password.
+            user.PasswordHash = passwordHash ?? string.Empty;
             await Task.CompletedTask;
         }
 
-        public async Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<string?> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(user.PasswordHash);
         }
 
         public async Task<bool> HasPasswordAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await Task.FromResult(!string.IsNullOrEmpty(user.PasswordHash));
         }
 

@@ -30,12 +30,22 @@ try
 
     // Зареждане на ConnectionString
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured.");
+    }
+
     var provider = builder.Configuration["DatabaseProvider"];
 
     // Регистриране на правилния DatabaseHelper според настройките
     if (provider == "Sybase")
     {
-        builder.Services.AddSingleton<IDatabaseHelper>(sp => new SybaseDatabaseHelper(connectionString));
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("The Sybase OleDb provider requires Windows.");
+        }
+
+        builder.Services.AddSingleton<IDatabaseHelper>(new SybaseDatabaseHelper(connectionString));
     }
     else if (provider == "MSSQL")
     {

@@ -3,7 +3,9 @@
     using Dapper;
     using System.Data.OleDb;
     using System.Data;
+    using System.Runtime.Versioning;
 
+    [SupportedOSPlatform("windows")]
     public class SybaseDatabaseHelper : DatabaseHelperBase
     {
         public SybaseDatabaseHelper(string connectionString) : base(connectionString) { }
