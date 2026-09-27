@@ -155,25 +155,59 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = @"
-        INSERT INTO UserRoles (UserN, RoleN) 
-        SELECT @UserId, N FROM Roles WHERE Name = @RoleName";
+            const string query = """
+                SET NOCOUNT ON;
+                SET XACT_ABORT ON;
+                BEGIN TRY
+                    BEGIN TRANSACTION;
+                    INSERT INTO UserRoles (UserN, RoleN)
+                    SELECT @UserN, N FROM Roles WHERE Name = @RoleName;
+                    DECLARE @changed int = @@ROWCOUNT;
+                    IF @changed > 0
+                        UPDATE Users SET SecurityStamp = @SecurityStamp WHERE N = @UserN;
+                    COMMIT TRANSACTION;
+                    SELECT @SecurityStamp WHERE @changed > 0;
+                END TRY
+                BEGIN CATCH
+                    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                    THROW;
+                END CATCH;
+                """;
 
-            var parameters = new { UserId = user.N, RoleName = roleName };
-            await _databaseHelper.ExecuteAsync(query, parameters);
+            var parameters = new { UserN = user.N, RoleName = roleName, SecurityStamp = Guid.NewGuid().ToString() };
+            var securityStamp = await _databaseHelper.QuerySingleAsync<string>(query, parameters);
+            if (securityStamp != null)
+                user.SecurityStamp = securityStamp;
         }
 
         public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = @"
-        DELETE FROM UserRoles 
-        WHERE UserN = @UserN
-        AND RoleN = (SELECT N FROM Roles WHERE Name = @RoleName)";
+            const string query = """
+                SET NOCOUNT ON;
+                SET XACT_ABORT ON;
+                BEGIN TRY
+                    BEGIN TRANSACTION;
+                    DELETE FROM UserRoles
+                    WHERE UserN = @UserN
+                      AND RoleN = (SELECT N FROM Roles WHERE Name = @RoleName);
+                    DECLARE @changed int = @@ROWCOUNT;
+                    IF @changed > 0
+                        UPDATE Users SET SecurityStamp = @SecurityStamp WHERE N = @UserN;
+                    COMMIT TRANSACTION;
+                    SELECT @SecurityStamp WHERE @changed > 0;
+                END TRY
+                BEGIN CATCH
+                    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                    THROW;
+                END CATCH;
+                """;
 
-            var parameters = new { UserN = user.N, RoleName = roleName };
-            await _databaseHelper.ExecuteAsync(query, parameters);
+            var parameters = new { UserN = user.N, RoleName = roleName, SecurityStamp = Guid.NewGuid().ToString() };
+            var securityStamp = await _databaseHelper.QuerySingleAsync<string>(query, parameters);
+            if (securityStamp != null)
+                user.SecurityStamp = securityStamp;
         }
 
         public async Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken cancellationToken)

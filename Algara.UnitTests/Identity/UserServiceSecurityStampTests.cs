@@ -30,7 +30,7 @@ public sealed class UserServiceSecurityStampTests : IDisposable
             .BuildServiceProvider();
         _http.RequestServices = _services;
         _authentication.Setup(a => a.SignOutAsync(_http, null, null)).Returns(Task.CompletedTask);
-        _service = new UserService(_database, new HttpContextAccessor { HttpContext = _http }, NullLogger<UserService>.Instance);
+        _service = new UserService(_database, NullLogger<UserService>.Instance);
     }
 
     [Fact]

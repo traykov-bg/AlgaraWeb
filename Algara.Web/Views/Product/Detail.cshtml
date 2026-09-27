@@ -2,10 +2,11 @@
 
 @{
     ViewData["Title"] = Model.Name;
-    var activePromo   = Model.GetActivePromotion(DateTime.Now);
-    var discount      = Model.GetActiveDiscount(DateTime.Now);
-    var discountLabel = Model.GetDiscountLabel(DateTime.Now);
-    var finalPrice    = Model.GetDiscountedPrice(DateTime.Now);
+    var pricingAt     = DateTime.Now;
+    var activePromo   = Model.GetActivePromotion(pricingAt);
+    var discount      = Model.GetActiveDiscount(pricingAt);
+    var discountLabel = Model.GetDiscountLabel(pricingAt);
+    var finalPrice    = Model.GetDiscountedPrice(pricingAt);
     var promoNote     = activePromo?.Note;
 }
 
@@ -61,13 +62,13 @@
         @if (discount.HasValue)
         {
             <div class="my-3">
-                <span class="h4 fw-bold text-danger me-2">@finalPrice.ToString("N0") €</span>
-                <span class="text-muted text-decoration-line-through">@Model.Price.ToString("N0") €</span>
+                <span class="h4 fw-bold text-danger me-2">@finalPrice.ToString("N2") €</span>
+                <span class="text-muted text-decoration-line-through">@(activePromo!.OriginalPrice.ToString("N2")) €</span>
             </div>
         }
         else
         {
-            <h4 class="my-3">@Model.Price.ToString("N0") €</h4>
+            <h4 class="my-3">@Model.Price.ToString("N2") €</h4>
         }
         @if (!string.IsNullOrWhiteSpace(promoNote))
         {

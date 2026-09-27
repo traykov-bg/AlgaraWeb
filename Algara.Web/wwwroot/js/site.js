@@ -58,7 +58,7 @@
                 : '';
 
             html += '<li class="algara-sd-item" role="option">'
-                +   '<a href="/Product/Detail/' + item.n + '" class="algara-sd-link">'
+                +   '<a href="' + escHtml(item.url) + '" class="algara-sd-link">'
                 +     imgHtml
                 +     '<div class="algara-sd-body">'
                 +       '<div class="algara-sd-name">' + highlight(item.name, q) + '</div>'
@@ -123,9 +123,12 @@
         return safe.replace(new RegExp('(' + safeQ + ')', 'gi'), '<strong>$1</strong>');
     }
 
-    // Форматира цена с интервал за хилядите (напр. 1 250)
+    // Запазва центовете и форматира според езика на страницата.
     function formatPrice(price) {
-        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+        return new Intl.NumberFormat(document.documentElement.lang || 'bg', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price);
     }
 
 })();

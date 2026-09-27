@@ -4,6 +4,8 @@ using Algara.Data.Repositories;
 using Algara.Web.Controllers;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -13,6 +15,7 @@ public class ProductControllerTests
 {
     private readonly Mock<IProductRepository> _products = new(MockBehavior.Strict);
     private readonly Mock<ICategoryRepository> _categories = new(MockBehavior.Strict);
+    private readonly Mock<IUrlHelper> _url = new(MockBehavior.Strict);
     private readonly ProductController _controller;
 
     public ProductControllerTests()
@@ -21,6 +24,10 @@ public class ProductControllerTests
             .ReturnsAsync(Array.Empty<Category>());
         _controller = new ProductController(
             _products.Object, _categories.Object, NullLogger<ProductController>.Instance);
+        _url.Setup(helper => helper.Action(It.IsAny<UrlActionContext>()))
+            .Returns((UrlActionContext context) =>
+                $"/store/Product/Detail?n={new RouteValueDictionary(context.Values)["n"]}");
+        _controller.Url = _url.Object;
     }
 
     [Theory]
@@ -176,6 +183,38 @@ public class ProductControllerTests
         Assert.Equal(new[] { first, second, third }, model.Products.Select(product => product.N));
     }
 
+    [Theory]
+    [InlineData("price_asc", false)]
+    [InlineData("price_desc", true)]
+    public async Task Index_SortsByCurrentEffectivePriceIncludingCents(string sort, bool descending)
+    {
+        var products = ProductsWithDifferentPromotionStates();
+        SetProducts(products);
+
+        var model = Model(await _controller.Index(sort: sort));
+
+        var ascendingIds = new[] { 1, 6, 2, 3, 4, 5 };
+        Assert.Equal(descending ? ascendingIds.Reverse() : ascendingIds,
+            model.Products.Select(product => product.N));
+    }
+
+    [Theory]
+    [InlineData("price_asc", false)]
+    [InlineData("price_desc", true)]
+    public async Task Index_PriceFilterAndSortUseTheSameEffectivePrices(string sort, bool descending)
+    {
+        SetProducts(ProductsWithDifferentPromotionStates());
+
+        var model = Model(await _controller.Index(sort: sort, minPrice: 100.25m, maxPrice: 100.50m));
+
+        var ascendingIds = new[] { 1, 6, 2 };
+        Assert.Equal(descending ? ascendingIds.Reverse() : ascendingIds,
+            model.Products.Select(product => product.N));
+        Assert.Equal(3, model.TotalCount);
+        Assert.Equal(100m, model.RangeMin);
+        Assert.Equal(351m, model.RangeMax);
+    }
+
     [Fact]
     public async Task Category_UnknownSlugReturnsNotFoundWithoutLoadingProducts()
     {
@@ -229,6 +268,24 @@ public class ProductControllerTests
     }
 
     [Theory]
+    [InlineData("price_asc", false)]
+    [InlineData("price_desc", true)]
+    public async Task Category_PriceFilterAndSortUseCurrentEffectivePrices(string sort, bool descending)
+    {
+        SetCategory(CategoryWithSubcategories());
+        _products.Setup(repository => repository.GetByCategoryAsync(10))
+            .ReturnsAsync(ProductsWithDifferentPromotionStates());
+
+        var model = Model(await _controller.Category("meka-mebel", sort: sort,
+            minPrice: 100.25m, maxPrice: 100.50m));
+
+        var ascendingIds = new[] { 1, 6, 2 };
+        Assert.Equal(descending ? ascendingIds.Reverse() : ascendingIds,
+            model.Products.Select(product => product.N));
+        Assert.Equal(3, model.TotalCount);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
@@ -255,12 +312,68 @@ public class ProductControllerTests
         Assert.All(suggestions, item => Assert.StartsWith("Диван", item.GetProperty("name").GetString()));
     }
 
+    [Theory]
+    [InlineData(1, 10025)]
+    [InlineData(2, 10050)]
+    [InlineData(3, 25075)]
+    [InlineData(4, 30099)]
+    [InlineData(5, 35090)]
+    [InlineData(6, 10045)]
+    public async Task Search_ReturnsExactBaseAndCurrentPromotionPrices(int productId, int expectedCents)
+    {
+        SetProducts(ProductsWithDifferentPromotionStates().Single(product => product.N == productId));
+
+        var result = Assert.IsType<JsonResult>(await _controller.Search("Product"));
+        var suggestion = Assert.Single(JsonSerializer.SerializeToElement(result.Value).EnumerateArray());
+
+        Assert.Equal(expectedCents / 100m, suggestion.GetProperty("price").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Search_ReturnsGeneratedDetailUrlUsingTheProductN()
+    {
+        SetProducts(Product(42));
+        _url.Setup(helper => helper.Action(It.Is<UrlActionContext>(context =>
+                context.Action == "Detail" &&
+                (int)new RouteValueDictionary(context.Values)["n"]! == 42)))
+            .Returns("/shop/offer/42");
+
+        var result = Assert.IsType<JsonResult>(await _controller.Search("Product"));
+        var suggestion = Assert.Single(JsonSerializer.SerializeToElement(result.Value).EnumerateArray());
+
+        Assert.Equal("/shop/offer/42", suggestion.GetProperty("url").GetString());
+        _url.Verify(helper => helper.Action(It.Is<UrlActionContext>(context =>
+            context.Action == "Detail" &&
+            (int)new RouteValueDictionary(context.Values)["n"]! == 42)), Times.Once);
+    }
+
     [Fact]
     public async Task Detail_MissingProductReturnsNotFound()
     {
         _products.Setup(repository => repository.GetByNAsync(404)).ReturnsAsync((Product?)null);
 
         Assert.IsType<NotFoundResult>(await _controller.Detail(404));
+    }
+
+    [Fact]
+    public async Task Detail_InactiveProductReturnsNotFound()
+    {
+        var product = Product(42);
+        product.IsActive = false;
+        _products.Setup(repository => repository.GetByNAsync(42)).ReturnsAsync(product);
+
+        Assert.IsType<NotFoundResult>(await _controller.Detail(42));
+    }
+
+    [Fact]
+    public async Task Detail_ActiveProductReturnsItsView()
+    {
+        var product = Product(42);
+        _products.Setup(repository => repository.GetByNAsync(42)).ReturnsAsync(product);
+
+        var result = Assert.IsType<ViewResult>(await _controller.Detail(42));
+
+        Assert.Same(product, result.Model);
     }
 
     private void SetProducts(params Product[] products) =>
@@ -279,6 +392,31 @@ public class ProductControllerTests
         Name = $"Product {id:D3}",
         Price = price,
         CreatedAt = new DateTime(2026, 1, 1).AddDays(id)
+    };
+
+    private static Product[] ProductsWithDifferentPromotionStates()
+    {
+        var now = DateTime.Now;
+        var active = Product(1, 900m);
+        active.ProductPromotions.Add(PromotionPrice(100.25m, true, now.AddYears(-1), now.AddYears(1)));
+        var regular = Product(2, 100.50m);
+        var inactive = Product(3, 250.75m);
+        inactive.ProductPromotions.Add(PromotionPrice(0.01m, false, now.AddYears(-1), now.AddYears(1)));
+        var expired = Product(4, 300.99m);
+        expired.ProductPromotions.Add(PromotionPrice(0.02m, true, now.AddYears(-2), now.AddYears(-1)));
+        var future = Product(5, 350.90m);
+        future.ProductPromotions.Add(PromotionPrice(0.03m, true, now.AddYears(1), now.AddYears(2)));
+        var multiple = Product(6, 500m);
+        multiple.ProductPromotions.Add(PromotionPrice(180.60m, true, now.AddYears(-1), now.AddYears(1)));
+        multiple.ProductPromotions.Add(PromotionPrice(100.45m, true, now.AddYears(-1), now.AddYears(1)));
+        multiple.ProductPromotions.Add(PromotionPrice(0.04m, false, now.AddYears(-1), now.AddYears(1)));
+        return new[] { future, regular, inactive, multiple, active, expired };
+    }
+
+    private static ProductPromotion PromotionPrice(decimal price, bool isActive, DateTime start, DateTime end) => new()
+    {
+        PromoPrice = price,
+        Promotion = new Promotion { IsActive = isActive, StartDate = start, EndDate = end }
     };
 
     private static Category CategoryWithSubcategories() => new()

@@ -2,6 +2,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutFull.cshtml";
     ViewData["Title"] = "Начало";
+    var pricingAt = DateTime.Now;
 }
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -94,9 +95,10 @@ else
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
                 @foreach (var p in Model.FeaturedProducts)
                 {
-                    var discount      = p.GetActiveDiscount(DateTime.Now);
-                    var discountLabel = p.GetDiscountLabel(DateTime.Now);
-                    var finalPrice    = p.GetDiscountedPrice(DateTime.Now);
+                    var activePromo   = p.GetActivePromotion(pricingAt);
+                    var discount      = p.GetActiveDiscount(pricingAt);
+                    var discountLabel = p.GetDiscountLabel(pricingAt);
+                    var finalPrice    = p.GetDiscountedPrice(pricingAt);
                     <div class="col">
                         <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
                            class="algara-product-card d-block text-decoration-none h-100">
@@ -124,13 +126,13 @@ else
                                 @if (discount.HasValue)
                                 {
                                     <div>
-                                        <span class="algara-product-card__price text-danger fw-bold">@finalPrice.ToString("N0") €</span>
-                                        <span class="text-muted text-decoration-line-through ms-1" style="font-size:.85rem;">@p.Price.ToString("N0") €</span>
+                                        <span class="algara-product-card__price text-danger fw-bold">@finalPrice.ToString("N2") €</span>
+                                        <span class="text-muted text-decoration-line-through ms-1" style="font-size:.85rem;">@(activePromo!.OriginalPrice.ToString("N2")) €</span>
                                     </div>
                                 }
                                 else
                                 {
-                                    <div class="algara-product-card__price">@p.Price.ToString("N0") €</div>
+                                    <div class="algara-product-card__price">@p.Price.ToString("N2") €</div>
                                 }
                                 @if (p.IsCustomizable)
                                 {

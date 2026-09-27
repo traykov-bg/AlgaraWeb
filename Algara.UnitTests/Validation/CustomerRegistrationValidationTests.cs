@@ -80,6 +80,23 @@ public class CustomerRegistrationValidationTests
     }
 
     [Theory]
+    [InlineData(256, true)]
+    [InlineData(257, false)]
+    public void Registration_email_length_matches_the_database_limit(int length, bool accepted)
+    {
+        var registration = ValidRegistration();
+        const string suffix = "@example.test";
+        registration.Email = new string('a', length - suffix.Length) + suffix;
+
+        var errors = ValidationErrors(registration);
+
+        if (accepted)
+            Assert.Empty(errors);
+        else
+            Assert.Contains(errors, error => error.MemberNames.Contains(nameof(RegisterViewModel.Email)));
+    }
+
+    [Theory]
     [InlineData("И", "Иванова", nameof(RegisterViewModel.FirstName))]
     [InlineData("Ива", "", nameof(RegisterViewModel.LastName))]
     public void Registration_rejects_incomplete_customer_names(

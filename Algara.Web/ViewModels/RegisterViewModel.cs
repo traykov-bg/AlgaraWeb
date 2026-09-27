@@ -17,6 +17,7 @@ namespace Algara.Web.ViewModels
 
         [Required(ErrorMessage = "Имейлът е задължителен")]
         [EmailAddress(ErrorMessage = "Невалиден имейл адрес")]
+        [StringLength(256, ErrorMessage = "Имейлът не може да е над 256 символа")]
         [DisplayName("Имейл")]
         public string Email { get; set; } = string.Empty;
 

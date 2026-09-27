@@ -23,7 +23,7 @@
             <div class="col-md-4">
                 <div class="algara-order-stat">
                     <span class="text-muted small">Обща сума</span>
-                    <strong>@Model.Order.TotalAmount.ToString("N0") €</strong>
+                    <strong>@Model.Order.TotalAmount.ToString("N2") €</strong>
                 </div>
             </div>
             <div class="col-md-4">
@@ -67,15 +67,15 @@
                                 }
                             </td>
                             <td class="text-center">@item.Quantity</td>
-                            <td class="text-end">@item.UnitPrice.ToString("N0") €</td>
-                            <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>
+                            <td class="text-end">@item.UnitPrice.ToString("N2") €</td>
+                            <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N2")) €</td>
                         </tr>
                     }
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-end fw-semibold">Общо:</td>
-                        <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N0") €</td>
+                        <td class="text-end fw-bold">@Model.Order.TotalAmount.ToString("N2") €</td>
                     </tr>
                 </tfoot>
             </table>

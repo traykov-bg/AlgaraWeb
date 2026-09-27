@@ -12,15 +12,20 @@
         public bool Included { get; set; }
 
         /// <summary>Текуща цена на продукта (Product.Price) — за UI, не се записва.</summary>
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
         public decimal CurrentPrice { get; set; }
 
         /// <summary>Снапшот на цената към запис на промоцията (ползва се като „преди отстъпка").</summary>
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
         public decimal OriginalPrice { get; set; }
+
+        /// <summary>Изрично обновяване на запазената цена от текущия ценоразпис.</summary>
+        public bool RefreshOriginalPrice { get; set; }
 
         /// <summary>Крайна цена след отстъпка.</summary>
         public decimal PromoPrice { get; set; }
 
-        /// <summary>Процент отстъпка (пази се за точно представяне).</summary>
+        /// <summary>Запазва се само ако съответства на проверените цени; иначе се преизчислява.</summary>
         public decimal DiscountPercent { get; set; }
 
         /// <summary>Кратка бележка към реда — напр. „За всеки диван допълнителни 2 табуретки".</summary>

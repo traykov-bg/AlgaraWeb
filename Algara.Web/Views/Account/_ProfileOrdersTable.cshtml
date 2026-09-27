@@ -21,7 +21,7 @@
                         <td class="fw-semibold">#@order.N</td>
                         <td><span class="badge @order.StatusCssClass">@order.StatusLabel</span></td>
                         <td class="text-center">@order.ItemCount</td>
-                        <td class="text-end fw-semibold">@order.TotalAmount.ToString("N0") €</td>
+                        <td class="text-end fw-semibold">@order.TotalAmount.ToString("N2") €</td>
                         <td class="text-muted small">
                             @order.CreatedAt.ToString("dd.MM.yyyy HH:mm")
                             @if (order.UpdatedAt.HasValue)

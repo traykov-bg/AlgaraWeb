@@ -101,6 +101,7 @@ namespace Algara.Web.Controllers
                 return Json(Array.Empty<object>());
 
             var allProducts = await _productRepository.GetAllAsync();
+            var now = DateTime.Now;
             var results = allProducts
                 .Where(p =>
                     p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
@@ -112,18 +113,19 @@ namespace Algara.Web.Controllers
                     n        = p.N,
                     name     = p.Name,
                     category = p.Category?.Name,
-                    price    = (long)p.Price,
+                    price    = p.GetDiscountedPrice(now),
+                    url      = Url.Action(nameof(Detail), new { n = p.N }),
                     imageUrl = p.ImageUrl,
-                });
+                }).ToList();
 
             return Json(results);
         }
 
-        // GET /Product/Detail/{n}
+        // GET /Product/Detail?n=123
         public async Task<IActionResult> Detail(int n)
         {
             var product = await _productRepository.GetByNAsync(n);
-            if (product == null) return NotFound();
+            if (product == null || !product.IsActive) return NotFound();
             return View(product);
         }
 
@@ -153,22 +155,23 @@ namespace Algara.Web.Controllers
                 .ToList();
 
             // Диапазон за целия (нефилтриран по цена) резултат
-            var rangeMin = withPrice.Count > 0 ? (decimal)Math.Floor((double)withPrice.Min(x => x.effective)) : 0m;
-            var rangeMax = withPrice.Count > 0 ? (decimal)Math.Ceiling((double)withPrice.Max(x => x.effective)) : 0m;
+            var rangeMin = withPrice.Count > 0 ? decimal.Floor(withPrice.Min(x => x.effective)) : 0m;
+            var rangeMax = withPrice.Count > 0 ? decimal.Ceiling(withPrice.Max(x => x.effective)) : 0m;
 
             // Филтър по цена
             if (minPrice.HasValue) withPrice = withPrice.Where(x => x.effective >= minPrice.Value).ToList();
             if (maxPrice.HasValue) withPrice = withPrice.Where(x => x.effective <= maxPrice.Value).ToList();
 
             // Сортиране
-            var sorted = ApplySort(withPrice.Select(x => x.product), sort);
+            var sorted = ApplySort(withPrice, sort);
 
             var totalCount = sorted.Count();
-            var products   = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var products   = sorted.Skip((page - 1) * pageSize).Take(pageSize).Select(x => x.product).ToList();
 
             return new CatalogViewModel
             {
                 Products      = products,
+                PricingAt     = now,
                 TotalCount    = totalCount,
                 Page          = page,
                 PageSize      = pageSize,
@@ -186,13 +189,14 @@ namespace Algara.Web.Controllers
             };
         }
 
-        private static IEnumerable<Product> ApplySort(IEnumerable<Product> products, string? sort) => sort switch
+        private static IEnumerable<(Product product, decimal effective)> ApplySort(
+            IEnumerable<(Product product, decimal effective)> products, string? sort) => sort switch
         {
-            "name_asc"   => products.OrderBy(p => p.Name),
-            "name_desc"  => products.OrderByDescending(p => p.Name),
-            "price_asc"  => products.OrderBy(p => p.Price),
-            "price_desc" => products.OrderByDescending(p => p.Price),
-            _            => products.OrderByDescending(p => p.CreatedAt),
+            "name_asc"   => products.OrderBy(x => x.product.Name).ThenBy(x => x.product.N),
+            "name_desc"  => products.OrderByDescending(x => x.product.Name).ThenBy(x => x.product.N),
+            "price_asc"  => products.OrderBy(x => x.effective).ThenBy(x => x.product.N),
+            "price_desc" => products.OrderByDescending(x => x.effective).ThenBy(x => x.product.N),
+            _            => products.OrderByDescending(x => x.product.CreatedAt).ThenBy(x => x.product.N),
         };
     }
 }

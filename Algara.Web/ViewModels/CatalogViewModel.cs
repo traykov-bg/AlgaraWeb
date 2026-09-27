@@ -5,6 +5,7 @@ namespace Algara.Web.ViewModels
     public class CatalogViewModel
     {
         public IReadOnlyList<Product> Products { get; init; } = [];
+        public DateTime PricingAt { get; init; } = DateTime.Now;
         public int TotalCount  { get; init; }
         public int Page        { get; init; } = 1;
         public int PageSize    { get; init; } = 20;

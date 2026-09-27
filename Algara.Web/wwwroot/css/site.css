@@ -17,6 +17,11 @@ body {
     color: var(--algara-text);
 }
 
+/* MVC keeps an empty summary in the form for validation updates. */
+.validation-summary-valid {
+    display: none;
+}
+
 /* ───── Category bar (second nav row) ───── */
 .algara-catbar {
     background: var(--algara-subtle);

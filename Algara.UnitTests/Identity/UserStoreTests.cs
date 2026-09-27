@@ -128,6 +128,97 @@ public sealed class UserStoreTests
         _database.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RoleChange_Cancelled_DoesNotQueryOrMutateUser(bool add)
+    {
+        var user = RoleUser();
+        var cancellation = new CancellationToken(canceled: true);
+
+        var error = await Assert.ThrowsAsync<OperationCanceledException>(() => ChangeRoleAsync(user, add, cancellation));
+
+        Assert.Equal(cancellation, error.CancellationToken);
+        Assert.Equal("old-stamp", user.SecurityStamp);
+        Assert.Equal("existing-session", user.LastLoginSessionId);
+        _database.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RoleChange_FailedDatabaseCommand_DoesNotChangeInMemoryStamp(bool add)
+    {
+        var user = RoleUser();
+        var failure = new InvalidOperationException("Storage unavailable");
+        _database.Setup(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()))
+            .ThrowsAsync(failure);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => ChangeRoleAsync(user, add, CancellationToken.None));
+
+        Assert.Same(failure, error);
+        Assert.Equal("old-stamp", user.SecurityStamp);
+        Assert.Equal("existing-session", user.LastLoginSessionId);
+        _database.Verify(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()), Times.Once);
+        _database.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RoleChange_NoChangedDatabaseRow_PreservesInMemoryStamp(bool add)
+    {
+        var user = RoleUser();
+        _database.Setup(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()))
+            .ReturnsAsync((string?)null);
+
+        await ChangeRoleAsync(user, add, CancellationToken.None);
+
+        Assert.Equal("old-stamp", user.SecurityStamp);
+        Assert.Equal("existing-session", user.LastLoginSessionId);
+        _database.Verify(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()), Times.Once);
+        _database.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RoleChange_ConfirmedDatabaseChange_UsesPersistedStampForSameUser(bool add)
+    {
+        var user = RoleUser();
+        object? commandParameters = null;
+        _database.Setup(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()))
+            .Callback((string _, object? parameters) => commandParameters = parameters)
+            .ReturnsAsync("confirmed-stamp");
+
+        await ChangeRoleAsync(user, add, CancellationToken.None);
+
+        Assert.NotNull(commandParameters);
+        Assert.Equal(user.N, Parameter<int>(commandParameters, "UserN"));
+        Assert.Equal("Admin", Parameter<string>(commandParameters, "RoleName"));
+        var proposedStamp = Parameter<string>(commandParameters, "SecurityStamp");
+        Assert.True(Guid.TryParse(proposedStamp, out _));
+        Assert.NotEqual("old-stamp", proposedStamp);
+        Assert.Equal("confirmed-stamp", user.SecurityStamp);
+        Assert.Equal("existing-session", user.LastLoginSessionId);
+        _database.Verify(db => db.QuerySingleAsync<string>(It.IsAny<string>(), It.IsAny<object>()), Times.Once);
+        _database.VerifyNoOtherCalls();
+    }
+
+    private Task ChangeRoleAsync(ApplicationUser user, bool add, CancellationToken cancellation) => add
+        ? _store.AddToRoleAsync(user, "Admin", cancellation)
+        : _store.RemoveFromRoleAsync(user, "Admin", cancellation);
+
+    private static ApplicationUser RoleUser() => new()
+    {
+        N = 7,
+        SecurityStamp = "old-stamp",
+        LastLoginSessionId = "existing-session"
+    };
+
+    private static T Parameter<T>(object parameters, string name) =>
+        (T)parameters.GetType().GetProperty(name)!.GetValue(parameters)!;
+
     private Task<ApplicationUser?> FindUserAsync(string lookup, CancellationToken cancellation) => lookup switch
     {
         "id" => _store.FindByIdAsync("customer-id", cancellation),

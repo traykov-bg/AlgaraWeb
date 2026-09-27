@@ -738,6 +738,7 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PromotionCreate(AdminPromotionFormViewModel vm)
         {
+            await PreparePromotionPricesAsync(vm, new Dictionary<int, ProductPromotion>());
             await ValidatePromotionAsync(vm, excludePromotionN: null);
 
             if (!ModelState.IsValid)
@@ -804,16 +805,17 @@ namespace Algara.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PromotionEdit(AdminPromotionFormViewModel vm)
         {
-            await ValidatePromotionAsync(vm, excludePromotionN: vm.N);
-
             var promotion = await _shopDb.Promotions
                 .Include(pr => pr.ProductPromotions)
                 .FirstOrDefaultAsync(pr => pr.N == vm.N);
             if (promotion == null) return NotFound();
 
+            var existingMap = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
+            await PreparePromotionPricesAsync(vm, existingMap);
+            await ValidatePromotionAsync(vm, excludePromotionN: vm.N);
+
             if (!ModelState.IsValid)
             {
-                var existingMap = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
                 await RehydrateProductRowsAsync(vm, existingMap, excludePromotionN: vm.N);
                 return View(vm);
             }
@@ -889,6 +891,50 @@ namespace Algara.Web.Controllers
 
         // ─── Помощни методи за промоции ──────────────────────────
 
+        // Reference prices come only from the database, never from editable/hidden form values.
+        private async Task PreparePromotionPricesAsync(
+            AdminPromotionFormViewModel vm, IDictionary<int, ProductPromotion> existing)
+        {
+            var productNs = vm.ProductRows.Select(r => r.ProductN).Distinct().ToList();
+            var products = (await _shopDb.Products.Where(p => productNs.Contains(p.N)).ToListAsync())
+                .ToDictionary(p => p.N);
+            var selected = new HashSet<int>();
+
+            for (var i = 0; i < vm.ProductRows.Count; i++)
+            {
+                var row = vm.ProductRows[i];
+                if (!products.TryGetValue(row.ProductN, out var product) || !product.IsActive)
+                {
+                    if (row.Included)
+                        ModelState.AddModelError($"ProductRows[{i}].Included", "Избраният продукт вече не е активен или не съществува.");
+                    continue;
+                }
+                if (row.Included && !selected.Add(row.ProductN))
+                    ModelState.AddModelError($"ProductRows[{i}].Included", "Продуктът е избран повече от веднъж.");
+
+                row.CurrentPrice = product.Price;
+                row.OriginalPrice = existing.TryGetValue(row.ProductN, out var saved) && !row.RefreshOriginalPrice
+                    ? saved.OriginalPrice : product.Price;
+                if (row.PromoPrice > 0 && row.PromoPrice < row.OriginalPrice)
+                {
+                    // Preserve an entered percentage only when it produces the exact final cents.
+                    // Otherwise derive it, so a forged percentage cannot mislabel the discount.
+                    var matchesFinalPrice = vm.Type == PromotionType.Percent
+                        && row.DiscountPercent > 0 && row.DiscountPercent <= 99.999m
+                        && row.DiscountPercent == decimal.Round(row.DiscountPercent, 3)
+                        && decimal.Round(row.OriginalPrice * (1m - row.DiscountPercent / 100m),
+                            2, MidpointRounding.AwayFromZero) == row.PromoPrice;
+                    if (!matchesFinalPrice)
+                        row.DiscountPercent = decimal.Round((row.OriginalPrice - row.PromoPrice) / row.OriginalPrice * 100m,
+                            3, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+                    row.DiscountPercent = 0m;
+                }
+            }
+        }
+
         /// <summary>Валидира периода, редовете и припокриването на промоция.</summary>
         private async Task ValidatePromotionAsync(AdminPromotionFormViewModel vm, int? excludePromotionN)
         {
@@ -920,6 +966,10 @@ namespace Algara.Web.Controllers
                     ModelState.AddModelError($"ProductRows[{i}].PromoPrice",
                         "Крайната цена трябва да е по-малка от оригиналната.");
                 }
+                if (row.PromoPrice != decimal.Round(row.PromoPrice, 2))
+                    ModelState.AddModelError($"ProductRows[{i}].PromoPrice", "Крайната цена може да има най-много два знака след десетичния разделител.");
+                if (row.DiscountPercent >= 100m)
+                    ModelState.AddModelError($"ProductRows[{i}].PromoPrice", "Отстъпката не може да надвишава 99,999%. Увеличете крайната цена.");
             }
 
             if (included.Count > 0 && vm.EndDate >= vm.StartDate)
@@ -1003,6 +1053,7 @@ namespace Algara.Web.Controllers
                 else
                 {
                     row.OriginalPrice = p.Price;
+                    row.PromoPrice = p.Price;
                 }
 
                 if (overlaps.TryGetValue(p.N, out var otherName))
@@ -1026,8 +1077,7 @@ namespace Algara.Web.Controllers
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
-            var byN = products.ToDictionary(p => p.N);
-            var postedByN = vm.ProductRows.ToDictionary(r => r.ProductN);
+            var postedByN = vm.ProductRows.GroupBy(r => r.ProductN).ToDictionary(g => g.Key, g => g.First());
 
             var overlaps = (await GetOverlappingPromotionsAsync(
                 products.Select(p => p.N), vm.StartDate, vm.EndDate, excludePromotionN))
@@ -1046,7 +1096,9 @@ namespace Algara.Web.Controllers
                     row = new AdminPromotionProductRowViewModel
                     {
                         ProductN      = p.N,
-                        OriginalPrice = p.Price,
+                        OriginalPrice = existingMap.TryGetValue(p.N, out var saved) ? saved.OriginalPrice : p.Price,
+                        PromoPrice    = existingMap.TryGetValue(p.N, out saved) ? saved.PromoPrice : p.Price,
+                        DiscountPercent = existingMap.TryGetValue(p.N, out saved) ? saved.DiscountPercent : 0m,
                     };
                 }
 

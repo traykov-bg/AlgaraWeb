@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Net.Http;
 using static Dapper.SqlMapper;
 using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
 using System;
 
 namespace Algara.Identity.Services
@@ -19,13 +20,11 @@ namespace Algara.Identity.Services
     public class UserService : IUserService
     {
         private readonly IdentityDbContext _context;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IdentityDbContext context, IHttpContextAccessor httpContextAccessor, ILogger<UserService> logger)
+        public UserService(IdentityDbContext context, ILogger<UserService> logger)
         {
             _context = context;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -53,7 +52,8 @@ namespace Algara.Identity.Services
             };
 
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            if (!await TrySaveRegisteredUserAsync(user))
+                return false;
             return true;
         }
 
@@ -81,7 +81,8 @@ namespace Algara.Identity.Services
             };
 
             _context.Users.Add(user);
-            await _context.SaveChangesAsync(); // записваме, за да получим user.N
+            if (!await TrySaveRegisteredUserAsync(user))
+                return null;
 
             var consents = new List<UserConsent>
             {
@@ -95,6 +96,26 @@ namespace Algara.Identity.Services
 
             _logger.LogInformation("Регистриран нов потребител {Email} с consent audit trail ({Count} записа)", data.Email, consents.Count);
             return user;
+        }
+
+        private async Task<bool> TrySaveRegisteredUserAsync(ApplicationUser user)
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException exception) when (
+                exception.InnerException is SqlException sqlException &&
+                sqlException.Errors.Cast<SqlError>().Any(error =>
+                    error.Number is 2601 or 2627 &&
+                    error.Message.Contains("'IX_Users_Email'", StringComparison.Ordinal)))
+            {
+                // Another request may register the email after the initial lookup.
+                // Remove the failed insert from this context before returning validation.
+                _context.Entry(user).State = EntityState.Detached;
+                return false;
+            }
         }
 
         private static UserConsent BuildConsent(int userN, string type, bool granted, RegistrationData data) => new()
@@ -347,9 +368,9 @@ namespace Algara.Identity.Services
             // Добавяме роля
             var userRole = new UserRole { UserN = user.N, RoleN = role.N };
             _context.UserRoles.Add(userRole);
+            // Persist role and stamp together, so every older cookie loses its rights.
+            user.SecurityStamp = Guid.NewGuid().ToString();
             await _context.SaveChangesAsync();
-
-            await UpdateUserClaimsAsync(user); // 🔄 Обновяване на claims
 
             return true;
         }
@@ -366,30 +387,10 @@ namespace Algara.Identity.Services
             if (userRole == null) return false;
 
             _context.UserRoles.Remove(userRole);
+            user.SecurityStamp = Guid.NewGuid().ToString();
             await _context.SaveChangesAsync();
 
-            await UpdateUserClaimsAsync(user); // 🔄 Обновяване на claims
-
             return true;
-        }
-
-        private async Task UpdateUserClaimsAsync(ApplicationUser user)
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-            if (httpContext == null) return;
-
-            // Обновяваме сесията само ако потребителят е текущо влезлият —
-            // при промяна на роли от администратор не трябва да подменяме неговата сесия.
-            var currentUserId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (currentUserId != user.Id) return;
-
-            var claims = await GetUserClaimsAsync(user);
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties { IsPersistent = true };
-            var principal = new ClaimsPrincipal(claimsIdentity);
-
-            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
         }
 
         public async Task<List<Claim>> GetUserClaimsAsync(ApplicationUser user)

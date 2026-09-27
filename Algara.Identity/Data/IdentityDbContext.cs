@@ -25,6 +25,14 @@ namespace Algara.Identity.Data
                 .HasIndex(u => u.Id, "IX_Users_Id") // Дава име на индекса
                 .IsUnique();
 
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(u => u.Email)
+                .HasMaxLength(256);
+
+            modelBuilder.Entity<ApplicationUser>()
+                .HasIndex(u => u.Email, "IX_Users_Email")
+                .IsUnique();
+
             modelBuilder.Entity<ApplicationRole>()
                 .HasKey(r => r.N); // Казваме, че Primary Key е N
 
