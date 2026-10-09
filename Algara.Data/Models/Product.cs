@@ -3,8 +3,13 @@
     public class Product
     {
         public int N { get; set; }
+        public string Sku { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string? Materials { get; set; }
+        public decimal? WidthCm { get; set; }
+        public decimal? HeightCm { get; set; }
+        public decimal? DepthCm { get; set; }
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsCustomizable { get; set; }
@@ -18,6 +23,33 @@
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<ProductSubCategory> ProductSubCategories { get; set; } = new List<ProductSubCategory>();
         public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
+        public ICollection<ProductTranslation> Translations { get; set; } = new List<ProductTranslation>();
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+
+        public string GetName(string? language = null)
+            => TranslatedValue(GetTranslation(language)?.Name, Name)!;
+
+        public string? GetDescription(string? language = null)
+            => TranslatedValue(GetTranslation(language)?.Description, Description);
+
+        public string? GetMaterials(string? language = null)
+            => TranslatedValue(GetTranslation(language)?.Materials, Materials);
+
+        public string? GetMainImageUrl()
+            => Images.OrderBy(i => i.DisplayOrder).ThenBy(i => i.N)
+                .Select(i => i.ImageUrl).FirstOrDefault() ?? ImageUrl;
+
+        private ProductTranslation? GetTranslation(string? language)
+        {
+            language ??= System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            return (language.Equals("en", StringComparison.OrdinalIgnoreCase) ||
+                    language.StartsWith("en-", StringComparison.OrdinalIgnoreCase))
+                ? Translations.FirstOrDefault(t => t.Language.Equals("en", StringComparison.OrdinalIgnoreCase))
+                : null;
+        }
+
+        private static string? TranslatedValue(string? translation, string? original)
+            => string.IsNullOrWhiteSpace(translation) ? original : translation;
 
         /// <summary>
         /// Връща активния ProductPromotion за дадения момент —

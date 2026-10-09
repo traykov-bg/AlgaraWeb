@@ -6,7 +6,7 @@ const test = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../Algara.Web/wwwroot/js/site.js'), 'utf8');
 
-async function search(items, language = 'bg', query = 'диван') {
+async function search(items, language = 'bg', query = 'диван', dataset = {}) {
     const listeners = {};
     const classes = new Set();
     const input = { value: query, addEventListener: (name, callback) => { listeners[name] = callback; } };
@@ -14,7 +14,7 @@ async function search(items, language = 'bg', query = 'диван') {
         innerHTML: '',
         classList: { add: name => classes.add(name), remove: name => classes.delete(name) }
     };
-    const elements = { algaraSearchInput: input, algaraSearchDropdown: dropdown, algaraSearchForm: {} };
+    const elements = { algaraSearchInput: input, algaraSearchDropdown: dropdown, algaraSearchForm: { dataset } };
     let requestedUrl;
     vm.runInNewContext(source, {
         document: {
@@ -61,4 +61,18 @@ test('empty live-search results hide the dropdown', async () => {
     const result = await search([]);
     assert.equal(result.open, false);
     assert.equal(result.html, '');
+});
+
+test('English UI uses supplied search labels and preserves the storefront price format and application paths', async () => {
+    const result = await search([{ n: 1, name: 'Sofa', price: 1234.56, url: '/shop/Product/Detail?n=1' }],
+        'en', 'sofa', {
+            searchAllLabel: 'See all results for', priceLocale: 'bg-BG',
+            searchUrl: '/shop/Product/Search', catalogUrl: '/shop/Product'
+        });
+    assert.equal(result.requestedUrl, '/shop/Product/Search?q=sofa');
+    assert.ok(result.html.includes('See all results for'));
+    assert.ok(result.html.includes('href="/shop/Product?q=sofa"'));
+    assert.ok(result.html.includes(new Intl.NumberFormat('bg-BG', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(1234.56) + ' €'));
 });

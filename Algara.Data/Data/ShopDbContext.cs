@@ -17,9 +17,13 @@ namespace Algara.Data.Data
         public DbSet<HeroSlide> HeroSlides { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<ProductPromotion> ProductPromotions { get; set; }
+        public DbSet<ProductTranslation> ProductTranslations { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasSequence<long>("ProductSkuNumbers").StartsAt(1).IncrementsBy(1);
+
             // --- Category ---
             modelBuilder.Entity<Category>(b =>
             {
@@ -34,14 +38,49 @@ namespace Algara.Data.Data
             {
                 b.HasKey(p => p.N);
                 b.Property(p => p.N).UseIdentityColumn();
-                b.ToTable("Products");
+                b.ToTable("Products", table =>
+                {
+                    table.HasCheckConstraint("CK_Products_Sku", "DATALENGTH([Sku]) BETWEEN 2 AND 128 AND [Sku] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^-A-Z0-9_]%'");
+                    table.HasCheckConstraint("CK_Products_WidthCm", "[WidthCm] IS NULL OR ([WidthCm] > 0 AND [WidthCm] <= 100000)");
+                    table.HasCheckConstraint("CK_Products_HeightCm", "[HeightCm] IS NULL OR ([HeightCm] > 0 AND [HeightCm] <= 100000)");
+                    table.HasCheckConstraint("CK_Products_DepthCm", "[DepthCm] IS NULL OR ([DepthCm] > 0 AND [DepthCm] <= 100000)");
+                });
+                b.Property(p => p.Sku).IsRequired().HasMaxLength(ProductSku.MaxLength)
+                    .UseCollation("Latin1_General_100_CI_AS");
+                b.HasIndex(p => p.Sku).IsUnique().HasDatabaseName("IX_Products_Sku");
                 b.Property(p => p.Name).IsRequired().HasMaxLength(300);
                 b.Property(p => p.Price).HasColumnType("decimal(18,2)");
+                b.Property(p => p.WidthCm).HasColumnType("decimal(10,2)");
+                b.Property(p => p.HeightCm).HasColumnType("decimal(10,2)");
+                b.Property(p => p.DepthCm).HasColumnType("decimal(10,2)");
 
                 b.HasOne(p => p.Category)
                  .WithMany(c => c.Products)
                  .HasForeignKey(p => p.CategoryN)
                  .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<ProductTranslation>(b =>
+            {
+                b.HasKey(t => new { t.ProductN, t.Language });
+                b.ToTable("ProductTranslations", table => table.HasCheckConstraint(
+                    "CK_ProductTranslations_Language", "[Language] COLLATE Latin1_General_100_BIN2 = N'en'"));
+                b.Property(t => t.Language).IsRequired().HasMaxLength(2);
+                b.Property(t => t.Name).HasMaxLength(300);
+                b.HasOne(t => t.Product).WithMany(p => p.Translations)
+                    .HasForeignKey(t => t.ProductN).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ProductImage>(b =>
+            {
+                b.HasKey(i => i.N);
+                b.Property(i => i.N).UseIdentityColumn();
+                b.ToTable("ProductImages", table => table.HasCheckConstraint(
+                    "CK_ProductImages_DisplayOrder", "[DisplayOrder] >= 0"));
+                b.Property(i => i.ImageUrl).IsRequired().HasMaxLength(2048);
+                b.HasIndex(i => new { i.ProductN, i.DisplayOrder });
+                b.HasOne(i => i.Product).WithMany(p => p.Images)
+                    .HasForeignKey(i => i.ProductN).OnDelete(DeleteBehavior.Cascade);
             });
 
             // --- SubCategory ---

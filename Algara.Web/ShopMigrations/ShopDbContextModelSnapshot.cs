@@ -17,10 +17,12 @@ namespace Algara.Web.ShopMigrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.HasSequence("ProductSkuNumbers");
 
             modelBuilder.Entity("Algara.Data.Models.Category", b =>
                 {
@@ -183,8 +185,14 @@ namespace Algara.Web.ShopMigrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal?>("DepthCm")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("HeightCm")
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
@@ -198,6 +206,9 @@ namespace Algara.Web.ShopMigrations
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Materials")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -206,11 +217,62 @@ namespace Algara.Web.ShopMigrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<decimal?>("WidthCm")
+                        .HasColumnType("decimal(10,2)");
+
                     b.HasKey("N");
 
                     b.HasIndex("CategoryN");
 
-                    b.ToTable("Products", (string)null);
+                    b.HasIndex("Sku")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Products_Sku");
+
+                    b.ToTable("Products", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Products_DepthCm", "[DepthCm] IS NULL OR ([DepthCm] > 0 AND [DepthCm] <= 100000)");
+
+                            t.HasCheckConstraint("CK_Products_HeightCm", "[HeightCm] IS NULL OR ([HeightCm] > 0 AND [HeightCm] <= 100000)");
+
+                            t.HasCheckConstraint("CK_Products_Sku", "DATALENGTH([Sku]) BETWEEN 2 AND 128 AND [Sku] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^-A-Z0-9_]%'");
+
+                            t.HasCheckConstraint("CK_Products_WidthCm", "[WidthCm] IS NULL OR ([WidthCm] > 0 AND [WidthCm] <= 100000)");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.ProductImage", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<int>("ProductN")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("ProductN", "DisplayOrder");
+
+                    b.ToTable("ProductImages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductImages_DisplayOrder", "[DisplayOrder] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.ProductPromotion", b =>
@@ -254,6 +316,33 @@ namespace Algara.Web.ShopMigrations
                     b.HasIndex("SubCategoryN");
 
                     b.ToTable("ProductSubCategories", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.ProductTranslation", b =>
+                {
+                    b.Property<int>("ProductN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Materials")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("ProductN", "Language");
+
+                    b.ToTable("ProductTranslations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductTranslations_Language", "[Language] COLLATE Latin1_General_100_BIN2 = N'en'");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Promotion", b =>
@@ -355,6 +444,17 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.ProductImage", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Product", "Product")
+                        .WithMany("Images")
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.ProductPromotion", b =>
                 {
                     b.HasOne("Algara.Data.Models.Product", "Product")
@@ -393,6 +493,17 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("SubCategory");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.ProductTranslation", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Product", "Product")
+                        .WithMany("Translations")
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.SubCategory", b =>
                 {
                     b.HasOne("Algara.Data.Models.Category", "Category")
@@ -418,11 +529,15 @@ namespace Algara.Web.ShopMigrations
 
             modelBuilder.Entity("Algara.Data.Models.Product", b =>
                 {
+                    b.Navigation("Images");
+
                     b.Navigation("OrderItems");
 
                     b.Navigation("ProductPromotions");
 
                     b.Navigation("ProductSubCategories");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Promotion", b =>

@@ -14,7 +14,7 @@ namespace Algara.Web.Controllers
 {
     [Authorize(Roles = "Admin")]
     [Route("admin")]
-    public class AdminController : Controller
+    public partial class AdminController : Controller
     {
         private readonly ShopDbContext      _shopDb;
         private readonly IdentityDbContext  _identityDb;
@@ -168,125 +168,6 @@ namespace Algara.Web.Controllers
                 AllCategories  = allCategories,
             };
             return View(vm);
-        }
-
-        [HttpGet("products/create")]
-        public async Task<IActionResult> ProductCreate()
-        {
-            var vm = new AdminProductFormViewModel
-            {
-                Categories = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync(),
-            };
-            return View(vm);
-        }
-
-        [HttpPost("products/create")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ProductCreate(AdminProductFormViewModel vm)
-        {
-            if (!ModelState.IsValid)
-            {
-                vm.Categories = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
-                if (vm.CategoryN.HasValue)
-                    vm.AvailableSubCategories = await _shopDb.SubCategories
-                        .Where(sc => sc.CategoryN == vm.CategoryN && sc.IsActive)
-                        .OrderBy(sc => sc.Name).ToListAsync();
-                return View(vm);
-            }
-
-            var product = new Product
-            {
-                Name           = vm.Name,
-                Description    = vm.Description,
-                Price          = vm.Price,
-                ImageUrl       = vm.ImageUrl,
-                IsCustomizable = vm.IsCustomizable,
-                IsFeatured     = vm.IsFeatured,
-                IsActive       = vm.IsActive,
-                CategoryN      = vm.CategoryN,
-            };
-            _shopDb.Products.Add(product);
-            await _shopDb.SaveChangesAsync();
-
-            foreach (var subN in vm.SelectedSubCategoryNs ?? [])
-                _shopDb.ProductSubCategories.Add(new ProductSubCategory { ProductN = product.N, SubCategoryN = subN });
-            await _shopDb.SaveChangesAsync();
-
-            TempData["Success"] = $"Продуктът \"{product.Name}\" е добавен успешно.";
-            return RedirectToAction(nameof(Products));
-        }
-
-        [HttpGet("products/edit/{n}")]
-        public async Task<IActionResult> ProductEdit(int n)
-        {
-            var product = await _shopDb.Products
-                .Include(p => p.ProductSubCategories)
-                .FirstOrDefaultAsync(p => p.N == n);
-            if (product == null) return NotFound();
-
-            var vm = new AdminProductFormViewModel
-            {
-                N                     = product.N,
-                Name                  = product.Name,
-                Description           = product.Description,
-                Price                 = product.Price,
-                ImageUrl              = product.ImageUrl,
-                IsCustomizable        = product.IsCustomizable,
-                IsFeatured            = product.IsFeatured,
-                IsActive              = product.IsActive,
-                CategoryN             = product.CategoryN,
-                Categories            = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync(),
-                SelectedSubCategoryNs = product.ProductSubCategories.Select(psc => psc.SubCategoryN).ToList(),
-            };
-            if (product.CategoryN.HasValue)
-                vm.AvailableSubCategories = await _shopDb.SubCategories
-                    .Where(sc => sc.CategoryN == product.CategoryN && sc.IsActive)
-                    .OrderBy(sc => sc.Name).ToListAsync();
-            return View(vm);
-        }
-
-        [HttpPost("products/edit/{n}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ProductEdit(AdminProductFormViewModel vm)
-        {
-            if (!ModelState.IsValid)
-            {
-                vm.Categories = await _shopDb.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
-                if (vm.CategoryN.HasValue)
-                    vm.AvailableSubCategories = await _shopDb.SubCategories
-                        .Where(sc => sc.CategoryN == vm.CategoryN && sc.IsActive)
-                        .OrderBy(sc => sc.Name).ToListAsync();
-                return View(vm);
-            }
-
-            var product = await _shopDb.Products
-                .Include(p => p.ProductSubCategories)
-                .FirstOrDefaultAsync(p => p.N == vm.N);
-            if (product == null) return NotFound();
-
-            product.Name           = vm.Name;
-            product.Description    = vm.Description;
-            product.Price          = vm.Price;
-            product.ImageUrl       = vm.ImageUrl;
-            product.IsCustomizable = vm.IsCustomizable;
-            product.IsFeatured     = vm.IsFeatured;
-            product.IsActive       = vm.IsActive;
-            product.CategoryN      = vm.CategoryN;
-
-            // Обнови присвоените под-категории
-            var selectedNs = (vm.SelectedSubCategoryNs ?? []).ToHashSet();
-            var existingNs = product.ProductSubCategories.Select(psc => psc.SubCategoryN).ToHashSet();
-
-            var toRemove = product.ProductSubCategories.Where(psc => !selectedNs.Contains(psc.SubCategoryN)).ToList();
-            _shopDb.ProductSubCategories.RemoveRange(toRemove);
-
-            foreach (var subN in selectedNs.Where(sn => !existingNs.Contains(sn)))
-                _shopDb.ProductSubCategories.Add(new ProductSubCategory { ProductN = product.N, SubCategoryN = subN });
-
-            await _shopDb.SaveChangesAsync();
-
-            TempData["Success"] = $"Продуктът \"{product.Name}\" е обновен успешно.";
-            return RedirectToAction(nameof(Products));
         }
 
         [HttpPost("products/toggle/{n}")]

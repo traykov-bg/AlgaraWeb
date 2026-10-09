@@ -12,6 +12,8 @@
 
     if (!searchInput || !searchDropdown || !searchForm) return;
 
+    var searchOptions = searchForm.dataset || {};
+
     var debounceTimer = null;
     var lastQuery     = '';
 
@@ -34,7 +36,7 @@
 
     // Fetch резултати от /Product/Search
     function fetchResults(q) {
-        fetch('/Product/Search?q=' + encodeURIComponent(q))
+        fetch((searchOptions.searchUrl || '/Product/Search') + '?q=' + encodeURIComponent(q))
             .then(function (r) { return r.json(); })
             .then(function (items) { renderDropdown(items, q); })
             .catch(function () { hideDropdown(); });
@@ -70,8 +72,8 @@
         html += '</ul>';
 
         html += '<div class="algara-sd-footer">'
-             +    '<a href="/Product?q=' + encodeURIComponent(q) + '" class="algara-sd-all">'
-             +      '<i class="bi bi-search"></i> Виж всички резултати за \u201E' + escHtml(q) + '\u201C'
+             +    '<a href="' + escHtml(searchOptions.catalogUrl || '/Product') + '?q=' + encodeURIComponent(q) + '" class="algara-sd-all">'
+             +      '<i class="bi bi-search"></i> ' + escHtml(searchOptions.searchAllLabel || 'Виж всички резултати за') + ' \u201E' + escHtml(q) + '\u201C'
              +    '</a>'
              +  '</div>';
 
@@ -125,7 +127,7 @@
 
     // Запазва центовете и форматира според езика на страницата.
     function formatPrice(price) {
-        return new Intl.NumberFormat(document.documentElement.lang || 'bg', {
+        return new Intl.NumberFormat(searchOptions.priceLocale || document.documentElement.lang || 'bg', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(price);

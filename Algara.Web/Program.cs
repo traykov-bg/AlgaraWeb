@@ -2,6 +2,7 @@
 using Algara.Data.Repositories;
 using Algara.Identity.Data;
 using Algara.Web.Data;
+using Algara.Web.Localization;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Utils;
@@ -27,6 +28,8 @@ try
 
     // Add services to the container.
     builder.Services.AddControllersWithViews();
+    builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+    builder.Services.Configure<RequestLocalizationOptions>(CatalogLocalization.Configure);
 
     // Зареждане на ConnectionString
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -71,6 +74,7 @@ try
 
     // Регистрираме Shop repositories
     builder.Services.AddScoped<IProductRepository, ProductRepository>();
+    builder.Services.AddScoped<Algara.Web.Services.IProductGalleryWriteLock, Algara.Web.Services.ProductGalleryWriteLock>();
     builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
     builder.Services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -204,6 +208,8 @@ try
 
     app.UseRouting();
 
+    app.UseRequestLocalization();
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -213,7 +219,8 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+// EF tools deliberately stop the host after resolving services; let that signal propagate.
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     logger.Error(ex, "Application terminated unexpectedly");
     throw;

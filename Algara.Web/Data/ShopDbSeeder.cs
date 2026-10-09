@@ -1,5 +1,6 @@
 ﻿using Algara.Data.Data;
 using Algara.Data.Models;
+using Algara.Data.Repositories;
 using Algara.Web.Helpers;
 
 namespace Algara.Web.Data
@@ -70,8 +71,13 @@ namespace Algara.Web.Data
                 new() { Name = $"Висулкова лампа {Q("Арко")}", Description = "Минималистична висулкова лампа с текстилен кабел.", Price = 320, ImageUrl = Img("Лампа Арко"),  IsFeatured = false, IsCustomizable = false, IsActive = true, CategoryN = categories[5].N },
                 new() { Name = $"Подова лампа {Q("Флора")}",   Description = "Подова лампа с мраморна основа и златист детайл.", Price = 280, ImageUrl = Img("Лампа Флора"), IsFeatured = false, IsCustomizable = false, IsActive = true, CategoryN = categories[5].N },
             };
-            context.Products.AddRange(products);
-            await context.SaveChangesAsync();
+            var productRepository = new ProductRepository(context);
+            foreach (var product in products)
+            {
+                if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                    product.Images.Add(new ProductImage { ImageUrl = product.ImageUrl, DisplayOrder = 0 });
+                await productRepository.AddAsync(product);
+            }
 
             // ── Hero Slides ──
             if (!context.HeroSlides.Any())

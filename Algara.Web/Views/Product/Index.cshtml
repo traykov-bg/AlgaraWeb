@@ -2,9 +2,10 @@
 
 @using Algara.Web.Helpers
 @using System.Globalization
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
 
 @{
-    ViewData["Title"] = Model.CategoryName ?? "Каталог";
+    ViewData["Title"] = Model.CategoryName ?? T["Catalog"].Value;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,8 +14,8 @@
         @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
         {
             <p class="text-muted small mt-1">
-                Резултати за: <strong>@Model.SearchQuery</strong> &nbsp;
-                <a asp-action="Index" class="text-muted"><i class="bi bi-x-circle"></i> Изчисти</a>
+                @T["ResultsFor"] <strong>@Model.SearchQuery</strong> &nbsp;
+                <a asp-action="Index" class="text-muted"><i class="bi bi-x-circle"></i> @T["Clear"]</a>
             </p>
         }
     </div>
@@ -24,7 +25,7 @@
 @if (Model.Categories.Any())
 {
     <div class="mb-3">
-        <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-1">Всички</a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm me-1">@T["All"]</a>
         @foreach (var cat in Model.Categories)
         {
             <a asp-action="Category" asp-route-slug="@cat.Slug"
@@ -39,10 +40,10 @@
 @if (Model.SubCategories?.Any() == true && Model.CategorySlug != null)
 {
     <div class="mb-4 d-flex flex-wrap align-items-center gap-1">
-        <span class="text-muted small me-1 fw-semibold">Под-категория:</span>
+        <span class="text-muted small me-1 fw-semibold">@T["Subcategory"]</span>
         <a href="/kategorii/@Model.CategorySlug@(CatalogQueryString.ForSubcategory(Model, null))"
            class="btn btn-sm me-1 @(Model.ActiveSubSlug == null ? "btn-secondary" : "btn-outline-secondary")">
-            Всички
+            @T["All"]
         </a>
         @foreach (var sub in Model.SubCategories)
         {
@@ -71,7 +72,7 @@
 
             @* Цена От *@
             <div>
-                <label class="form-label mb-1 small text-muted fw-semibold">Цена от (€)</label>
+                <label class="form-label mb-1 small text-muted fw-semibold">@T["PriceFrom"]</label>
                 <input type="number" name="minPrice" id="minPrice" class="form-control form-control-sm"
                        style="width:100px" min="0" step="0.01"
                        value="@Model.MinPrice?.ToString(CultureInfo.InvariantCulture)"
@@ -80,7 +81,7 @@
 
             @* Цена До *@
             <div>
-                <label class="form-label mb-1 small text-muted fw-semibold">Цена до (€)</label>
+                <label class="form-label mb-1 small text-muted fw-semibold">@T["PriceTo"]</label>
                 <input type="number" name="maxPrice" id="maxPrice" class="form-control form-control-sm"
                        style="width:100px" min="0" step="0.01"
                        value="@Model.MaxPrice?.ToString(CultureInfo.InvariantCulture)"
@@ -89,10 +90,10 @@
 
             @* Бутони Приложи / Изчисти *@
             <div class="d-flex gap-2 align-items-end">
-                <button type="submit" class="btn btn-primary btn-sm">Приложи</button>
+                <button type="submit" class="btn btn-primary btn-sm">@T["Apply"]</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm"
                         onclick="document.getElementById('minPrice').value='';document.getElementById('maxPrice').value='';document.getElementById('filterForm').submit()">
-                    <i class="bi bi-x"></i> Изчисти
+                    <i class="bi bi-x"></i> @T["Clear"]
                 </button>
             </div>
 
@@ -101,20 +102,20 @@
 
             @* Сортиране *@
             <div class="ms-md-auto">
-                <label class="form-label mb-1 small text-muted fw-semibold">Сортиране</label>
+                <label class="form-label mb-1 small text-muted fw-semibold">@T["Sort"]</label>
                 <select name="sort" class="form-select form-select-sm" style="width:auto"
                         onchange="this.form.submit()">
-                    <!option value="newest"    @(Model.Sort == "newest"    ? "selected" : "")>Най-нови</!option>
-                    <!option value="name_asc"  @(Model.Sort == "name_asc"  ? "selected" : "")>Азбучен ред (А→Я)</!option>
-                    <!option value="name_desc" @(Model.Sort == "name_desc" ? "selected" : "")>Азбучен ред (Я→А)</!option>
-                    <!option value="price_asc" @(Model.Sort == "price_asc" ? "selected" : "")>Най-ниска цена</!option>
-                    <!option value="price_desc"@(Model.Sort == "price_desc"? "selected" : "")>Най-висока цена</!option>
+                    <!option value="newest"    @(Model.Sort == "newest"    ? "selected" : "")>@T["Newest"]</!option>
+                    <!option value="name_asc"  @(Model.Sort == "name_asc"  ? "selected" : "")>@T["NameAscending"]</!option>
+                    <!option value="name_desc" @(Model.Sort == "name_desc" ? "selected" : "")>@T["NameDescending"]</!option>
+                    <!option value="price_asc" @(Model.Sort == "price_asc" ? "selected" : "")>@T["PriceAscending"]</!option>
+                    <!option value="price_desc"@(Model.Sort == "price_desc"? "selected" : "")>@T["PriceDescending"]</!option>
                 </select>
             </div>
 
             @* Продукти на страница *@
             <div>
-                <label class="form-label mb-1 small text-muted fw-semibold">На страница</label>
+                <label class="form-label mb-1 small text-muted fw-semibold">@T["PerPage"]</label>
                 <select name="pageSize" class="form-select form-select-sm" style="width:auto"
                         onchange="this.form.submit()">
                     @foreach (var ps in Algara.Web.ViewModels.CatalogViewModel.PageSizeOptions)
@@ -133,13 +134,13 @@
     <span class="text-muted small">
         @if (Model.TotalCount == 0)
         {
-            <span>Няма намерени продукти.</span>
+            <span>@T["NoProducts"]</span>
         }
         else
         {
             var from = (Model.Page - 1) * Model.PageSize + 1;
             var to   = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
-            <span>Показани @from–@to от <strong>@Model.TotalCount</strong> продукта</span>
+            <span>@T["ResultsCount", from, to, Model.TotalCount]</span>
         }
     </span>
 </div>
@@ -167,7 +168,7 @@
 
 @if (!Model.Products.Any())
 {
-    <p class="text-muted">Няма намерени продукти.</p>
+    <p class="text-muted">@T["NoProducts"]</p>
 }
 else
 {
@@ -179,20 +180,23 @@ else
             var discountLabel = product.GetDiscountLabel(Model.PricingAt);
             var finalPrice    = product.GetDiscountedPrice(Model.PricingAt);
             var promoNote     = activePromo?.Note;
+            var productName = product.GetName();
+            var description = product.GetDescription();
+            var imageUrl = product.GetMainImageUrl();
             <div class="col">
                 <a asp-action="Detail" asp-route-n="@product.N"
                    class="card h-100 shadow-sm text-decoration-none text-reset product-card-link">
                     <div class="position-relative">
-                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        @if (!string.IsNullOrEmpty(imageUrl))
                         {
-                            <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name"
-                                 style="height: 200px; object-fit: cover;" />
+                            <img src="@imageUrl" class="card-img-top" alt="@productName"
+                                 style="height: 200px; object-fit: cover;" loading="lazy" />
                         }
                         else
                         {
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                                  style="height: 200px;">
-                                <span class="text-muted">Без снимка</span>
+                                <span class="text-muted">@T["NoImage"]</span>
                             </div>
                         }
                         @if (discount.HasValue)
@@ -205,17 +209,18 @@ else
                         }
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title">@product.Name</h5>
+                        <h5 class="card-title">@productName</h5>
+                        <p class="card-text text-muted small">@T["Sku"]: @product.Sku</p>
                         @if (product.Category != null)
                         {
                             <p class="card-text text-muted small">@product.Category.Name</p>
                         }
-                        @if (!string.IsNullOrEmpty(product.Description))
+                        @if (!string.IsNullOrEmpty(description))
                         {
                             <p class="card-text small">
-                                @(product.Description.Length > 80
-                                    ? product.Description[..80] + "…"
-                                    : product.Description)
+                                @(description.Length > 80
+                                    ? description[..80] + "…"
+                                    : description)
                             </p>
                         }
                         @if (!string.IsNullOrWhiteSpace(promoNote))
@@ -240,7 +245,7 @@ else
                         </div>
                         @if (product.IsCustomizable)
                         {
-                            <span class="badge bg-info">По поръчка</span>
+                            <span class="badge bg-info">@T["MadeToOrder"]</span>
                         }
                     </div>
                 </a>
@@ -251,12 +256,12 @@ else
     @* Пагинация *@
     @if (Model.TotalPages > 1)
     {
-        <nav class="mt-4" aria-label="Навигация по страници">
+        <nav class="mt-4" aria-label="@T["Pagination"]">
             <ul class="pagination justify-content-center flex-wrap">
 
                 @* Предишна *@
                 <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
-                    <a class="page-link" href="@CatalogQueryString.ForPage(Model, Model.Page - 1)">
+                    <a class="page-link" href="@CatalogQueryString.ForPage(Model, Model.Page - 1)" aria-label="@T["Previous"]">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
@@ -295,7 +300,7 @@ else
 
                 @* Следваща *@
                 <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
-                    <a class="page-link" href="@CatalogQueryString.ForPage(Model, Model.Page + 1)">
+                    <a class="page-link" href="@CatalogQueryString.ForPage(Model, Model.Page + 1)" aria-label="@T["Next"]">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

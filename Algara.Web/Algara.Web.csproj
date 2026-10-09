@@ -31,6 +31,8 @@
     <PackageReference Include="NLog.Config" Version="4.7.15" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.4.0" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="5.4.0" />
+    <PackageReference Include="SkiaSharp" Version="4.153.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.0" />
     <PackageReference Include="System.Data.Odbc" Version="10.0.12" />
     <PackageReference Include="System.Data.OleDb" Version="10.0.12" />
   </ItemGroup>
@@ -41,4 +43,9 @@
     <ProjectReference Include="..\Algara.Utils\Algara.Utils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Runtime draft images and ownership manifests must never be published. -->
+    <Content Remove="App_Data\product-image-drafts\**" />
+    <None Remove="App_Data\product-image-drafts\**" />
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
-﻿using Algara.Data.Models;
+﻿using System.Globalization;
+using Algara.Data.Models;
 using Algara.Data.Repositories;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -35,9 +36,10 @@ namespace Algara.Web.Controllers
             IEnumerable<Product> filtered = all;
             if (!string.IsNullOrWhiteSpace(q))
                 filtered = filtered.Where(p =>
-                    p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    p.GetName().Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    p.Sku.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     (p.Category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+                    (p.GetDescription()?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
 
             var now = DateTime.Now;
             var vm = BuildViewModel(filtered, now,
@@ -104,18 +106,19 @@ namespace Algara.Web.Controllers
             var now = DateTime.Now;
             var results = allProducts
                 .Where(p =>
-                    p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    p.GetName().Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    p.Sku.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     (p.Category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
+                    (p.GetDescription()?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
                 .Take(5)
                 .Select(p => new
                 {
                     n        = p.N,
-                    name     = p.Name,
+                    name     = p.GetName(),
                     category = p.Category?.Name,
                     price    = p.GetDiscountedPrice(now),
                     url      = Url.Action(nameof(Detail), new { n = p.N }),
-                    imageUrl = p.ImageUrl,
+                    imageUrl = p.GetMainImageUrl(),
                 }).ToList();
 
             return Json(results);
@@ -192,8 +195,8 @@ namespace Algara.Web.Controllers
         private static IEnumerable<(Product product, decimal effective)> ApplySort(
             IEnumerable<(Product product, decimal effective)> products, string? sort) => sort switch
         {
-            "name_asc"   => products.OrderBy(x => x.product.Name).ThenBy(x => x.product.N),
-            "name_desc"  => products.OrderByDescending(x => x.product.Name).ThenBy(x => x.product.N),
+            "name_asc"   => products.OrderBy(x => x.product.GetName(), StringComparer.Create(CultureInfo.CurrentUICulture, false)).ThenBy(x => x.product.N),
+            "name_desc"  => products.OrderByDescending(x => x.product.GetName(), StringComparer.Create(CultureInfo.CurrentUICulture, false)).ThenBy(x => x.product.N),
             "price_asc"  => products.OrderBy(x => x.effective).ThenBy(x => x.product.N),
             "price_desc" => products.OrderByDescending(x => x.effective).ThenBy(x => x.product.N),
             _            => products.OrderByDescending(x => x.product.CreatedAt).ThenBy(x => x.product.N),

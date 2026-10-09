@@ -1,7 +1,15 @@
 ﻿@model Algara.Data.Models.Product
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
 
 @{
-    ViewData["Title"] = Model.Name;
+    var productName = Model.GetName();
+    var description = Model.GetDescription();
+    var materials = Model.GetMaterials();
+    var images = Model.Images.OrderBy(image => image.DisplayOrder).ThenBy(image => image.N)
+        .Select(image => image.ImageUrl).ToList();
+    if (images.Count == 0 && !string.IsNullOrWhiteSpace(Model.ImageUrl))
+        images.Add(Model.ImageUrl);
+    ViewData["Title"] = productName;
     var pricingAt     = DateTime.Now;
     var activePromo   = Model.GetActivePromotion(pricingAt);
     var discount      = Model.GetActiveDiscount(pricingAt);
@@ -12,43 +20,59 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">Каталог</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">@T["Catalog"]</a></li>
         @if (Model.Category != null)
         {
             <li class="breadcrumb-item">
                 <a asp-action="Category" asp-route-slug="@Model.Category.Slug">@Model.Category.Name</a>
             </li>
         }
-        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        <li class="breadcrumb-item active" aria-current="page">@productName</li>
     </ol>
 </nav>
 
-<div class="row">
+<div class="row g-4">
     <div class="col-md-5">
-        <div class="position-relative">
-            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        <div class="algara-product-gallery" data-product-gallery>
+            <div class="position-relative">
+                @if (images.Count > 0)
+                {
+                    <img src="@images[0]" class="algara-product-gallery__main img-fluid rounded shadow-sm"
+                         alt="@productName" data-gallery-main />
+                }
+                else
+                {
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center algara-product-gallery__empty">
+                        <span class="text-muted">@T["NoImage"]</span>
+                    </div>
+                }
+                @if (discount.HasValue)
+                {
+                    <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
+                                 bg-danger text-white fw-bold rounded-circle shadow"
+                          style="width:54px;height:54px;font-size:.9rem;">
+                        @discountLabel
+                    </span>
+                }
+            </div>
+            @if (images.Count > 1)
             {
-                <img src="@Model.ImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Name" />
-            }
-            else
-            {
-                <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                     style="height: 350px;">
-                    <span class="text-muted">Без снимка</span>
+                <div class="algara-product-gallery__thumbnails mt-3" role="group" aria-label="@T["Gallery"]">
+                    @for (var index = 0; index < images.Count; index++)
+                    {
+                        <button type="button" class="algara-product-gallery__thumbnail @(index == 0 ? "is-selected" : "")"
+                                data-gallery-src="@Url.Content(images[index])" aria-pressed="@(index == 0 ? "true" : "false")"
+                                aria-label="@T["ImageNumber", index + 1, images.Count]">
+                            <img src="@images[index]" alt="" loading="lazy" />
+                        </button>
+                    }
                 </div>
-            }
-            @if (discount.HasValue)
-            {
-                <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
-                             bg-danger text-white fw-bold rounded-circle shadow"
-                      style="width:54px;height:54px;font-size:.9rem;">
-                    @discountLabel
-                </span>
             }
         </div>
     </div>
     <div class="col-md-7">
-        <h2>@Model.Name</h2>
+        <h2>@productName</h2>
+        <p class="text-muted small">@T["Sku"]: <strong>@Model.Sku</strong></p>
         @if (Model.Category != null)
         {
             <p class="text-muted">
@@ -57,7 +81,7 @@
         }
         @if (Model.IsCustomizable)
         {
-            <span class="badge bg-info mb-2">По поръчка</span>
+            <span class="badge bg-info mb-2">@T["MadeToOrder"]</span>
         }
         @if (discount.HasValue)
         {
@@ -76,11 +100,41 @@
                 <i class="bi bi-gift-fill me-1"></i>@promoNote
             </p>
         }
-        @if (!string.IsNullOrEmpty(Model.Description))
+        @if (!string.IsNullOrWhiteSpace(description))
         {
-            <p>@Model.Description</p>
+            <p class="algara-product-description">@description</p>
+        }
+        @if (Model.WidthCm.HasValue || Model.HeightCm.HasValue || Model.DepthCm.HasValue)
+        {
+            <h3 class="h6 mt-4">@T["Dimensions"]</h3>
+            <dl class="row small">
+                @if (Model.WidthCm.HasValue)
+                {
+                    <dt class="col-5">@T["Width"]</dt>
+                    <dd class="col-7">@Model.WidthCm.Value.ToString("0.##") @T["Cm"]</dd>
+                }
+                @if (Model.HeightCm.HasValue)
+                {
+                    <dt class="col-5">@T["Height"]</dt>
+                    <dd class="col-7">@Model.HeightCm.Value.ToString("0.##") @T["Cm"]</dd>
+                }
+                @if (Model.DepthCm.HasValue)
+                {
+                    <dt class="col-5">@T["Depth"]</dt>
+                    <dd class="col-7">@Model.DepthCm.Value.ToString("0.##") @T["Cm"]</dd>
+                }
+            </dl>
+        }
+        @if (!string.IsNullOrWhiteSpace(materials))
+        {
+            <h3 class="h6 mt-4">@T["Materials"]</h3>
+            <p class="algara-product-description">@materials</p>
         }
         <hr />
-        <a asp-action="Index" class="btn btn-outline-secondary">← Назад към каталога</a>
+        <a asp-action="Index" class="btn btn-outline-secondary">← @T["BackToCatalog"]</a>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+}

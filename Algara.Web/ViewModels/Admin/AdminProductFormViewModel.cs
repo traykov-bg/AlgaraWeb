@@ -1,11 +1,16 @@
 ﻿using Algara.Data.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Algara.Web.ViewModels.Admin
 {
     public class AdminProductFormViewModel
     {
         public int N { get; set; }
+
+        [MaxLength(64)]
+        [Display(Name = "Артикулен код")]
+        public string? Sku { get; set; }
 
         [Required(ErrorMessage = "Името е задължително")]
         [MaxLength(300)]
@@ -15,13 +20,40 @@ namespace Algara.Web.ViewModels.Admin
         [Display(Name = "Описание")]
         public string? Description { get; set; }
 
+        [MaxLength(4000)]
+        [Display(Name = "Материали")]
+        public string? Materials { get; set; }
+
+        [MaxLength(300)]
+        [Display(Name = "Наименование на английски")]
+        public string? EnglishName { get; set; }
+
+        [Display(Name = "Описание на английски")]
+        public string? EnglishDescription { get; set; }
+
+        [MaxLength(4000)]
+        [Display(Name = "Материали на английски")]
+        public string? EnglishMaterials { get; set; }
+
+        [Range(typeof(decimal), "0.01", "100000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "Въведете размер между 0,01 и 100 000 см.")]
+        [Display(Name = "Ширина (см)")]
+        public decimal? WidthCm { get; set; }
+
+        [Range(typeof(decimal), "0.01", "100000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "Въведете размер между 0,01 и 100 000 см.")]
+        [Display(Name = "Височина (см)")]
+        public decimal? HeightCm { get; set; }
+
+        [Range(typeof(decimal), "0.01", "100000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "Въведете размер между 0,01 и 100 000 см.")]
+        [Display(Name = "Дълбочина (см)")]
+        public decimal? DepthCm { get; set; }
+
         [Required(ErrorMessage = "Цената е задължителна")]
         [Range(0.01, 9_999_999, ErrorMessage = "Невалидна цена")]
         [Display(Name = "Цена (€)")]
         public decimal Price { get; set; }
 
-        [Display(Name = "URL на снимка")]
-        public string? ImageUrl { get; set; }
+        public string? GalleryDraftId { get; set; }
+        public List<AdminProductImageViewModel> Images { get; set; } = [];
 
         [Display(Name = "По поръчка")]
         public bool IsCustomizable { get; set; }
@@ -41,5 +73,17 @@ namespace Algara.Web.ViewModels.Admin
         // Под-категории
         public List<int> SelectedSubCategoryNs { get; set; } = new();
         public List<SubCategory> AvailableSubCategories { get; set; } = new();
+    }
+
+    public class AdminProductImageViewModel
+    {
+        public int N { get; set; }
+
+        [Range(0, 10000)]
+        public int DisplayOrder { get; set; }
+        public string? UploadId { get; set; }
+
+        [BindNever]
+        public string ImageUrl { get; set; } = string.Empty;
     }
 }

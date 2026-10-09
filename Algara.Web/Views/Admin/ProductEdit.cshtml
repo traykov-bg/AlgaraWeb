@@ -4,16 +4,18 @@
     ViewData["Title"] = "Редактирай продукт";
 }
 
+<link rel="stylesheet" href="~/css/admin-product-gallery.css" asp-append-version="true" />
+
 <div class="row justify-content-center">
-    <div class="col-lg-7">
+    <div class="col-12 algara-product-form-column">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
                 {
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger mb-3"></div>
                 }
 
-                <form asp-action="ProductEdit" asp-route-n="@Model.N" method="post">
+                <form asp-action="ProductEdit" asp-route-n="@Model.N" method="post" enctype="multipart/form-data">
                     <input type="hidden" asp-for="N" />
                     @await Html.PartialAsync("_ProductFormFields", Model)
                     <div class="d-flex gap-2 mt-4">
@@ -27,3 +29,8 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/admin-products.js" asp-append-version="true"></script>
+    <script src="~/js/admin-product-gallery.js" asp-append-version="true"></script>
+}

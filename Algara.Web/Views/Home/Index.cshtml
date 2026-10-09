@@ -1,7 +1,8 @@
 ﻿@model Algara.Web.ViewModels.HomeViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
 @{
     Layout = "~/Views/Shared/_LayoutFull.cshtml";
-    ViewData["Title"] = "Начало";
+    ViewData["Title"] = T["Home"];
     var pricingAt = DateTime.Now;
 }
 
@@ -86,8 +87,8 @@ else
 <section class="py-5">
     <div class="container">
         <div class="d-flex justify-content-between align-items-baseline mb-4">
-            <h2 class="algara-section-title mb-0">Препоръчани продукти</h2>
-            <a asp-controller="Product" asp-action="Index" class="algara-link-accent">Виж всички &rarr;</a>
+            <h2 class="algara-section-title mb-0">@T["Featured"]</h2>
+            <a asp-controller="Product" asp-action="Index" class="algara-link-accent">@T["ViewAll"] &rarr;</a>
         </div>
 
         @if (Model.FeaturedProducts.Any())
@@ -103,9 +104,9 @@ else
                         <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
                            class="algara-product-card d-block text-decoration-none h-100">
                             <div class="position-relative">
-                                @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                                @if (!string.IsNullOrWhiteSpace(p.GetMainImageUrl()))
                                 {
-                                    <img src="@p.ImageUrl" alt="@p.Name" class="algara-product-card__img" />
+                                    <img src="@p.GetMainImageUrl()" alt="@p.GetName()" class="algara-product-card__img" />
                                 }
                                 @if (discount.HasValue)
                                 {
@@ -122,7 +123,8 @@ else
                                 {
                                     <span class="algara-product-card__cat">@p.Category.Name</span>
                                 }
-                                <div class="algara-product-card__name">@p.Name</div>
+                                <div class="algara-product-card__name">@p.GetName()</div>
+                                <div class="text-muted small mb-2">@T["Sku"]: @p.Sku</div>
                                 @if (discount.HasValue)
                                 {
                                     <div>
@@ -136,7 +138,7 @@ else
                                 }
                                 @if (p.IsCustomizable)
                                 {
-                                    <span class="algara-badge-custom">По поръчка</span>
+                                    <span class="algara-badge-custom">@T["MadeToOrder"]</span>
                                 }
                             </div>
                         </a>
@@ -146,11 +148,11 @@ else
         }
         else
         {
-            <p class="text-muted">Няма препоръчани продукти в момента.</p>
+            <p class="text-muted">@T["NoFeatured"]</p>
         }
 
         <div class="text-center mt-5">
-            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">Виж целия каталог</a>
+            <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">@T["FullCatalog"]</a>
         </div>
     </div>
 </section>

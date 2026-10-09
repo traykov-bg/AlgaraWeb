@@ -254,6 +254,7 @@
                                                name="ProductRows[@i].DiscountPercent"
                                                value="@row.DiscountPercent.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)"
                                                class="form-control form-control-sm text-end row-percent" />
+                                        <input type="hidden" name="__Invariant" value="ProductRows[@i].DiscountPercent" />
                                         <span class="input-group-text">%</span>
                                     </div>
                                     @Html.ValidationMessage($"ProductRows[{i}].DiscountPercent", null, new { @class = "text-danger small" })
@@ -274,6 +275,7 @@
                                                name="ProductRows[@i].PromoPrice"
                                                value="@row.PromoPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                                class="form-control form-control-sm text-end fw-bold row-promo" />
+                                        <input type="hidden" name="__Invariant" value="ProductRows[@i].PromoPrice" />
                                         <span class="input-group-text">€</span>
                                     </div>
                                     @Html.ValidationMessage($"ProductRows[{i}].PromoPrice", null, new { @class = "text-danger small" })
