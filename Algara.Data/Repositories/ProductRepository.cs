@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Algara.Data.Repositories
 {
-    public class ProductRepository : IProductRepository
+    public partial class ProductRepository : IProductRepository
     {
         private readonly ShopDbContext _context;
 
@@ -19,6 +19,9 @@ namespace Algara.Data.Repositories
                     .ThenInclude(pp => pp.Promotion)
                 .Include(p => p.Translations)
                 .Include(p => p.Images)
+                .Include(p => p.Variants).ThenInclude(v => v.Color).ThenInclude(c => c.Fabric)
+                .Include(p => p.Variants).ThenInclude(v => v.Image)
+                .Include(p => p.FabricSurcharges).ThenInclude(s => s.Fabric)
                 .AsSplitQuery();
 
         public async Task<IEnumerable<Product>> GetAllAsync()
@@ -52,20 +55,26 @@ namespace Algara.Data.Repositories
 
         public async Task AddAsync(Product product)
         {
+            await using var transaction = await BeginCatalogWriteAsync();
             product.Sku = ProductSku.Normalize(product.Sku);
             var automaticSku = product.Sku.Length == 0;
             if (!automaticSku)
                 await ValidateSkuAsync(product);
 
+            await PrepareVariantCodesAsync(product);
             _context.Products.Add(product);
             while (true)
             {
                 if (automaticSku)
-                    product.Sku = await GetNextAvailableSkuAsync();
+                {
+                    do { product.Sku = await GetNextAvailableSkuAsync(); }
+                    while (product.Variants.Any(v => v.Sku == product.Sku));
+                }
 
                 try
                 {
                     await _context.SaveChangesAsync();
+                    if (transaction != null) await transaction.CommitAsync();
                     return;
                 }
                 catch (DbUpdateException ex) when (IsSkuConflict(ex))
@@ -80,13 +89,18 @@ namespace Algara.Data.Repositories
 
         public async Task UpdateAsync(Product product)
         {
+            await using var transaction = await BeginCatalogWriteAsync();
             product.Sku = ProductSku.Normalize(product.Sku);
             await ValidateSkuAsync(product);
+            await PrepareVariantCodesAsync(product);
             if (_context.Entry(product).State == EntityState.Detached)
                 _context.Products.Update(product);
+            // Advance the product token even when only variant stock or gallery membership changes.
+            _context.Entry(product).Property(p => p.Name).IsModified = true;
             try
             {
                 await _context.SaveChangesAsync();
+                if (transaction != null) await transaction.CommitAsync();
             }
             catch (DbUpdateException ex) when (IsSkuConflict(ex))
             {
@@ -98,7 +112,7 @@ namespace Algara.Data.Repositories
         {
             if (!ProductSku.IsValid(product.Sku))
                 throw new ArgumentException("SKU must contain 1 to 64 ASCII letters, digits, hyphens or underscores.", nameof(product));
-            if (await _context.Products.AnyAsync(p => p.Sku == product.Sku && p.N != product.N))
+            if (await _context.Products.AnyAsync(p => p.Sku == product.Sku && p.N != product.N) || await _context.ProductVariants.AnyAsync(v => v.Sku == product.Sku))
                 throw new ProductSkuConflictException(product.Sku);
         }
 
@@ -111,7 +125,7 @@ namespace Algara.Data.Repositories
                 var numbers = await _context.Database.SqlQueryRaw<long>(
                     "SELECT NEXT VALUE FOR [ProductSkuNumbers] AS [Value]").ToListAsync();
                 var sku = ProductSku.FormatNumber(numbers.Single());
-                if (!await _context.Products.AnyAsync(p => p.Sku == sku))
+                if (!await _context.Products.AnyAsync(p => p.Sku == sku) && !await _context.ProductVariants.AnyAsync(v => v.Sku == sku))
                     return sku;
             }
         }

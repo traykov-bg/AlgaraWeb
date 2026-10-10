@@ -1,0 +1,73 @@
+﻿@model Algara.Web.ViewModels.Admin.ColorFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.N.HasValue ? "Редакция на цвят" : "Нов цвят";
+}
+<div class="card border-0 shadow-sm" style="max-width:60rem">
+    <div class="card-body p-4">
+        <form asp-action="@(Model.N.HasValue ? "ColorEdit" : "ColorCreate")" asp-route-n="@Model.N" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="N" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="FabricN" class="form-label">Дамаска</label>
+                    @if (Model.N.HasValue)
+                    {
+                        <input type="hidden" asp-for="FabricN" />
+                        <div class="form-control bg-light">@Model.FabricName</div>
+                        <div class="form-text">Дамаската на съществуващ цвят не се сменя, за да се запазят продуктовите варианти.</div>
+                    }
+                    else
+                    {
+                        <select asp-for="FabricN" asp-items="Model.Fabrics" class="form-select"><option value="">Самостоятелен цвят (без дамаска)</option></select>
+                    }
+                    <span asp-validation-for="FabricN" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Code" class="form-label">Код</label>
+                    <input asp-for="Code" class="form-control" maxlength="64" required />
+                    <span asp-validation-for="Code" class="text-danger small"></span>
+                    <div class="form-text">Уникален в тази дамаска или сред самостоятелните цветове. Кирилицата е разрешена.</div>
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="Name" class="form-label">Име на български</label>
+                    <input asp-for="Name" class="form-control" maxlength="200" required />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EnglishName" class="form-label">Име на английски (незадължително)</label>
+                    <input asp-for="EnglishName" class="form-control" maxlength="200" />
+                    <span asp-validation-for="EnglishName" class="text-danger small"></span>
+                    <div class="form-text">При липсващ превод се показва българското име.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="HexColor" class="form-label">Цвят</label>
+                    <input asp-for="HexColor" type="color" value="@(Model.HexColor ?? "#808080")" class="form-control form-control-color" title="Изберете цвят от палитрата" />
+                    <span asp-validation-for="HexColor" class="text-danger small"></span>
+                    <div class="form-text">Натиснете цветното поле, за да изберете от палитрата. Ако качите мостра, тя се показва вместо цветното поле.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SwatchFile" class="form-label">Снимка на мострата</label>
+                    <input asp-for="SwatchFile" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" />
+                    <span asp-validation-for="SwatchFile" class="text-danger small"></span>
+                    <div class="form-text">JPEG, PNG или WebP до 5 MB. Мострата се записва с бутона „Запиши“. Нова снимка заменя текущата.</div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <div class="col-12"><img src="@Model.ImageUrl" alt="Текуща мостра" width="120" height="120" class="rounded border" style="object-fit:cover" /></div>
+                }
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label">Активен цвят</label>
+                    </div>
+                    <div class="form-text">Неактивните цветове не се предлагат на клиентите. Записаните варианти се запазват.</div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Запиши</button>
+                <a asp-action="Colors" asp-route-fabricN="@(Model.FabricN ?? 0)" class="btn btn-outline-secondary">Откажи</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -52,6 +52,17 @@ namespace Algara.Web.ViewModels.Admin
         [Display(Name = "Цена (€)")]
         public decimal Price { get; set; }
 
+        public string? RowVersion { get; set; }
+        public ProductOptionKind OptionKind { get; set; }
+        [Range(0, 1_000_000)]
+        public int? StockQuantity { get; set; }
+        public List<AdminProductVariantViewModel> Variants { get; set; } = [];
+        public List<AdminProductFabricSurchargeViewModel> FabricSurcharges { get; set; } = [];
+        [BindNever]
+        public List<CatalogColor> AvailableColors { get; set; } = [];
+        [BindNever]
+        public List<Fabric> AvailableFabrics { get; set; } = [];
+
         public string? GalleryDraftId { get; set; }
         public List<AdminProductImageViewModel> Images { get; set; } = [];
 
@@ -85,5 +96,26 @@ namespace Algara.Web.ViewModels.Admin
 
         [BindNever]
         public string ImageUrl { get; set; } = string.Empty;
+    }
+
+    public class AdminProductVariantViewModel
+    {
+        public int N { get; set; }
+        public int CatalogColorN { get; set; }
+        [MaxLength(64)]
+        public string? Sku { get; set; }
+        [Range(0, 1_000_000)]
+        public int? StockQuantity { get; set; }
+        public decimal Surcharge { get; set; }
+        public int? ProductImageN { get; set; }
+        public string? ProductImageUploadId { get; set; }
+        public bool IsDefault { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class AdminProductFabricSurchargeViewModel
+    {
+        public int FabricN { get; set; }
+        public decimal Surcharge { get; set; }
     }
 }

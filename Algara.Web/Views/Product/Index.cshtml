@@ -178,7 +178,7 @@ else
             var activePromo   = product.GetActivePromotion(Model.PricingAt);
             var discount      = product.GetActiveDiscount(Model.PricingAt);
             var discountLabel = product.GetDiscountLabel(Model.PricingAt);
-            var finalPrice    = product.GetDiscountedPrice(Model.PricingAt);
+            var finalPrice    = product.GetCatalogPrice(Model.PricingAt);
             var promoNote     = activePromo?.Note;
             var productName = product.GetName();
             var description = product.GetDescription();
@@ -235,15 +235,19 @@ else
                         <div>
                             @if (discount.HasValue)
                             {
-                                <span class="fw-bold text-danger me-1">@finalPrice.ToString("N2") €</span>
-                                <span class="text-muted text-decoration-line-through small">@(activePromo!.OriginalPrice.ToString("N2")) €</span>
+                                <span class="fw-bold text-danger me-1">@(product.OptionKind != ProductOptionKind.None ? T["StartingAt"].Value + " " : "")@finalPrice.ToString("N2") €</span>
+                                <span class="text-muted text-decoration-line-through small">@(product.GetCatalogOriginalPrice(Model.PricingAt).ToString("N2")) €</span>
                             }
                             else
                             {
-                                <strong>@product.Price.ToString("N2") €</strong>
+                                <strong>@(product.OptionKind != ProductOptionKind.None ? T["StartingAt"].Value + " " : "")@finalPrice.ToString("N2") €</strong>
                             }
                         </div>
-                        @if (product.IsCustomizable)
+                        @if (discount.HasValue && product.OptionKind != ProductOptionKind.None)
+                        {
+                            <small class="text-muted ms-2">@T["PromotionBaseOnly"]</small>
+                        }
+                        @if (product.GetAvailability(product.GetDefaultVariant()) == ProductAvailability.MadeToOrder)
                         {
                             <span class="badge bg-info">@T["MadeToOrder"]</span>
                         }

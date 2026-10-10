@@ -46,8 +46,13 @@ namespace Algara.Web.Controllers
             return View();
         }
 
+        public IActionResult Delivery()
+        {
+            return View();
+        }
+
         [Route("Home/HttpError/{code:int}")]
-        public IActionResult HttpError(int code)
+        public IActionResult HttpError([FromRoute] int code)
         {
             Response.StatusCode = code;
             return View(code);

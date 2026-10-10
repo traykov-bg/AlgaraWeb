@@ -1,0 +1,96 @@
+﻿@model Algara.Data.Models.Product
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
+@{
+    var variants = Model.GetSelectableVariants().ToList();
+    var selected = variants.FirstOrDefault(variant => variant.N == (int?)ViewData["SelectedVariantN"]) ?? Model.GetDefaultVariant();
+    var pricingAt = (DateTime?)ViewData["VariantPricingAt"] ?? DateTime.Now;
+    var isFabric = Model.OptionKind == ProductOptionKind.Fabric;
+    string Money(decimal value) => value.ToString("N2") + " €";
+    string SelectionName(ProductVariant variant) => isFabric
+        ? variant.Color.Fabric!.GetName() + " / " + variant.Color.GetName()
+        : variant.Color.GetName();
+}
+
+@if (selected == null)
+{
+    <p class="text-muted">@T["NoAvailableVariants"]</p>
+}
+else
+{
+    <section class="algara-variant-picker mb-3" data-variant-picker
+             data-initial-variant="@selected.N" data-base-photo-note="@T["BaseProductPhoto"]"
+             data-exact-photo-note="@T["ExactVariantPhoto"]" data-no-photo-note="@T["NoImage"]">
+        <h3 class="h6">@T[isFabric ? "ChooseFabricAndColor" : "ChooseColor"]</h3>
+        @if (isFabric)
+        {
+            <div class="algara-variant-picker__filters mb-3" data-variant-filters hidden>
+                <label class="algara-variant-picker__fabric">
+                    <span class="form-label small">@T["Fabric"]</span>
+                    <select class="form-select" data-variant-fabric>
+                        @foreach (var fabricVariants in variants.GroupBy(variant => variant.Color.FabricN).OrderBy(group => group.First().Color.Fabric!.GetName()))
+                        {
+                            var first = fabricVariants.First();
+                            var surcharge = Model.GetVariantSurcharge(first);
+                            <option value="@fabricVariants.Key" selected="@(selected.Color.FabricN == fabricVariants.Key)">
+                                @(first.Color.Fabric!.GetName() + (surcharge > 0 ? " (+" + Money(surcharge) + ")" : ""))
+                            </option>
+                        }
+                    </select>
+                </label>
+            </div>
+        }
+        <div class="algara-variant-picker__grid" role="group" aria-label="@T["Colors"]" data-variant-grid>
+            @foreach (var variant in variants)
+            {
+                var color = variant.Color;
+                var variantImage = Model.GetVariantImageUrl(variant);
+                var exactImage = variant.ProductImageN != null && Model.Images.Any(image => image.N == variant.ProductImageN);
+                var swatchHex = System.Text.RegularExpressions.Regex.IsMatch(color.HexColor ?? "", "^#[0-9a-fA-F]{6}$") ? color.HexColor : "#e9ecef";
+                var selectionName = SelectionName(variant);
+                var selectedHere = selected.N == variant.N;
+                <div class="algara-variant-picker__option" data-variant-option>
+                    <a asp-action="Detail" asp-route-n="@Model.N" asp-route-variant="@variant.N"
+                       class="algara-variant-picker__choice @(selectedHere ? "is-selected" : "")" role="button"
+                       aria-pressed="@(selectedHere ? "true" : "false")" aria-label="@selectionName" data-variant-id="@variant.N"
+                       data-fabric="@color.FabricN" data-name="@selectionName"
+                       data-price="@Money(Model.GetVariantPrice(variant, pricingAt))"
+                       data-original="@Money(Model.GetVariantOriginalPrice(variant, pricingAt))"
+                       data-status="@T["Availability" + Model.GetAvailability(variant)]"
+                       data-image="@(string.IsNullOrWhiteSpace(variantImage) ? "" : Url.Content(variantImage))"
+                       data-exact-image="@(exactImage ? "true" : "false")">
+                        <span class="algara-variant-picker__swatch" style="background-color:@swatchHex">
+                            @if (!string.IsNullOrWhiteSpace(color.ImageUrl))
+                            {
+                                <img src="@color.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </span>
+                        <span class="algara-variant-picker__name">@color.GetName()</span>
+                    </a>
+                    <button type="button" class="algara-variant-picker__zoom" data-swatch-zoom hidden
+                            data-swatch-image="@(string.IsNullOrWhiteSpace(color.ImageUrl) ? "" : Url.Content(color.ImageUrl))"
+                            data-swatch-hex="@swatchHex" data-swatch-title="@selectionName"
+                            aria-label="@T["EnlargeSwatch", selectionName]">
+                        <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+                    </button>
+                </div>
+            }
+        </div>
+        <div class="algara-variant-picker__summary mt-3" aria-live="polite" aria-atomic="true">
+            <p class="mb-1"><span class="text-muted">@T["SelectedOption"]:</span> <strong data-variant-name>@SelectionName(selected)</strong></p>
+            <p class="fw-semibold mb-0" data-variant-status>@T["Availability" + Model.GetAvailability(selected)]</p>
+        </div>
+        @if (Model.GetActivePromotion(pricingAt) != null)
+        {
+            <p class="small text-muted mt-2 mb-0">@T["PromotionBaseOnly"]</p>
+        }
+        <dialog class="algara-swatch-dialog" data-swatch-dialog aria-labelledby="swatch-dialog-title">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <h3 id="swatch-dialog-title" class="h6 mb-0" data-swatch-dialog-title></h3>
+                <button type="button" class="btn-close" data-swatch-close aria-label="@T["Close"]"></button>
+            </div>
+            <div class="algara-swatch-dialog__sample" data-swatch-dialog-sample>
+                <img alt="" data-swatch-dialog-image hidden />
+            </div>
+        </dialog>
+    </section>
+}

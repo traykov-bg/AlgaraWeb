@@ -100,6 +100,18 @@
                     </a>
                 </li>
                 <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Fabric") == true ? "active" : "")"
+                       asp-controller="Admin" asp-action="Fabrics">
+                        <i class="bi bi-grid-3x3-gap"></i> Дамаски
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Color") == true ? "active" : "")"
+                       asp-controller="Admin" asp-action="Colors">
+                        <i class="bi bi-palette"></i> Цветове и мостри
+                    </a>
+                </li>
+                <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Category") == true ? "active" : "")"
                        asp-controller="Admin" asp-action="Categories">
                         <i class="bi bi-tags"></i> Категории
@@ -187,6 +199,7 @@
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/admin-form-keyboard.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

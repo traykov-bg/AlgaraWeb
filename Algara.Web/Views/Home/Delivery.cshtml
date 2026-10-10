@@ -1,0 +1,38 @@
+﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
+@{
+    ViewData["Title"] = T["Delivery"].Value;
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-lg-9">
+        <h1 class="algara-section-title">@T["Delivery"]</h1>
+        <p class="lead text-muted">@T["DeliveryIntro"]</p>
+        <div class="row g-4 my-3">
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <i class="bi bi-truck fs-2 text-success" aria-hidden="true"></i>
+                    <h2 class="h5 mt-3">@T["AvailabilityInStock"]</h2>
+                    <p class="mb-0">@T["DeliveryInStock", DeliveryPolicy.DeliveryWorkingDays]</p>
+                </div>
+            </section>
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <i class="bi bi-tools fs-2 text-warning" aria-hidden="true"></i>
+                    <h2 class="h5 mt-3">@T["DeliveryManufacturingTitle"]</h2>
+                    <p>@T["DeliveryManufacturing", DeliveryPolicy.ManufacturingWorkingDays]</p>
+                    <p class="mb-0">@T["DeliveryManufacturingExtra", DeliveryPolicy.DeliveryWorkingDays]</p>
+                </div>
+            </section>
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <i class="bi bi-chat-dots fs-2 text-secondary" aria-hidden="true"></i>
+                    <h2 class="h5 mt-3">@T["AvailabilityInquiry"]</h2>
+                    <p class="mb-0">@T["DeliveryInquiry"]</p>
+                </div>
+            </section>
+        </div>
+        <p class="text-muted">@T["DeliveryVariantStock"]</p>
+        <a asp-controller="Home" asp-action="Contact" class="btn btn-outline-primary">@T["Contact"]</a>
+        <a asp-controller="Product" asp-action="Index" class="btn btn-link">@T["BackToCatalog"]</a>
+    </div>
+</div>

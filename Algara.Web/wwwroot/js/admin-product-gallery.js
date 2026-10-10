@@ -68,6 +68,8 @@
             data.append('__RequestVerificationToken', token ? token.value : '');
             data.append('productN', gallery.dataset.productN || '0');
             data.append('draftId', gallery.dataset.draftId || '');
+            var version = form.querySelector('input[name="RowVersion"]');
+            data.append('rowVersion', version ? version.value : '');
             return data;
         }
         async function request(url, data) {
@@ -86,6 +88,8 @@
             if (!response.ok) {
                 throw new Error(result && typeof result.error === 'string' ? result.error : 'Снимките не бяха променени. Опитайте отново.');
             }
+            var version = form.querySelector('input[name="RowVersion"]');
+            if (version && result && typeof result.rowVersion === 'string') version.value = result.rowVersion;
             return result;
         }
         function button(className, text, attribute, value) {

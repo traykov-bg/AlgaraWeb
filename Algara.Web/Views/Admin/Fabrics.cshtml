@@ -1,0 +1,48 @@
+﻿@model Algara.Web.ViewModels.Admin.FabricCatalogViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Дамаски";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <p class="text-muted mb-0">Общи колекции дамаски. Надценките и наличностите се задават в съответния продукт.</p>
+    <a asp-action="FabricCreate" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Нова дамаска</a>
+</div>
+<form method="get" asp-action="Fabrics" class="d-flex flex-wrap gap-2 mb-4" role="search">
+    <label for="fabric-search" class="visually-hidden">Търсене на дамаска</label>
+    <input id="fabric-search" name="search" value="@Model.Search" class="form-control" style="max-width:26rem" placeholder="Име или код на дамаска" />
+    <button class="btn btn-outline-primary" type="submit">Търси</button>
+    <a asp-action="Fabrics" class="btn btn-outline-secondary">Всички</a>
+</form>
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Снимка</th><th>Код</th><th>Дамаска</th><th>Цветове</th><th>Статус</th><th><span class="visually-hidden">Действия</span></th></tr></thead>
+            <tbody>
+                @foreach (var fabric in Model.Fabrics)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(fabric.ImageUrl))
+                            {
+                                <img src="@fabric.ImageUrl" alt="Дамаска: @fabric.Name" width="64" height="64" class="rounded border" style="object-fit:cover" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td><code>@fabric.Code</code></td>
+                        <td><a asp-action="FabricEdit" asp-route-n="@fabric.N" class="fw-semibold">@fabric.Name</a></td>
+                        <td><a asp-action="Colors" asp-route-fabricN="@fabric.N">@fabric.Colors.Count цвята</a></td>
+                        <td><span class="badge @(fabric.IsActive ? "text-bg-success" : "text-bg-secondary")">@(fabric.IsActive ? "Активна" : "Неактивна")</span></td>
+                        <td class="text-end"><a asp-action="ColorCreate" asp-route-fabricN="@fabric.N" class="btn btn-sm btn-outline-primary">Добави цвят</a></td>
+                    </tr>
+                }
+                @if (Model.Fabrics.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Няма намерени дамаски.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

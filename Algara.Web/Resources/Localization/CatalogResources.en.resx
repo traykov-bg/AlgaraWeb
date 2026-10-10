@@ -54,4 +54,38 @@
   <data name="ViewAll" xml:space="preserve"><value>View all</value></data>
   <data name="FullCatalog" xml:space="preserve"><value>View full catalog</value></data>
   <data name="NoFeatured" xml:space="preserve"><value>No featured products at the moment.</value></data>
+  <data name="Delivery" xml:space="preserve"><value>Delivery</value></data>
+  <data name="DeliveryIntro" xml:space="preserve"><value>The following timeframes depend on the availability of the selected product or variant.</value></data>
+  <data name="DeliveryInStock" xml:space="preserve"><value>Delivery within {0} working days for any product in stock.</value></data>
+  <data name="DeliveryManufacturingTitle" xml:space="preserve"><value>Upholstered furniture production</value></data>
+  <data name="DeliveryManufacturing" xml:space="preserve"><value>When upholstered furniture is not in stock, manufacturing takes {0} working days.</value></data>
+  <data name="DeliveryManufacturingExtra" xml:space="preserve"><value>Delivery is not included in the manufacturing timeframe. Allow up to {0} additional working days for delivery.</value></data>
+  <data name="DeliveryInquiry" xml:space="preserve"><value>Out-of-stock accessories and other products that are not upholstered furniture are available by inquiry.</value></data>
+  <data name="DeliveryVariantStock" xml:space="preserve"><value>Availability refers to the exact color or fabric and color combination. If availability is unspecified, please contact us.</value></data>
+  <data name="DeliveryTerms" xml:space="preserve"><value>Delivery terms and timeframes</value></data>
+  <data name="AvailabilityUnknown" xml:space="preserve"><value>Availability not specified</value></data>
+  <data name="AvailabilityInStock" xml:space="preserve"><value>In stock</value></data>
+  <data name="AvailabilityMadeToOrder" xml:space="preserve"><value>Made to order</value></data>
+  <data name="AvailabilityInquiry" xml:space="preserve"><value>By inquiry</value></data>
+  <data name="PromotionBaseOnly" xml:space="preserve"><value>The promotion applies to the base model. The full surcharge for the selected fabric or color is added without a discount.</value></data>
+  <data name="ExactVariantPhoto" xml:space="preserve"><value>Photo of the selected variant.</value></data>
+  <data name="BaseProductPhoto" xml:space="preserve"><value>General model photo. It may not show the selected fabric or color.</value></data>
+  <data name="NoAvailableVariants" xml:space="preserve"><value>No options are currently available to select. Please contact us for details.</value></data>
+  <data name="ChooseFabricAndColor" xml:space="preserve"><value>Choose fabric and color</value></data>
+  <data name="ChooseColor" xml:space="preserve"><value>Choose a color</value></data>
+  <data name="Fabric" xml:space="preserve"><value>Fabric</value></data>
+  <data name="Colors" xml:space="preserve"><value>Colors</value></data>
+  <data name="NoSurcharge" xml:space="preserve"><value>No surcharge</value></data>
+  <data name="WithSurcharge" xml:space="preserve"><value>With surcharge</value></data>
+  <data name="Surcharge" xml:space="preserve"><value>Surcharge</value></data>
+  <data name="SearchOptions" xml:space="preserve"><value>Search colors</value></data>
+  <data name="SearchOptionsPlaceholder" xml:space="preserve"><value>Name or code…</value></data>
+  <data name="ColorGroup" xml:space="preserve"><value>Color group</value></data>
+  <data name="EnlargeSwatch" xml:space="preserve"><value>Enlarge swatch: {0}</value></data>
+  <data name="NoMatchingOptions" xml:space="preserve"><value>No options match these filters. Change your search or filter.</value></data>
+  <data name="SelectedOption" xml:space="preserve"><value>Selected option</value></data>
+  <data name="VariantCode" xml:space="preserve"><value>Variant code</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="StartingAt" xml:space="preserve"><value>from</value></data>
+  <data name="DeliveryDetails" xml:space="preserve"><value>Delivery information</value></data>
 </root>

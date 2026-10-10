@@ -1,0 +1,68 @@
+﻿@model Algara.Web.ViewModels.Admin.FabricFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.N.HasValue ? "Редакция на дамаска" : "Нова дамаска";
+}
+<div class="card border-0 shadow-sm" style="max-width:60rem">
+    <div class="card-body p-4">
+        <form asp-action="@(Model.N.HasValue ? "FabricEdit" : "FabricCreate")" asp-route-n="@Model.N" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="N" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="Code" class="form-label">Код (незадължителен)</label>
+                    <input asp-for="Code" class="form-control" maxlength="200" />
+                    <span asp-validation-for="Code" class="text-danger small"></span>
+                    <div class="form-text">Ако е празен, се използва името без интервали. Кирилицата е разрешена. Кодът трябва да е уникален.</div>
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="Name" class="form-label">Име на български</label>
+                    <input asp-for="Name" class="form-control" maxlength="200" required />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="ImageFile" class="form-label">Снимка на дамаската</label>
+                    <input asp-for="ImageFile" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" />
+                    <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                    <div class="form-text">JPEG, PNG или WebP до 5 MB. Снимката се записва с „Запиши“. Нова снимка заменя текущата.</div>
+                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="Текуща снимка на дамаската" width="144" height="144" class="rounded border mt-2" style="object-fit:cover" />
+                    }
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label">Описание на български</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" maxlength="4000"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <details class="border rounded p-3">
+                        <summary class="fw-semibold">Превод на английски (незадължителен)</summary>
+                        <p class="form-text">При липсващ превод се показва съответният български текст.</p>
+                        <label asp-for="EnglishName" class="form-label">Име на английски</label>
+                        <input asp-for="EnglishName" class="form-control mb-2" maxlength="200" />
+                        <span asp-validation-for="EnglishName" class="text-danger small"></span>
+                        <label asp-for="EnglishDescription" class="form-label">Описание на английски</label>
+                        <textarea asp-for="EnglishDescription" class="form-control" rows="3" maxlength="4000"></textarea>
+                        <span asp-validation-for="EnglishDescription" class="text-danger small"></span>
+                    </details>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label">Активна дамаска</label>
+                    </div>
+                    <div class="form-text">Неактивните дамаски не се предлагат на клиентите. Записаните варианти се запазват.</div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Запиши</button>
+                <a asp-action="Fabrics" class="btn btn-outline-secondary">Откажи</a>
+                @if (Model.N.HasValue)
+                {
+                    <a asp-action="Colors" asp-route-fabricN="@Model.N" class="btn btn-outline-primary">Цветове на дамаската</a>
+                }
+            </div>
+        </form>
+    </div>
+</div>

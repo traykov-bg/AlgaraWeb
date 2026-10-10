@@ -1,0 +1,56 @@
+﻿@model Algara.Web.ViewModels.Admin.ColorCatalogViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Цветове и мостри";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <p class="text-muted mb-0">Цветове към дамаска или самостоятелни цветове за останалите продукти.</p>
+    <a asp-action="ColorCreate" asp-route-fabricN="@Model.FabricN" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Нов цвят</a>
+</div>
+<form asp-action="Colors" method="get" class="row g-2 mb-4" role="search">
+    <div class="col-md-6">
+        <label for="color-search" class="form-label">Име или код</label>
+        <input id="color-search" name="search" value="@Model.Search" class="form-control" placeholder="Търсене на цвят" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="FabricN" class="form-label">Дамаска</label>
+        <select asp-for="FabricN" asp-items="Model.Fabrics" class="form-select"><option value="">Всички</option><option value="0">Самостоятелни цветове</option></select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-outline-primary">Търси</button>
+        <a asp-action="Colors" class="btn btn-outline-secondary" title="Изчисти филтрите" aria-label="Изчисти филтрите"><i class="bi bi-x-lg"></i></a>
+    </div>
+</form>
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Мостра</th><th>Код</th><th>Цвят</th><th>Дамаска</th><th>Статус</th><th><span class="visually-hidden">Действия</span></th></tr></thead>
+            <tbody>
+                @foreach (var color in Model.Colors)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(color.ImageUrl))
+                            {
+                                <img src="@color.ImageUrl" alt="Мостра: @color.Name" width="48" height="48" class="rounded border" style="object-fit:cover" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="d-inline-block rounded border" style="width:48px;height:48px;background-color:@color.HexColor" role="img" aria-label="@color.Name"></span>
+                            }
+                        </td>
+                        <td><code>@color.Code</code></td>
+                        <td><a asp-action="ColorEdit" asp-route-n="@color.N" class="fw-semibold">@color.Name</a></td>
+                        <td>@(color.Fabric?.Name ?? "Самостоятелен цвят")</td>
+                        <td><span class="badge @(color.IsActive ? "text-bg-success" : "text-bg-secondary")">@(color.IsActive ? "Активен" : "Неактивен")</span></td>
+                        <td class="text-end"><a asp-action="ColorEdit" asp-route-n="@color.N" class="btn btn-sm btn-outline-primary">Редактирай</a></td>
+                    </tr>
+                }
+                @if (Model.Colors.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Няма намерени цветове.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

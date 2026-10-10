@@ -17,7 +17,7 @@ public partial class AdminController
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
     [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit)]
-    public async Task<IActionResult> ProductImagesUpload(int productN, string? draftId, List<IFormFile> files)
+    public async Task<IActionResult> ProductImagesUpload(int productN, string? draftId, List<IFormFile> files, string? rowVersion = null)
     {
         var storage = new ProductImageStorage(_env);
         IReadOnlyList<string> savedUrls = [];
@@ -37,6 +37,7 @@ public partial class AdminController
             await using var write = await GalleryWriteLock.AcquireAsync(productN, HttpContext.RequestAborted);
             var product = await LoadEditableProductAsync(productN);
             if (product == null) return GalleryError("Продуктът не е намерен.", 404);
+            if (!MatchesProductVersion(product, rowVersion)) return GalleryError("Продуктът е променен. Презаредете страницата преди промяна на снимките.", 409);
             if (product.Images.Count + files.Count > MaxProductImages)
                 return GalleryError($"Галерията може да съдържа най-много {MaxProductImages} снимки.");
             savedUrls = await storage.SaveAsync(prepared, HttpContext.RequestAborted);
@@ -47,7 +48,7 @@ public partial class AdminController
             await _productRepo.UpdateAsync(product);
             await write.CommitAsync(HttpContext.RequestAborted);
             committed = true;
-            return Json(new { images = added.Select(i => new { n = i.N, uploadId = (string?)null, imageUrl = i.ImageUrl }) });
+            return Json(new { rowVersion = Convert.ToBase64String(product.RowVersion), images = added.Select(i => new { n = i.N, uploadId = (string?)null, imageUrl = i.ImageUrl }) });
         }
         catch (ProductImageValidationException ex) { return GalleryError(ex.Message); }
         catch (Exception ex) when (ex is DbUpdateException or DbException or IOException or UnauthorizedAccessException)
@@ -60,7 +61,7 @@ public partial class AdminController
 
     [HttpPost("products/images/delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ProductImageDelete(int productN, string? draftId, int imageN, string? uploadId)
+    public async Task<IActionResult> ProductImageDelete(int productN, string? draftId, int imageN, string? uploadId, string? rowVersion = null)
     {
         try
         {
@@ -75,8 +76,14 @@ public partial class AdminController
             await using var write = await GalleryWriteLock.AcquireAsync(productN, HttpContext.RequestAborted);
             var product = await LoadEditableProductAsync(productN);
             if (product == null) return GalleryError("Продуктът не е намерен.", 404);
+            if (!MatchesProductVersion(product, rowVersion)) return GalleryError("Продуктът е променен. Презаредете страницата преди промяна на снимките.", 409);
             var image = product.Images.SingleOrDefault(i => i.N == imageN);
             if (image == null) return GalleryError("Снимката не е намерена. Презаредете галерията.", 404);
+            foreach (var variant in product.Variants.Where(v => v.ProductImageN == imageN))
+            {
+                variant.Image = null;
+                variant.ProductImageN = null;
+            }
             product.Images.Remove(image);
             var ordered = product.Images.OrderBy(i => i.DisplayOrder).ThenBy(i => i.N).ToArray();
             for (var i = 0; i < ordered.Length; i++) ordered[i].DisplayOrder = i;
@@ -84,7 +91,7 @@ public partial class AdminController
             await _productRepo.UpdateAsync(product);
             await write.CommitAsync(HttpContext.RequestAborted);
             // Never delete arbitrary legacy/shared files from a posted path.
-            return Json(new { });
+            return Json(new { rowVersion = Convert.ToBase64String(product.RowVersion) });
         }
         catch (ProductImageValidationException ex) { return GalleryError(ex.Message); }
         catch (Exception ex) when (ex is DbUpdateException or DbException or IOException or UnauthorizedAccessException)

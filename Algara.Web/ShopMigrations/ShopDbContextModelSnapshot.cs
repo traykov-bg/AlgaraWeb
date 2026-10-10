@@ -24,6 +24,62 @@ namespace Algara.Web.ShopMigrations
 
             modelBuilder.HasSequence("ProductSkuNumbers");
 
+            modelBuilder.HasSequence("ProductVariantSkuNumbers");
+
+            modelBuilder.Entity("Algara.Data.Models.CatalogColor", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<string>("ColorGroup")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EnglishName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("FabricN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HexColor")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("FabricN", "Code")
+                        .IsUnique();
+
+                    b.ToTable("CatalogColors", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CatalogColors_Code", "DATALENGTH([Code]) BETWEEN 2 AND 128 AND LEN(LTRIM(RTRIM([Code]))) > 0");
+
+                            t.HasCheckConstraint("CK_CatalogColors_HexColor", "[HexColor] IS NULL OR (DATALENGTH([HexColor]) = 14 AND LEFT([HexColor], 1) = N'#' AND SUBSTRING([HexColor], 2, 6) COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9A-Fa-f]%')");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Category", b =>
                 {
                     b.Property<int>("N")
@@ -57,6 +113,55 @@ namespace Algara.Web.ShopMigrations
                     b.HasKey("N");
 
                     b.ToTable("Categories", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.Fabric", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("EnglishDescription")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("EnglishName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Fabrics", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Fabrics_Code", "DATALENGTH([Code]) BETWEEN 2 AND 400 AND LEN(LTRIM(RTRIM([Code]))) > 0");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.HeroSlide", b =>
@@ -206,6 +311,9 @@ namespace Algara.Web.ShopMigrations
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsUpholstered")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Materials")
                         .HasColumnType("nvarchar(max)");
 
@@ -214,14 +322,26 @@ namespace Algara.Web.ShopMigrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<int>("OptionKind")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Sku")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)")
                         .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<int?>("StockQuantity")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("WidthCm")
                         .HasColumnType("decimal(10,2)");
@@ -240,9 +360,36 @@ namespace Algara.Web.ShopMigrations
 
                             t.HasCheckConstraint("CK_Products_HeightCm", "[HeightCm] IS NULL OR ([HeightCm] > 0 AND [HeightCm] <= 100000)");
 
+                            t.HasCheckConstraint("CK_Products_OptionKind", "[OptionKind] IN (0, 1, 2)");
+
                             t.HasCheckConstraint("CK_Products_Sku", "DATALENGTH([Sku]) BETWEEN 2 AND 128 AND [Sku] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^-A-Z0-9_]%'");
 
+                            t.HasCheckConstraint("CK_Products_StockQuantity", "[StockQuantity] IS NULL OR ([StockQuantity] >= 0 AND [StockQuantity] <= 1000000)");
+
+                            t.HasCheckConstraint("CK_Products_VariantStock", "[OptionKind] = 0 OR [StockQuantity] IS NULL");
+
                             t.HasCheckConstraint("CK_Products_WidthCm", "[WidthCm] IS NULL OR ([WidthCm] > 0 AND [WidthCm] <= 100000)");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.ProductFabricSurcharge", b =>
+                {
+                    b.Property<int>("ProductN")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FabricN")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Surcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("ProductN", "FabricN");
+
+                    b.HasIndex("FabricN");
+
+                    b.ToTable("ProductFabricSurcharges", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductFabricSurcharges_Surcharge", "[Surcharge] >= 0");
                         });
                 });
 
@@ -345,6 +492,63 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.ProductVariant", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<int>("CatalogColorN")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ProductImageN")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<int?>("StockQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Surcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("CatalogColorN");
+
+                    b.HasIndex("Sku")
+                        .IsUnique();
+
+                    b.HasIndex("ProductN", "CatalogColorN")
+                        .IsUnique();
+
+                    b.HasIndex("ProductN", "ProductImageN");
+
+                    b.ToTable("ProductVariants", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductVariants_Sku", "DATALENGTH([Sku]) BETWEEN 2 AND 128 AND [Sku] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^-A-Z0-9_]%'");
+
+                            t.HasCheckConstraint("CK_ProductVariants_StockQuantity", "[StockQuantity] IS NULL OR ([StockQuantity] >= 0 AND [StockQuantity] <= 1000000)");
+
+                            t.HasCheckConstraint("CK_ProductVariants_Surcharge", "[Surcharge] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Promotion", b =>
                 {
                     b.Property<int>("N")
@@ -415,6 +619,16 @@ namespace Algara.Web.ShopMigrations
                     b.ToTable("SubCategories", (string)null);
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.CatalogColor", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Fabric", "Fabric")
+                        .WithMany("Colors")
+                        .HasForeignKey("FabricN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Fabric");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.OrderItem", b =>
                 {
                     b.HasOne("Algara.Data.Models.Order", "Order")
@@ -442,6 +656,25 @@ namespace Algara.Web.ShopMigrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.ProductFabricSurcharge", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Fabric", "Fabric")
+                        .WithMany()
+                        .HasForeignKey("FabricN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Algara.Data.Models.Product", "Product")
+                        .WithMany("FabricSurcharges")
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Fabric");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.ProductImage", b =>
@@ -504,6 +737,33 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.ProductVariant", b =>
+                {
+                    b.HasOne("Algara.Data.Models.CatalogColor", "Color")
+                        .WithMany()
+                        .HasForeignKey("CatalogColorN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Algara.Data.Models.Product", "Product")
+                        .WithMany("Variants")
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Algara.Data.Models.ProductImage", "Image")
+                        .WithMany()
+                        .HasForeignKey("ProductN", "ProductImageN")
+                        .HasPrincipalKey("ProductN", "N")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Color");
+
+                    b.Navigation("Image");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.SubCategory", b =>
                 {
                     b.HasOne("Algara.Data.Models.Category", "Category")
@@ -522,6 +782,11 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("SubCategories");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.Fabric", b =>
+                {
+                    b.Navigation("Colors");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Order", b =>
                 {
                     b.Navigation("OrderItems");
@@ -529,6 +794,8 @@ namespace Algara.Web.ShopMigrations
 
             modelBuilder.Entity("Algara.Data.Models.Product", b =>
                 {
+                    b.Navigation("FabricSurcharges");
+
                     b.Navigation("Images");
 
                     b.Navigation("OrderItems");
@@ -538,6 +805,8 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("ProductSubCategories");
 
                     b.Navigation("Translations");
+
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Promotion", b =>

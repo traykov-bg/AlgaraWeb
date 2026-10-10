@@ -11,18 +11,27 @@ namespace Algara.UnitTests.Controllers;
 // connect to SQL Server. Database constraints and MVC binding need HTTP/SQL tests.
 internal sealed class ProductAdminTestContext : ShopDbContext
 {
-    public ProductAdminTestContext(Product[] products, Category[] categories, SubCategory[] subCategories)
+    private readonly Func<int>? _save;
+
+    public ProductAdminTestContext(Product[] products, Category[] categories, SubCategory[] subCategories,
+        Fabric[]? fabrics = null, CatalogColor[]? colors = null, Func<int>? save = null)
         : base(new DbContextOptionsBuilder<ShopDbContext>()
             .UseSqlServer("Server=(local);Database=NeverOpenedProductUnitTest;Integrated Security=True;TrustServerCertificate=True")
             .Options)
     {
+        _save = save;
         Products = CreateSet(products);
         Categories = CreateSet(categories);
         SubCategories = CreateSet(subCategories);
+        Fabrics = CreateSet(fabrics ?? []);
+        CatalogColors = CreateSet(colors ?? []);
+        ProductVariants = CreateSet(products.SelectMany(p => p.Variants));
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => throw new InvalidOperationException("Product controller tests must save through the mocked repository.");
+        => _save is null
+            ? throw new InvalidOperationException("Product controller tests must save through the mocked repository.")
+            : Task.FromResult(_save());
     private DbSet<TEntity> CreateSet<TEntity>(IEnumerable<TEntity> rows) where TEntity : class
     {
         var query = new AsyncEnumerable<TEntity>(rows);

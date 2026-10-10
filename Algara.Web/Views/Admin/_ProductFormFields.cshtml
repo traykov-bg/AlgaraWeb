@@ -113,6 +113,8 @@
     </div>
 </div>
 
+@await Html.PartialAsync("_ProductVariants", Model)
+
 <section class="algara-image-editor border rounded p-3 mb-4" aria-labelledby="galleryHeading"
          data-product-gallery data-product-n="@Model.N" data-draft-id="@Model.GalleryDraftId"
          data-upload-url="@Url.Content("~/admin/products/images/upload")"
@@ -159,7 +161,7 @@
 <div class="d-flex flex-wrap gap-4 mt-2">
     <div class="form-check">
         <input class="form-check-input" asp-for="IsCustomizable" />
-        <label class="form-check-label" asp-for="IsCustomizable">По поръчка</label>
+        <label class="form-check-label" asp-for="IsCustomizable">Възможност за индивидуална поръчка</label>
     </div>
     <div class="form-check">
         <input class="form-check-input" asp-for="IsFeatured" />

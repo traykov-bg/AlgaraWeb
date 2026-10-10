@@ -99,7 +99,7 @@ else
                     var activePromo   = p.GetActivePromotion(pricingAt);
                     var discount      = p.GetActiveDiscount(pricingAt);
                     var discountLabel = p.GetDiscountLabel(pricingAt);
-                    var finalPrice    = p.GetDiscountedPrice(pricingAt);
+                    var finalPrice    = p.GetCatalogPrice(pricingAt);
                     <div class="col">
                         <a asp-controller="Product" asp-action="Detail" asp-route-n="@p.N"
                            class="algara-product-card d-block text-decoration-none h-100">
@@ -128,15 +128,19 @@ else
                                 @if (discount.HasValue)
                                 {
                                     <div>
-                                        <span class="algara-product-card__price text-danger fw-bold">@finalPrice.ToString("N2") €</span>
-                                        <span class="text-muted text-decoration-line-through ms-1" style="font-size:.85rem;">@(activePromo!.OriginalPrice.ToString("N2")) €</span>
+                                        <span class="algara-product-card__price text-danger fw-bold">@(p.OptionKind != ProductOptionKind.None ? T["StartingAt"].Value + " " : "")@finalPrice.ToString("N2") €</span>
+                                        <span class="text-muted text-decoration-line-through ms-1" style="font-size:.85rem;">@(p.GetCatalogOriginalPrice(pricingAt).ToString("N2")) €</span>
                                     </div>
                                 }
                                 else
                                 {
-                                    <div class="algara-product-card__price">@p.Price.ToString("N2") €</div>
+                                    <div class="algara-product-card__price">@(p.OptionKind != ProductOptionKind.None ? T["StartingAt"].Value + " " : "")@finalPrice.ToString("N2") €</div>
                                 }
-                                @if (p.IsCustomizable)
+                                @if (discount.HasValue && p.OptionKind != ProductOptionKind.None)
+                                {
+                                    <p class="small text-muted mb-1">@T["PromotionBaseOnly"]</p>
+                                }
+                                @if (p.GetAvailability(p.GetDefaultVariant()) == ProductAvailability.MadeToOrder)
                                 {
                                     <span class="algara-badge-custom">@T["MadeToOrder"]</span>
                                 }
@@ -213,8 +217,8 @@ else
             </div>
             <div class="col-12 col-md-4">
                 <div class="algara-usp-icon">🚚</div>
-                <h5 class="fw-semibold">Безплатна доставка</h5>
-                <p class="text-muted small">Безплатна доставка и монтаж за поръчки над 500 € в цяла България.</p>
+                <h5 class="fw-semibold">@T["Delivery"]</h5>
+                <p class="text-muted small">@T["DeliveryInStock", DeliveryPolicy.DeliveryWorkingDays] <a asp-controller="Home" asp-action="Delivery">@T["DeliveryDetails"]</a></p>
             </div>
             <div class="col-12 col-md-4">
                 <div class="algara-usp-icon">🔧</div>

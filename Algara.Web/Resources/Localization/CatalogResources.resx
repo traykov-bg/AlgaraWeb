@@ -54,4 +54,38 @@
   <data name="ViewAll" xml:space="preserve"><value>Виж всички</value></data>
   <data name="FullCatalog" xml:space="preserve"><value>Виж целия каталог</value></data>
   <data name="NoFeatured" xml:space="preserve"><value>Няма препоръчани продукти в момента.</value></data>
+  <data name="Delivery" xml:space="preserve"><value>Доставка</value></data>
+  <data name="DeliveryIntro" xml:space="preserve"><value>Общите срокове важат според наличността на избрания продукт или вариант.</value></data>
+  <data name="DeliveryInStock" xml:space="preserve"><value>Доставка до {0} работни дни за всеки продукт в наличност.</value></data>
+  <data name="DeliveryManufacturingTitle" xml:space="preserve"><value>Изработка на мека мебел</value></data>
+  <data name="DeliveryManufacturing" xml:space="preserve"><value>При липса на наличност срокът за изработка на мека мебел е {0} работни дни.</value></data>
+  <data name="DeliveryManufacturingExtra" xml:space="preserve"><value>Срокът за изработка не включва доставката. Доставката е допълнително до {0} работни дни.</value></data>
+  <data name="DeliveryInquiry" xml:space="preserve"><value>Аксесоари и други продукти, които не са мека мебел и не са налични, се предлагат по запитване.</value></data>
+  <data name="DeliveryVariantStock" xml:space="preserve"><value>Наличността се отнася за конкретния цвят или комбинация от дамаска и цвят. Ако няма посочена наличност, свържете се с нас за уточнение.</value></data>
+  <data name="DeliveryTerms" xml:space="preserve"><value>Условия и срокове за доставка</value></data>
+  <data name="AvailabilityUnknown" xml:space="preserve"><value>Наличността не е уточнена</value></data>
+  <data name="AvailabilityInStock" xml:space="preserve"><value>В наличност</value></data>
+  <data name="AvailabilityMadeToOrder" xml:space="preserve"><value>Изработка по поръчка</value></data>
+  <data name="AvailabilityInquiry" xml:space="preserve"><value>По запитване</value></data>
+  <data name="PromotionBaseOnly" xml:space="preserve"><value>Промоцията важи за базовия модел. Надценката за избраната дамаска или цвят се добавя без отстъпка.</value></data>
+  <data name="ExactVariantPhoto" xml:space="preserve"><value>Снимка на избрания вариант.</value></data>
+  <data name="BaseProductPhoto" xml:space="preserve"><value>Обща снимка на модела. Не показва непременно избраната дамаска или цвят.</value></data>
+  <data name="NoAvailableVariants" xml:space="preserve"><value>Няма налични за избор варианти. Свържете се с нас за уточнение.</value></data>
+  <data name="ChooseFabricAndColor" xml:space="preserve"><value>Изберете дамаска и цвят</value></data>
+  <data name="ChooseColor" xml:space="preserve"><value>Изберете цвят</value></data>
+  <data name="Fabric" xml:space="preserve"><value>Дамаска</value></data>
+  <data name="Colors" xml:space="preserve"><value>Цветове</value></data>
+  <data name="NoSurcharge" xml:space="preserve"><value>Без надценка</value></data>
+  <data name="WithSurcharge" xml:space="preserve"><value>С надценка</value></data>
+  <data name="Surcharge" xml:space="preserve"><value>Надценка</value></data>
+  <data name="SearchOptions" xml:space="preserve"><value>Търсене в цветовете</value></data>
+  <data name="SearchOptionsPlaceholder" xml:space="preserve"><value>Име или код…</value></data>
+  <data name="ColorGroup" xml:space="preserve"><value>Група цветове</value></data>
+  <data name="EnlargeSwatch" xml:space="preserve"><value>Увеличи мострата: {0}</value></data>
+  <data name="NoMatchingOptions" xml:space="preserve"><value>Няма варианти, които отговарят на филтрите. Променете търсенето или филтъра.</value></data>
+  <data name="SelectedOption" xml:space="preserve"><value>Избран вариант</value></data>
+  <data name="VariantCode" xml:space="preserve"><value>Код на варианта</value></data>
+  <data name="Close" xml:space="preserve"><value>Затвори</value></data>
+  <data name="StartingAt" xml:space="preserve"><value>от</value></data>
+  <data name="DeliveryDetails" xml:space="preserve"><value>Условия за доставка</value></data>
 </root>

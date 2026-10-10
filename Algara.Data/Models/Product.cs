@@ -13,6 +13,10 @@
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsCustomizable { get; set; }
+        public ProductOptionKind OptionKind { get; set; }
+        public bool IsUpholstered { get; set; }
+        public int? StockQuantity { get; set; }
+        public byte[] RowVersion { get; set; } = [];
         public bool IsFeatured { get; set; } = false;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -25,6 +29,8 @@
         public ICollection<ProductPromotion> ProductPromotions { get; set; } = new List<ProductPromotion>();
         public ICollection<ProductTranslation> Translations { get; set; } = new List<ProductTranslation>();
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+        public ICollection<ProductFabricSurcharge> FabricSurcharges { get; set; } = new List<ProductFabricSurcharge>();
 
         public string GetName(string? language = null)
             => TranslatedValue(GetTranslation(language)?.Name, Name)!;
@@ -38,6 +44,69 @@
         public string? GetMainImageUrl()
             => Images.OrderBy(i => i.DisplayOrder).ThenBy(i => i.N)
                 .Select(i => i.ImageUrl).FirstOrDefault() ?? ImageUrl;
+
+        public bool IsSelectableVariant(ProductVariant? variant)
+        {
+            if (variant == null || !variant.IsActive || variant.Color == null || !variant.Color.IsActive ||
+                (N > 0 ? variant.ProductN != N : !ReferenceEquals(variant.Product, this) && !Variants.Contains(variant)))
+                return false;
+
+            return OptionKind switch
+            {
+                ProductOptionKind.Color => variant.Color.FabricN == null,
+                ProductOptionKind.Fabric => variant.Color.FabricN.HasValue &&
+                    variant.Color.Fabric is { IsActive: true } &&
+                    FabricSurcharges.Any(s => s.FabricN == variant.Color.FabricN),
+                _ => false
+            };
+        }
+
+        public IEnumerable<ProductVariant> GetSelectableVariants()
+            => Variants.Where(IsSelectableVariant).OrderByDescending(v => v.IsDefault).ThenBy(v => v.N);
+
+        public ProductVariant? GetDefaultVariant() => GetSelectableVariants().FirstOrDefault();
+
+        public decimal GetVariantSurcharge(ProductVariant variant)
+        {
+            if (!IsSelectableVariant(variant))
+                throw new ArgumentException("The variant is not selectable for this product.", nameof(variant));
+
+            return OptionKind == ProductOptionKind.Fabric
+                ? FabricSurcharges.Single(s => s.FabricN == variant.Color.FabricN).Surcharge
+                : variant.Surcharge;
+        }
+
+        public decimal GetVariantPrice(ProductVariant variant, DateTime now)
+            => GetDiscountedPrice(now) + GetVariantSurcharge(variant);
+
+        public decimal GetVariantOriginalPrice(ProductVariant variant, DateTime now)
+            => (GetActivePromotion(now)?.OriginalPrice ?? Price) + GetVariantSurcharge(variant);
+
+        public decimal GetCatalogPrice(DateTime now)
+            => GetDiscountedPrice(now) + GetSelectableVariants().Select(GetVariantSurcharge).DefaultIfEmpty(0m).Min();
+
+        public decimal GetCatalogOriginalPrice(DateTime now)
+            => (GetActivePromotion(now)?.OriginalPrice ?? Price) + GetSelectableVariants().Select(GetVariantSurcharge).DefaultIfEmpty(0m).Min();
+
+        public string? GetVariantImageUrl(ProductVariant? variant)
+        {
+            if (!IsSelectableVariant(variant) || !variant!.ProductImageN.HasValue)
+                return GetMainImageUrl();
+
+            var exactImage = Images.FirstOrDefault(i => i.N == variant.ProductImageN && i.ProductN == N) ??
+                (variant.Image is { } image && image.N == variant.ProductImageN && image.ProductN == N ? image : null);
+            return !string.IsNullOrWhiteSpace(exactImage?.ImageUrl) ? exactImage.ImageUrl : GetMainImageUrl();
+        }
+
+        public ProductAvailability GetAvailability(ProductVariant? variant = null)
+        {
+            if (OptionKind == ProductOptionKind.None)
+                return variant == null ? DeliveryPolicy.GetAvailability(StockQuantity, IsUpholstered) : ProductAvailability.Unknown;
+
+            return IsSelectableVariant(variant)
+                ? DeliveryPolicy.GetAvailability(variant!.StockQuantity, IsUpholstered)
+                : ProductAvailability.Unknown;
+        }
 
         private ProductTranslation? GetTranslation(string? language)
         {

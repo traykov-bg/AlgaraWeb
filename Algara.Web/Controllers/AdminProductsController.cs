@@ -19,7 +19,7 @@ public partial class AdminController
     [HttpPost("products/create")]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
-    [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit, ValueCountLimit = 20000)]
     public async Task<IActionResult> ProductCreate(AdminProductFormViewModel vm)
         => await SaveProductAsync(vm, null);
 
@@ -41,13 +41,14 @@ public partial class AdminController
             SelectedSubCategoryNs = product.ProductSubCategories.Select(s => s.SubCategoryN).ToList(),
             Images = ImageRows(product)
         };
+        ReadVariantForm(vm, product);
         return View(await PrepareProductFormAsync(vm, product));
     }
 
     [HttpPost("products/edit/{n}")]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
-    [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit, ValueCountLimit = 20000)]
     public async Task<IActionResult> ProductEdit(AdminProductFormViewModel vm)
     {
         // Do not let a modified hidden field silently target a different route.
@@ -65,6 +66,8 @@ public partial class AdminController
     private Task<Product?> LoadEditableProductAsync(int n)
         => _shopDb.Products.Include(p => p.ProductSubCategories)
             .Include(p => p.Translations).Include(p => p.Images)
+            .Include(p => p.Variants).ThenInclude(v => v.Color).ThenInclude(c => c.Fabric)
+            .Include(p => p.FabricSurcharges)
             .AsSplitQuery().FirstOrDefaultAsync(p => p.N == n);
 
     private async Task<IActionResult> SaveProductAsync(AdminProductFormViewModel vm, Product? existing)
@@ -86,10 +89,12 @@ public partial class AdminController
                 originalImages = DraftRows(vm.GalleryDraftId, draft.Images);
             }
             await ValidateProductFormAsync(vm, existing);
+            await ValidateProductVariantsAsync(vm, existing);
             ValidateGallery(vm, originalImages);
             if (!ModelState.IsValid)
             {
                 RestoreImageRows(vm, originalImages);
+                RestoreRetainedVariantRows(vm, existing);
                 return View(await PrepareProductFormAsync(vm));
             }
             if (draft != null)
@@ -99,6 +104,7 @@ public partial class AdminController
             }
             var product = existing ?? new Product();
             ApplyProductForm(product, vm, savedUrls);
+            ApplyVariantForm(product, vm);
             if (existing == null) await _productRepo.AddAsync(product);
             else await _productRepo.UpdateAsync(product);
             saved = true;
@@ -119,6 +125,10 @@ public partial class AdminController
         {
             ModelState.AddModelError(nameof(vm.Sku), "Този артикулен код вече се използва. Въведете друг код.");
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            ModelState.AddModelError(string.Empty, "Продуктът е променен от друг потребител. Презаредете страницата и проверете наличностите преди нов запис.");
+        }
         catch (Exception ex) when (ex is DbUpdateException or IOException or UnauthorizedAccessException)
         {
             _logger.LogError(ex, "Could not save product {ProductN}", existing?.N);
@@ -130,6 +140,7 @@ public partial class AdminController
             if (draft != null) await draft.DisposeAsync();
         }
         RestoreImageRows(vm, originalImages);
+        RestoreRetainedVariantRows(vm, existing);
         return View(await PrepareProductFormAsync(vm));
     }
 
@@ -153,7 +164,8 @@ public partial class AdminController
         if (!string.IsNullOrEmpty(vm.Sku) && !ProductSku.IsValid(vm.Sku))
             ModelState.AddModelError(nameof(vm.Sku), "Използвайте до 64 латински букви, цифри, тире или долна черта.");
         else if (!string.IsNullOrEmpty(vm.Sku) &&
-            await _shopDb.Products.AnyAsync(p => p.Sku == vm.Sku && p.N != (existing == null ? 0 : existing.N)))
+            (await _shopDb.Products.AnyAsync(p => p.Sku == vm.Sku && p.N != (existing == null ? 0 : existing.N)) ||
+             await _shopDb.ProductVariants.AnyAsync(v => v.Sku == vm.Sku)))
             ModelState.AddModelError(nameof(vm.Sku), "Този артикулен код вече се използва. Въведете друг код.");
 
         if (vm.CategoryN.HasValue && !await _shopDb.Categories.AnyAsync(c => c.N == vm.CategoryN &&
@@ -220,6 +232,7 @@ public partial class AdminController
 
     private async Task<AdminProductFormViewModel> PrepareProductFormAsync(AdminProductFormViewModel vm, Product? product = null)
     {
+        await PrepareVariantFormAsync(vm);
         vm.Categories = await _shopDb.Categories.Where(c => c.IsActive || c.N == vm.CategoryN)
             .OrderBy(c => c.Name).ToListAsync();
         if (vm.CategoryN.HasValue)

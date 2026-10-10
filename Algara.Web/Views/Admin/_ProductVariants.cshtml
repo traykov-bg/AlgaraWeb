@@ -1,0 +1,54 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminProductFormViewModel
+@using System.Text.Json
+@using Algara.Data.Models
+@{
+    var data = new {
+        colors = Model.AvailableColors.Select(c => new { c.N, c.Code, c.Name, c.FabricN, c.IsActive, FabricName = c.Fabric?.Name, FabricActive = c.Fabric?.IsActive ?? true }),
+        fabrics = Model.AvailableFabrics.Select(f => new { f.N, f.Name, f.Code, f.ImageUrl, f.IsActive }),
+        variants = Model.Variants,
+        surcharges = Model.FabricSurcharges
+    };
+}
+<link rel="stylesheet" href="~/css/admin-product-variants.css" asp-append-version="true" />
+<input type="hidden" asp-for="RowVersion" />
+<section class="border rounded p-3 my-4" data-product-variants-editor>
+    <h2 class="h5">Варианти и наличности</h2>
+    <p class="text-muted small">Надценките се добавят към базовата или промоционалната цена. Промоцията важи само за базовия модел.</p>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="OptionKind" class="form-label">Избор за клиента</label>
+            <select asp-for="OptionKind" class="form-select" data-option-kind>
+                <option value="0">Без варианти</option>
+                <option value="1">Цвят</option>
+                <option value="2">Дамаска и неин цвят</option>
+            </select>
+            <span asp-validation-for="OptionKind" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6" data-simple-stock>
+            <label asp-for="StockQuantity" class="form-label">Налични бройки</label>
+            <input asp-for="StockQuantity" type="number" min="0" max="1000000" step="1" class="form-control" />
+            <span asp-validation-for="StockQuantity" class="text-danger small"></span>
+        </div>
+    </div>
+    <p class="form-text">Празна наличност означава „невъведена“; 0 означава, че няма готови бройки.</p>
+    <div data-option-controls>
+        <div class="row g-2 mt-2 align-items-end">
+            <div class="col-lg-4"><label for="variantSearch" class="form-label" data-variant-search-label>Търси цвят</label><input id="variantSearch" type="search" class="form-control" data-variant-search /></div>
+            <div class="col-lg-6"><label for="variantChoice" class="form-label" data-variant-choice-label>Добави цвят</label><select id="variantChoice" class="form-select" data-variant-choice></select></div>
+            <div class="col-lg-2"><button type="button" class="btn btn-outline-primary w-100" data-add-variant>Добави</button></div>
+        </div>
+        <p class="small mt-2">Създайте нужните <a asp-action="Fabrics" target="_blank" rel="noopener">дамаски</a> и <a asp-action="Colors" target="_blank" rel="noopener">цветове</a> в картотеките преди да ги добавите тук.</p>
+        <p class="small text-muted">Основният вариант е включен в базовата цена (0 € надценка). Промените по вариантите и премахването на дамаска се записват със „Запиши“.</p>
+    </div>
+    <div data-fabric-groups class="mt-3"></div>
+    <div class="table-responsive mt-3" data-variant-table-wrap>
+        <table class="table table-sm align-middle algara-variant-editor-table">
+            <thead><tr><th>Включен</th><th>Основен</th><th>Цвят</th><th>Артикулен код</th><th>Бройки</th><th>Надценка (€)</th><th>Снимка от галерията</th></tr></thead>
+            <tbody data-variant-rows></tbody>
+        </table>
+    </div>
+    <p class="text-muted small" data-variants-empty>Няма добавени варианти.</p>
+    <p class="small" role="status" aria-live="polite" data-variant-status></p>
+    <noscript><p class="text-danger">Редакцията на варианти изисква JavaScript. Не записвайте формата с изключен JavaScript.</p></noscript>
+    <script type="application/json" data-variant-editor-data>@Html.Raw(JsonSerializer.Serialize(data, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+</section>

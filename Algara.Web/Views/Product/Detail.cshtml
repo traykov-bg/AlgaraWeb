@@ -11,11 +11,21 @@
         images.Add(Model.ImageUrl);
     ViewData["Title"] = productName;
     var pricingAt     = DateTime.Now;
+    ViewData["VariantPricingAt"] = pricingAt;
+    var selectedVariant = Model.GetSelectableVariants()
+        .FirstOrDefault(variant => variant.N == (int?)ViewData["SelectedVariantN"]) ?? Model.GetDefaultVariant();
     var activePromo   = Model.GetActivePromotion(pricingAt);
     var discount      = Model.GetActiveDiscount(pricingAt);
     var discountLabel = Model.GetDiscountLabel(pricingAt);
-    var finalPrice    = Model.GetDiscountedPrice(pricingAt);
+    var finalPrice    = selectedVariant == null ? Model.GetDiscountedPrice(pricingAt) : Model.GetVariantPrice(selectedVariant, pricingAt);
+    var originalPrice = selectedVariant == null ? activePromo?.OriginalPrice ?? Model.Price : Model.GetVariantOriginalPrice(selectedVariant, pricingAt);
+    var mainImage = Model.GetVariantImageUrl(selectedVariant);
+    var exactVariantImage = selectedVariant?.ProductImageN != null && Model.Images.Any(image => image.N == selectedVariant.ProductImageN);
     var promoNote     = activePromo?.Note;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/product-variants.css" asp-append-version="true" />
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -31,13 +41,13 @@
     </ol>
 </nav>
 
-<div class="row g-4">
+<div class="row g-4" data-product-detail>
     <div class="col-md-5">
         <div class="algara-product-gallery" data-product-gallery>
             <div class="position-relative">
-                @if (images.Count > 0)
+                @if (!string.IsNullOrWhiteSpace(mainImage))
                 {
-                    <img src="@images[0]" class="algara-product-gallery__main img-fluid rounded shadow-sm"
+                    <img src="@mainImage" class="algara-product-gallery__main img-fluid rounded shadow-sm"
                          alt="@productName" data-gallery-main />
                 }
                 else
@@ -50,7 +60,7 @@
                 {
                     <span class="position-absolute top-0 start-0 m-2 d-flex align-items-center justify-content-center
                                  bg-danger text-white fw-bold rounded-circle shadow"
-                          style="width:54px;height:54px;font-size:.9rem;">
+                          style="width:54px;height:54px;font-size:.9rem;" title="@(Model.OptionKind == ProductOptionKind.None ? "" : T["PromotionBaseOnly"].Value)">
                         @discountLabel
                     </span>
                 }
@@ -60,13 +70,19 @@
                 <div class="algara-product-gallery__thumbnails mt-3" role="group" aria-label="@T["Gallery"]">
                     @for (var index = 0; index < images.Count; index++)
                     {
-                        <button type="button" class="algara-product-gallery__thumbnail @(index == 0 ? "is-selected" : "")"
-                                data-gallery-src="@Url.Content(images[index])" aria-pressed="@(index == 0 ? "true" : "false")"
+                        <button type="button" class="algara-product-gallery__thumbnail @(images[index] == mainImage ? "is-selected" : "")"
+                                data-gallery-src="@Url.Content(images[index])" aria-pressed="@(images[index] == mainImage ? "true" : "false")"
                                 aria-label="@T["ImageNumber", index + 1, images.Count]">
                             <img src="@images[index]" alt="" loading="lazy" />
                         </button>
                     }
                 </div>
+            }
+            @if (Model.OptionKind != ProductOptionKind.None)
+            {
+                <p class="small text-muted mt-2" data-variant-photo-note>
+                    @T[string.IsNullOrWhiteSpace(mainImage) ? "NoImage" : exactVariantImage ? "ExactVariantPhoto" : "BaseProductPhoto"]
+                </p>
             }
         </div>
     </div>
@@ -79,20 +95,16 @@
                 <a asp-action="Category" asp-route-slug="@Model.Category.Slug">@Model.Category.Name</a>
             </p>
         }
-        @if (Model.IsCustomizable)
-        {
-            <span class="badge bg-info mb-2">@T["MadeToOrder"]</span>
-        }
         @if (discount.HasValue)
         {
             <div class="my-3">
-                <span class="h4 fw-bold text-danger me-2">@finalPrice.ToString("N2") €</span>
-                <span class="text-muted text-decoration-line-through">@(activePromo!.OriginalPrice.ToString("N2")) €</span>
+                <span class="h4 fw-bold text-danger me-2" data-variant-price>@finalPrice.ToString("N2") €</span>
+                <span class="text-muted text-decoration-line-through" data-variant-original>@originalPrice.ToString("N2") €</span>
             </div>
         }
         else
         {
-            <h4 class="my-3">@Model.Price.ToString("N2") €</h4>
+            <h4 class="my-3" data-variant-price>@finalPrice.ToString("N2") €</h4>
         }
         @if (!string.IsNullOrWhiteSpace(promoNote))
         {
@@ -100,6 +112,15 @@
                 <i class="bi bi-gift-fill me-1"></i>@promoNote
             </p>
         }
+        @if (Model.OptionKind != ProductOptionKind.None)
+        {
+            @await Html.PartialAsync("_ProductVariantPicker", Model)
+        }
+        else
+        {
+            <p class="fw-semibold">@T["Availability" + Model.GetAvailability()]</p>
+        }
+        <p class="small"><a asp-controller="Home" asp-action="Delivery">@T["DeliveryTerms"]</a></p>
         @if (!string.IsNullOrWhiteSpace(description))
         {
             <p class="algara-product-description">@description</p>
@@ -137,4 +158,5 @@
 
 @section Scripts {
     <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+    <script src="~/js/product-variants.js" asp-append-version="true"></script>
 }

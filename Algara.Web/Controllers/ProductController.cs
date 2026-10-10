@@ -116,7 +116,7 @@ namespace Algara.Web.Controllers
                     n        = p.N,
                     name     = p.GetName(),
                     category = p.Category?.Name,
-                    price    = p.GetDiscountedPrice(now),
+                    price    = p.GetCatalogPrice(now),
                     url      = Url.Action(nameof(Detail), new { n = p.N }),
                     imageUrl = p.GetMainImageUrl(),
                 }).ToList();
@@ -125,10 +125,12 @@ namespace Algara.Web.Controllers
         }
 
         // GET /Product/Detail?n=123
-        public async Task<IActionResult> Detail(int n)
+        public async Task<IActionResult> Detail(int n, int? variant = null)
         {
             var product = await _productRepository.GetByNAsync(n);
             if (product == null || !product.IsActive) return NotFound();
+            ViewData["SelectedVariantN"] = product.GetSelectableVariants()
+                .FirstOrDefault(candidate => candidate.N == variant)?.N ?? product.GetDefaultVariant()?.N;
             return View(product);
         }
 
@@ -154,7 +156,7 @@ namespace Algara.Web.Controllers
 
             // Изчисляваме ефективната цена (след промоции) за всеки продукт веднъж
             var withPrice = source
-                .Select(p => (product: p, effective: p.GetDiscountedPrice(now)))
+                .Select(p => (product: p, effective: p.GetCatalogPrice(now)))
                 .ToList();
 
             // Диапазон за целия (нефилтриран по цена) резултат
