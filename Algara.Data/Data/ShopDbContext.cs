@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Algara.Data.Data
 {
-    public class ShopDbContext : DbContext
+    public partial class ShopDbContext : DbContext
     {
         public ShopDbContext(DbContextOptions<ShopDbContext> options)
             : base(options) { }
@@ -26,6 +26,7 @@ namespace Algara.Data.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            ConfigurePartnerCatalog(modelBuilder);
             modelBuilder.HasSequence<long>("ProductSkuNumbers").StartsAt(1).IncrementsBy(1);
             modelBuilder.HasSequence<long>("ProductVariantSkuNumbers").StartsAt(1).IncrementsBy(1);
 

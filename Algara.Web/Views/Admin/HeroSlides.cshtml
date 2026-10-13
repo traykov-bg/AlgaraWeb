@@ -18,7 +18,6 @@
                     <th style="width:70px">Снимка</th>
                     <th>Заглавие</th>
                     <th>Eyebrow</th>
-                    <th class="text-center" style="width:80px">Ред</th>
                     <th class="text-center" style="width:100px">Статус</th>
                     <th class="text-end" style="width:100px">Действия</th>
                 </tr>
@@ -40,7 +39,6 @@
                         </td>
                         <td class="fw-semibold">@s.Title</td>
                         <td class="small text-muted">@(s.EyebrowText ?? "—")</td>
-                        <td class="text-center small">@s.DisplayOrder</td>
                         <td class="text-center">
                             @if (s.IsActive)
                             {
@@ -68,7 +66,7 @@
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">Няма слайдове.</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">Няма слайдове.</td></tr>
                 }
             </tbody>
         </table>

@@ -1,0 +1,12 @@
+﻿@model CatalogAddress
+<div class="row g-3">
+    <div class="col-md-4"><label asp-for="Country" class="form-label">Държава</label><input asp-for="Country" class="form-control" /><span asp-validation-for="Country" class="text-danger"></span></div>
+    <div class="col-md-5"><label asp-for="City" class="form-label">Населено място</label><input asp-for="City" class="form-control" /><span asp-validation-for="City" class="text-danger"></span></div>
+    <div class="col-md-3"><label asp-for="PostalCode" class="form-label">Пощенски код</label><input asp-for="PostalCode" class="form-control" /><span asp-validation-for="PostalCode" class="text-danger"></span></div>
+    <div class="col-md-9"><label asp-for="Street" class="form-label">Улица / квартал</label><input asp-for="Street" class="form-control" /><span asp-validation-for="Street" class="text-danger"></span></div>
+    <div class="col-md-3"><label asp-for="Building" class="form-label">Номер / блок</label><input asp-for="Building" class="form-control" /><span asp-validation-for="Building" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="Entrance" class="form-label">Вход</label><input asp-for="Entrance" class="form-control" /><span asp-validation-for="Entrance" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="Floor" class="form-label">Етаж</label><input asp-for="Floor" class="form-control" /><span asp-validation-for="Floor" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="Apartment" class="form-label">Апартамент / офис</label><input asp-for="Apartment" class="form-control" /><span asp-validation-for="Apartment" class="text-danger"></span></div>
+    <div class="col-12"><label asp-for="Details" class="form-label">Уточнения</label><input asp-for="Details" class="form-control" /><span asp-validation-for="Details" class="text-danger"></span></div>
+</div>

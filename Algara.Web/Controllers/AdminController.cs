@@ -362,7 +362,8 @@ namespace Algara.Web.Controllers
         public async Task<IActionResult> HeroSlides()
         {
             var slides = await _heroSlideRepo.GetAllAsync();
-            return View(slides);
+            return View(slides.OrderBy(s => s.Title,
+                StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("bg-BG"), true)).ThenBy(s => s.N));
         }
 
         [HttpGet("hero-slides/create")]
@@ -390,7 +391,6 @@ namespace Algara.Web.Controllers
                 Subtitle     = vm.Subtitle,
                 ButtonText   = vm.ButtonText,
                 ButtonUrl    = vm.ButtonUrl,
-                DisplayOrder = vm.DisplayOrder,
                 IsActive     = vm.IsActive,
             };
             await _heroSlideRepo.AddAsync(slide);
@@ -440,7 +440,6 @@ namespace Algara.Web.Controllers
             slide.Subtitle     = vm.Subtitle;
             slide.ButtonText   = vm.ButtonText;
             slide.ButtonUrl    = vm.ButtonUrl;
-            slide.DisplayOrder = vm.DisplayOrder;
             slide.IsActive     = vm.IsActive;
 
             await _heroSlideRepo.UpdateAsync(slide);

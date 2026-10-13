@@ -1,0 +1,14 @@
+﻿@model Algara.Web.ViewModels.Admin.CatalogEditForm
+@if (Model.History.Count > 0)
+{
+    <details class="card card-body mt-4">
+        <summary class="fw-semibold">Последни промени</summary>
+        <div class="table-responsive mt-3"><table class="table table-sm mb-0">
+            <thead><tr><th>Дата (UTC)</th><th>Действие</th><th>Служебен профил</th></tr></thead>
+            <tbody>@foreach (var item in Model.History)
+            {
+                <tr><td>@item.CreatedAtUtc.ToString("dd.MM.yyyy HH:mm:ss")</td><td>@(item.BeforeJson == null ? "Създаване" : "Редакция")</td><td class="text-break">@item.ActorName</td></tr>
+            }</tbody>
+        </table></div>
+    </details>
+}

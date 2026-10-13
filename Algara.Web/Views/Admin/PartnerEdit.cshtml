@@ -1,0 +1,27 @@
+﻿@model Algara.Web.ViewModels.Admin.PartnerForm
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.N.HasValue ? "Редакция на контрагент" : "Нов контрагент";
+}
+<div class="card border-0 shadow-sm" style="max-width:65rem"><div class="card-body p-4">
+    <form asp-action="@(Model.N.HasValue ? "PartnerEdit" : "PartnerCreate")" asp-route-n="@Model.N" method="post">
+        <input asp-for="N" type="hidden" /><input asp-for="RowVersion" type="hidden" />
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+        <div class="row g-3">
+            <div class="col-12"><label asp-for="SiteName" class="form-label">Име на обекта *</label><input asp-for="SiteName" class="form-control" maxlength="400" required aria-describedby="partner-name-help" /><div id="partner-name-help" class="form-text">Уникално име за всеки контрагент — човек, фирмен обект или клиент на дребно.</div></div>
+            <div class="col-md-4"><label asp-for="Code" class="form-label">Код</label><input asp-for="Code" class="form-control" inputmode="numeric" maxlength="32" /><div class="form-text">При празно поле се определя автоматично; при редакция се запазва текущият.</div></div>
+            <div class="col-md-8"><label asp-for="GroupN" class="form-label">Група</label><select asp-for="GroupN" asp-items="Model.Groups" class="form-select"></select></div>
+            <div class="col-12"><label asp-for="CompanyN" class="form-label">Фирма</label><select asp-for="CompanyN" asp-items="Model.Companies" class="form-select" aria-describedby="partner-company-help"><option value="">Без фирма — физическо лице</option></select><div id="partner-company-help" class="form-text">Може да добавите, смените или премахнете фирмата по всяко време. Фирмените реквизити се поддържат във „Фирми“.</div></div>
+            <div class="col-md-6"><label asp-for="Phone" class="form-label">Телефон</label><input asp-for="Phone" class="form-control" type="tel" /><div class="form-text">Незадължителен. 0888… или +359888…; без номер оставете празно или въведете 0.</div></div>
+            <div class="col-md-6"><label asp-for="Email" class="form-label">Имейл</label><input asp-for="Email" class="form-control" type="email" /></div>
+            <div class="col-12"><label asp-for="ContactPerson" class="form-label">Лице за контакт</label><input asp-for="ContactPerson" class="form-control" /></div>
+            <div class="col-12"><fieldset class="border rounded p-3"><legend class="float-none w-auto px-2 fs-6">Основен адрес</legend>@Html.EditorFor(m => m.Address)</fieldset></div>
+            <div class="col-12"><details class="border rounded p-3"><summary class="fw-semibold mb-2">Отделен адрес за доставка (незадължителен)</summary>@Html.EditorFor(m => m.DeliveryAddress)</details></div>
+            <div class="col-12"><label asp-for="Notes" class="form-label">Служебни бележки</label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+            <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Активен контрагент</label></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-4"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Partners" asp-route-groupN="@Model.GroupN" class="btn btn-outline-secondary">Откажи</a>
+        @if (Model.N.HasValue) { <a asp-action="PartnerEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary">Презареди записаното</a> }</div>
+    </form>
+</div></div>
+<partial name="_PartnerCatalogHistory" model="Model" />

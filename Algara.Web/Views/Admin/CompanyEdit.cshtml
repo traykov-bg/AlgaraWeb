@@ -1,0 +1,29 @@
+﻿@model Algara.Web.ViewModels.Admin.CompanyForm
+@{ Layout = "_AdminLayout"; ViewData["Title"] = Model.N.HasValue ? "Редакция на фирма" : "Нова фирма"; }
+<div class="card border-0 shadow-sm" style="max-width:65rem"><div class="card-body p-4">
+    <p class="text-muted">Общите реквизити се използват от всички обекти на тази фирма. Всеки обект има собствени контакти и адрес.</p>
+    <form asp-action="@(Model.N.HasValue ? "CompanyEdit" : "CompanyCreate")" asp-route-n="@Model.N" method="post">
+        <input asp-for="N" type="hidden" /><input asp-for="RowVersion" type="hidden" />
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-8"><label asp-for="Name" class="form-label">Име на фирмата *</label><input asp-for="Name" class="form-control" required /><div class="form-text">Без правната форма.</div></div>
+            <div class="col-md-4"><label asp-for="LegalForm" class="form-label">Правна форма</label><input asp-for="LegalForm" class="form-control" placeholder="ООД, ЕООД, АД…" /></div>
+            <div class="col-md-3"><label asp-for="CountryCode" class="form-label">Код на държава *</label><input asp-for="CountryCode" class="form-control" maxlength="2" required /><div class="form-text">Двубуквен код, например BG.</div></div>
+            <div class="col-md-3"><label asp-for="RegistrationType" class="form-label">Вид регистрация</label><select asp-for="RegistrationType" class="form-select"><option value="EIK">ЕИК</option><option value="BULSTAT">БУЛСТАТ</option><option value="FOREIGN">Чуждестранен</option></select></div>
+            <div class="col-md-6"><label asp-for="RegistrationNumber" class="form-label">Регистрационен номер</label><input asp-for="RegistrationNumber" class="form-control" /><div class="form-text">Ако е попълнен, се проверява за дублиране по държава и вид.</div></div>
+            <div class="col-md-6"><label asp-for="VatNumber" class="form-label">ДДС номер</label><input asp-for="VatNumber" class="form-control" /></div>
+            <div class="col-md-6 d-flex align-items-center"><div class="form-check"><input asp-for="IsVatRegistered" class="form-check-input" /><label asp-for="IsVatRegistered" class="form-check-label">Регистрирана по ДДС</label></div></div>
+            <div class="col-md-6"><label asp-for="Representative" class="form-label">Представляващ / управител</label><input asp-for="Representative" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Phone" class="form-label">Телефон</label><input asp-for="Phone" class="form-control" type="tel" /><div class="form-text">Български с начална 0 или международен с + / 00.</div></div>
+            <div class="col-md-6"><label asp-for="Email" class="form-label">Общ имейл</label><input asp-for="Email" class="form-control" type="email" /></div>
+            <div class="col-md-6"><label asp-for="AccountingContact" class="form-label">Контакт за счетоводство</label><input asp-for="AccountingContact" class="form-control" /></div>
+            <div class="col-12"><fieldset class="border rounded p-3"><legend class="float-none w-auto px-2 fs-6">Седалище и адрес на управление</legend>@Html.EditorFor(m => m.Address)</fieldset></div>
+            <div class="col-12"><details class="border rounded p-3"><summary class="fw-semibold mb-2">Отделен адрес за кореспонденция (незадължителен)</summary>@Html.EditorFor(m => m.CorrespondenceAddress)</details></div>
+            <div class="col-12"><label asp-for="Notes" class="form-label">Служебни бележки</label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+            <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Активна фирма</label></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-4"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Companies" class="btn btn-outline-secondary">Откажи</a>
+        @if (Model.N.HasValue) { <a asp-action="CompanyEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary">Презареди записаното</a><a asp-action="Partners" asp-route-all="true" asp-route-companyN="@Model.N" class="btn btn-outline-primary">Обекти на фирмата</a> }</div>
+    </form>
+</div></div>
+<partial name="_PartnerCatalogHistory" model="Model" />

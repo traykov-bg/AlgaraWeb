@@ -22,6 +22,8 @@ namespace Algara.Web.ShopMigrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.HasSequence("PartnerCodeNumbers");
+
             modelBuilder.HasSequence("ProductSkuNumbers");
 
             modelBuilder.HasSequence("ProductVariantSkuNumbers");
@@ -113,6 +115,94 @@ namespace Algara.Web.ShopMigrations
                     b.HasKey("N");
 
                     b.ToTable("Categories", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.Company", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("AccountingContact")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVatRegistered")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LegalForm")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NormalizedRegistrationNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("RegistrationNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("RegistrationType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Representative")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("VatNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("CountryCode", "RegistrationType", "NormalizedRegistrationNumber")
+                        .IsUnique()
+                        .HasFilter("[NormalizedRegistrationNumber] IS NOT NULL");
+
+                    b.ToTable("Companies", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Companies_Country", "DATALENGTH([CountryCode]) = 4 AND [CountryCode] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^A-Z]%'");
+
+                            t.HasCheckConstraint("CK_Companies_Name", "LEN(LTRIM(RTRIM([Name]))) > 0");
+
+                            t.HasCheckConstraint("CK_Companies_RegistrationType", "[RegistrationType] IN (N'EIK', N'BULSTAT', N'FOREIGN')");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Fabric", b =>
@@ -274,6 +364,205 @@ namespace Algara.Web.ShopMigrations
                     b.HasIndex("ProductN");
 
                     b.ToTable("OrderItems", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.Partner", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int?>("CompanyN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContactPerson")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("GroupN")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NormalizedFirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NormalizedLastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NormalizedSiteName")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SiteName")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyN");
+
+                    b.HasIndex("GroupN");
+
+                    b.HasIndex("NormalizedSiteName")
+                        .IsUnique();
+
+                    b.ToTable("Partners", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Partners_Code", "LEN([Code]) > 0 AND [Code] COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%'");
+
+                            t.HasCheckConstraint("CK_Partners_Identity", "LEN(LTRIM(RTRIM([SiteName]))) > 0 AND LEN([NormalizedSiteName]) > 0");
+
+                            t.HasCheckConstraint("CK_Partners_Kind", "([CompanyN] IS NULL AND [Kind] = 0) OR ([CompanyN] IS NOT NULL AND [Kind] = 1)");
+
+                            t.HasCheckConstraint("CK_Partners_Phone", "[Phone] IS NULL OR [Phone] = N'0' OR (LEFT([Phone],1) = N'+' AND LEN([Phone]) BETWEEN 8 AND 16 AND SUBSTRING([Phone],2,15) COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%')");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PartnerCatalogChange", b =>
+                {
+                    b.Property<long>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("N"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("AfterJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EntityN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("EntityType", "EntityN", "CreatedAtUtc");
+
+                    b.ToTable("PartnerCatalogChanges");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PartnerGroup", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int?>("ParentN")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("ParentN", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("PartnerGroups", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PartnerGroups_Name", "LEN(LTRIM(RTRIM([Name]))) > 0 AND LEN([NormalizedName]) > 0");
+
+                            t.HasCheckConstraint("CK_PartnerGroups_Order", "[DisplayOrder] >= 0");
+
+                            t.HasCheckConstraint("CK_PartnerGroups_Parent", "([N] = 0 AND [ParentN] IS NULL) OR ([N] <> 0 AND [ParentN] IS NOT NULL AND [ParentN] <> [N])");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Product", b =>
@@ -629,6 +918,113 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Fabric");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.Company", b =>
+                {
+                    b.OwnsOne("Algara.Data.Models.CatalogAddress", "Address", b1 =>
+                        {
+                            b1.Property<int>("CompanyN")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Building")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)");
+
+                            b1.Property<string>("Country")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<string>("Details")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("Entrance")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Floor")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.HasKey("CompanyN");
+
+                            b1.ToTable("Companies");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CompanyN");
+                        });
+
+                    b.OwnsOne("Algara.Data.Models.CatalogAddress", "CorrespondenceAddress", b1 =>
+                        {
+                            b1.Property<int>("CompanyN")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Building")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)");
+
+                            b1.Property<string>("Country")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<string>("Details")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("Entrance")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Floor")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.HasKey("CompanyN");
+
+                            b1.ToTable("Companies");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CompanyN");
+                        });
+
+                    b.Navigation("Address")
+                        .IsRequired();
+
+                    b.Navigation("CorrespondenceAddress")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Algara.Data.Models.OrderItem", b =>
                 {
                     b.HasOne("Algara.Data.Models.Order", "Order")
@@ -646,6 +1042,138 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.Partner", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Algara.Data.Models.PartnerGroup", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("Algara.Data.Models.CatalogAddress", "Address", b1 =>
+                        {
+                            b1.Property<int>("PartnerN")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Building")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)");
+
+                            b1.Property<string>("Country")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<string>("Details")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("Entrance")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Floor")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.HasKey("PartnerN");
+
+                            b1.ToTable("Partners");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PartnerN");
+                        });
+
+                    b.OwnsOne("Algara.Data.Models.CatalogAddress", "DeliveryAddress", b1 =>
+                        {
+                            b1.Property<int>("PartnerN")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Apartment")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Building")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)");
+
+                            b1.Property<string>("Country")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<string>("Details")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("Entrance")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Floor")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Street")
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.HasKey("PartnerN");
+
+                            b1.ToTable("Partners");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PartnerN");
+                        });
+
+                    b.Navigation("Address")
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("DeliveryAddress")
+                        .IsRequired();
+
+                    b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PartnerGroup", b =>
+                {
+                    b.HasOne("Algara.Data.Models.PartnerGroup", "Parent")
+                        .WithMany()
+                        .HasForeignKey("ParentN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Product", b =>

@@ -1,0 +1,94 @@
+﻿@model Algara.Web.ViewModels.Admin.PartnerListModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Контрагенти";
+    string? ListUrl(int group, bool all = false, int page = 1) => Url.Action("Partners", new { search = Model.Search, active = Model.Active, companyN = Model.CompanyN, groupN = group, all, includeChildren = Model.IncludeChildren, page });
+    var parents = Model.Groups.Where(g => g.ParentN.HasValue).Select(g => g.ParentN!.Value).ToHashSet();
+    var selectedGroup = Model.Groups.FirstOrDefault(g => g.N == Model.GroupN);
+}
+<link rel="stylesheet" href="~/css/admin-partner-tree.css" asp-append-version="true" />
+<div data-partner-move data-move-url="@Url.Action("MovePartners")" data-move-key="@Model.MoveSelectionKey" data-move-scope="@ListUrl(Model.GroupN, Model.All)">
+<div class="d-flex flex-wrap gap-2 mb-3" data-move-source-actions><a asp-action="PartnerCreate" asp-route-groupN="@Model.GroupN" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Нов контрагент</a><a asp-action="Companies" class="btn btn-outline-secondary">Фирми</a></div>
+<div class="card card-body mb-3" data-move-toggle-panel hidden>
+    <div class="form-check form-switch mb-0"><input id="partner-move-mode" type="checkbox" role="switch" class="form-check-input" data-move-mode aria-describedby="partner-move-help" /><label class="form-check-label fw-semibold" for="partner-move-mode">Режим преместване</label></div>
+    <p id="partner-move-help" class="small text-muted mb-0 mt-1">Включете, маркирайте записите и посочете целевата група с клик върху името ѝ.</p>
+</div>
+<form data-move-token hidden>@Html.AntiForgeryToken()</form>
+<div class="row g-3">
+<aside class="col-xl-4 col-xxl-3"><nav class="card card-body partner-groups" aria-label="Групи контрагенти">
+    <h2 class="h6">Групи</h2>
+    <a href="@ListUrl(Model.GroupN, true)" class="partner-all-link @(Model.All ? "is-selected" : "")" data-move-source-link aria-current="@(Model.All ? "page" : null)"><i class="bi bi-collection me-1" aria-hidden="true"></i>Всички контрагенти</a>
+    <ul class="partner-tree list-unstyled mb-0 mt-2" data-partner-tree>
+    @foreach (var group in Model.Groups)
+    {
+        var selected = !Model.All && Model.GroupN == group.N;
+        <li class="partner-tree-node" data-group="@group.N" data-parent="@group.ParentN" data-depth="@group.Depth" data-row-version="@group.RowVersion" data-group-path="@group.Path" data-group-name="@group.Name" style="--tree-depth:@group.Depth">
+            <div class="partner-tree-row @(selected ? "is-selected" : "")">
+                @if (parents.Contains(group.N))
+                {
+                    <button type="button" class="partner-tree-toggle" data-tree-toggle aria-expanded="true" aria-label="Свий група @group.Name" data-expand-label="Разгъни група @group.Name" data-collapse-label="Свий група @group.Name" title="Свий група @group.Name"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+                }
+                else
+                {
+                    <span class="partner-tree-spacer" aria-hidden="true"></span>
+                }
+                @if (group.N != 0)
+                {
+                    <span class="partner-move-check" data-move-only hidden><input type="checkbox" class="form-check-input" data-move-group="@group.N" aria-label="Маркирай група @group.Name за преместване" /></span>
+                }
+                <a href="@ListUrl(group.N)" title="@group.Path" class="partner-tree-link" data-tree-link aria-current="@(selected ? "page" : null)"><i class="bi bi-folder me-1" aria-hidden="true"></i><span class="partner-tree-name">@group.Name</span><span class="partner-tree-count">@group.Count</span><span class="partner-move-target-badge" data-move-target-badge hidden>ЦЕЛ</span><span class="partner-move-included" data-move-group-included hidden>С групата</span></a>
+                <span class="partner-tree-actions" data-move-source-actions>
+                    <a asp-action="PartnerGroupEdit" asp-route-n="@group.N" class="partner-tree-action" title="Редакция на група" aria-label="Редакция на група @group.Name"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    <a asp-action="PartnerGroupCreate" asp-route-parentN="@group.N" class="partner-tree-action" title="Добави подгрупа" aria-label="Добави подгрупа в @group.Name"><i class="bi bi-folder-plus" aria-hidden="true"></i></a>
+                </span>
+            </div>
+        </li>
+    }
+    </ul>
+    <p class="form-text mb-0 mt-2">Броят е само за записите непосредствено в групата, включително неактивните.</p>
+    <section class="partner-move-panel mt-3" data-move-only hidden aria-label="Преместване на избраните записи">
+        <p class="small mb-2" data-move-summary aria-live="polite"></p>
+        <p class="small mb-2">Целева група: <strong data-move-destination aria-live="polite">Не е избрана</strong></p>
+        <button type="button" class="btn btn-primary w-100" data-move-submit disabled><i class="bi bi-folder-symlink me-1" aria-hidden="true"></i>Премести</button>
+        <p class="small text-muted mt-2 mb-0">Групите се преместват с всички свои подгрупи и контрагенти. Изключването на режима отменя маркирането.</p>
+        <p class="small text-warning-emphasis mt-2 mb-0" data-move-storage-warning hidden>Запаметяването между страниците е недостъпно. Изборът важи за тази страница; изключете режима, за да смените страницата.</p>
+        <div class="alert alert-danger small mt-2 mb-0" data-move-error role="alert" hidden></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-2" data-move-reload hidden>Презареди и маркирай отново</button>
+    </section>
+</nav></aside>
+<div class="col-xl-8 col-xxl-9">
+    <form method="get" class="card card-body mb-3" data-move-filter-form>
+        <input type="hidden" name="groupN" value="@Model.GroupN" />
+        <input type="hidden" name="all" value="@Model.All.ToString().ToLowerInvariant()" />
+        <fieldset data-move-filters>
+        <div class="row g-2">
+            <div class="col-12"><label for="partner-search" class="visually-hidden">Търсене</label><input id="partner-search" name="search" value="@Model.Search" class="form-control" placeholder="Код, име, фирма, ЕИК, телефон, имейл или адрес" /></div>
+            <div class="col-md-6"><label for="partner-active" class="visually-hidden">Активност</label><select id="partner-active" name="active" class="form-select"><option value="">Всички записи</option><option value="true" selected="@(Model.Active == true)">Активни</option><option value="false" selected="@(Model.Active == false)">Неактивни</option></select></div>
+            <div class="col-md-6"><label for="partner-company" class="visually-hidden">Фирма</label><select id="partner-company" name="companyN" class="form-select"><option value="">Всички фирми</option>@foreach (var c in Model.Companies) { <option value="@c.Value" selected="@(c.Value == Model.CompanyN?.ToString())">@c.Text</option> }</select></div>
+            <div class="col-md-8"><label for="group-scope" class="visually-hidden">Обхват на групата</label><select id="group-scope" name="includeChildren" class="form-select" disabled="@Model.All"><option value="false" selected="@(!Model.IncludeChildren)">Само избраната група</option><option value="true" selected="@Model.IncludeChildren">Избраната група и подгрупите</option></select>@if (Model.All) { <input type="hidden" name="includeChildren" value="@Model.IncludeChildren.ToString().ToLowerInvariant()" /> }</div>
+            <div class="col-md-4"><button type="submit" class="btn btn-outline-primary w-100">Търси</button></div>
+        </div>
+        </fieldset>
+        <a asp-action="Partners" asp-route-groupN="@Model.GroupN" asp-route-all="@Model.All" class="small mt-2" data-move-source-link>Изчисти филтрите</a>
+    </form>
+    <div class="alert alert-info small" data-move-only hidden>Списъкът остава в изходната група. Кликът върху група вляво избира само целта. За избор от различни групи отворете „Всички контрагенти“ преди включване на режима.</div>
+    <div class="d-flex flex-wrap justify-content-between gap-2 mb-2"><span class="text-muted">Намерени: @Model.Total</span><span class="small">@(Model.All ? "Всички контрагенти" : selectedGroup?.Path)</span></div>
+    <div class="card table-responsive"><table class="table align-middle mb-0"><thead><tr><th class="partner-move-column" data-move-only hidden><span class="visually-hidden">Маркиране за преместване</span></th><th>Код</th><th>Име на обекта / фирма</th><th>Контакти</th><th>Адрес / група</th><th></th></tr></thead><tbody>
+    @foreach (var p in Model.Items)
+    {
+        <tr data-move-partner-row="@p.N" data-partner-group="@p.GroupN" data-row-version="@Convert.ToBase64String(p.RowVersion)" data-partner-name="@p.DisplayName"><td class="partner-move-column" data-move-only hidden><input type="checkbox" class="form-check-input" data-move-partner="@p.N" aria-label="Маркирай @p.DisplayName за преместване" /></td><td class="text-nowrap">@p.Code</td><td><strong>@p.DisplayName</strong><span class="partner-move-included ms-1" data-move-partner-included hidden>С групата</span>@if (!p.IsActive) { <span class="badge text-bg-secondary ms-1">Неактивен</span> }@if (p.Company != null) { <div class="small text-muted">@p.Company.DisplayName</div><div class="small">@p.Company.RegistrationNumber</div> }</td><td class="text-break">@p.Phone<br />@p.Email</td><td>@p.Address.City @p.Address.Street @p.Address.Building<div class="small text-muted">@p.Group?.Name</div></td><td><a asp-action="PartnerEdit" asp-route-n="@p.N" class="btn btn-sm btn-outline-primary" data-move-source-actions>Редакция</a></td></tr>
+    }
+    @if (Model.Items.Count == 0) { <tr><td colspan="6" class="text-center text-muted p-4">Няма контрагенти за избраните условия.</td></tr> }
+    </tbody></table></div>
+    <nav class="d-flex align-items-center gap-3 mt-3" aria-label="Страници">
+        @if (Model.Page > 1) { <a href="@ListUrl(Model.GroupN, Model.All, Model.Page - 1)" class="btn btn-outline-secondary" data-move-page>Назад</a> }
+        <span>@Model.Page / @Model.TotalPages</span>
+        @if (Model.Page < Model.TotalPages) { <a href="@ListUrl(Model.GroupN, Model.All, Model.Page + 1)" class="btn btn-outline-secondary" data-move-page>Напред</a> }
+    </nav>
+</div>
+</div>
+</div>
+@section Scripts {
+    <script src="~/js/admin-partner-tree.js" asp-append-version="true"></script>
+    <script src="~/js/admin-partner-move.js" asp-append-version="true"></script>
+}
