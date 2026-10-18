@@ -80,7 +80,7 @@
 
     <!-- ── Sidebar ─────────────────────────────────────────── -->
     <nav class="admin-sidebar">
-        <a class="sidebar-brand" asp-controller="Admin" asp-action="Index">
+        <a class="sidebar-brand" asp-controller="Admin" asp-action="Index" staff-permission="Dashboard.View">
             <i class="bi bi-shield-check fs-5"></i> Алгара Админ
         </a>
 
@@ -88,56 +88,56 @@
             <div class="nav-section">Управление</div>
             <ul class="nav flex-column">
                 <li>
-                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
-                       asp-controller="Admin" asp-action="Index">
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                       asp-controller="Admin" asp-action="Index" staff-permission="Dashboard.View">
                         <i class="bi bi-speedometer2"></i> Табло
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Product") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Products">
+                       asp-controller="Admin" asp-action="Products" staff-permission="Products.View">
                         <i class="bi bi-box-seam"></i> Продукти
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Fabric") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Fabrics">
+                       asp-controller="Admin" asp-action="Fabrics" staff-permission="Options.View">
                         <i class="bi bi-grid-3x3-gap"></i> Дамаски
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Color") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Colors">
+                       asp-controller="Admin" asp-action="Colors" staff-permission="Options.View">
                         <i class="bi bi-palette"></i> Цветове и мостри
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Category") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Categories">
+                       asp-controller="Admin" asp-action="Categories" staff-permission="Categories.View">
                         <i class="bi bi-tags"></i> Категории
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("HeroSlide") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="HeroSlides">
+                       asp-controller="Admin" asp-action="HeroSlides" staff-permission="Content.View">
                         <i class="bi bi-images"></i> Слайдер
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Promotion") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Promotions">
+                       asp-controller="Admin" asp-action="Promotions" staff-permission="Promotions.View">
                         <i class="bi bi-tag"></i> Промоции
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Order") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Orders">
+                       asp-controller="Admin" asp-action="Orders" staff-permission="Orders.View">
                         <i class="bi bi-bag-check"></i> Поръчки
                     </a>
                 </li>
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("User") == true ? "active" : "")"
-                       asp-controller="Admin" asp-action="Users">
+                       asp-controller="Admin" asp-action="Users" staff-permission="Users.View">
                         <i class="bi bi-people"></i> Потребители
                     </a>
                 </li>
@@ -145,11 +145,15 @@
 
             <div class="nav-section mt-2">Контрагенти</div>
             <ul class="nav flex-column">
-                <li><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Company") == true || ViewContext.RouteData.Values["action"]?.ToString() == "Companies" ? "active" : "")" asp-controller="Admin" asp-action="Companies"><i class="bi bi-buildings"></i> Фирми</a></li>
-                <li><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Partner") == true ? "active" : "")" asp-controller="Admin" asp-action="Partners"><i class="bi bi-person-vcard"></i> Контрагенти</a></li>
+                <li><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Company") == true || ViewContext.RouteData.Values["action"]?.ToString() == "Companies" ? "active" : "")" asp-controller="Admin" asp-action="Companies" staff-permission="Companies.View"><i class="bi bi-buildings"></i> Фирми</a></li>
+                <li><a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("Partner") == true ? "active" : "")" asp-controller="Admin" asp-action="Partners" staff-permission="Partners.View"><i class="bi bi-person-vcard"></i> Контрагенти</a></li>
             </ul>
 
             <div class="nav-section mt-2">Навигация</div>
+            <ul class="nav flex-column">
+                <li staff-permission="Access.ManagePermissions"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminAccess" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" href="@Url.Content("~/admin/access")"><i class="bi bi-shield-lock"></i> Роли и права</a></li>
+                <li staff-permission="Access.ViewHistory"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminAccess" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")" href="@Url.Content("~/admin/access/history")"><i class="bi bi-clock-history"></i> История на достъпа</a></li>
+            </ul>
             <ul class="nav flex-column">
                 <li>
                     <a class="nav-link" asp-controller="Home" asp-action="Index" target="_blank">

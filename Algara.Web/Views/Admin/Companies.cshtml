@@ -1,6 +1,6 @@
 ﻿@model Algara.Web.ViewModels.Admin.CompanyListModel
 @{ Layout = "_AdminLayout"; ViewData["Title"] = "Фирми"; }
-<div class="d-flex flex-wrap gap-2 mb-3"><a asp-action="CompanyCreate" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Нова фирма</a><a asp-action="Partners" class="btn btn-outline-secondary">Контрагенти</a></div>
+<div class="d-flex flex-wrap gap-2 mb-3"><a asp-action="CompanyCreate" class="btn btn-primary" staff-permission="Companies.View,Companies.Create"><i class="bi bi-plus-lg"></i> Нова фирма</a><a asp-action="Partners" class="btn btn-outline-secondary" staff-permission="Partners.View">Контрагенти</a></div>
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-7"><label for="company-search" class="visually-hidden">Търсене</label><input id="company-search" name="search" value="@Model.Search" class="form-control" placeholder="Фирма, ЕИК, ДДС номер, имейл или град" /></div>
     <div class="col-md-3"><label for="company-active" class="visually-hidden">Активност</label><select id="company-active" name="active" class="form-select"><option value="">Всички фирми</option><option value="true" selected="@(Model.Active == true)">Активни</option><option value="false" selected="@(Model.Active == false)">Неактивни</option></select></div>
@@ -10,12 +10,12 @@
 <div class="card table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Фирма</th><th>Регистрация</th><th>Контакти</th><th>Град</th><th>Действия</th></tr></thead><tbody>
 @foreach (var c in Model.Items)
 {
-    <tr><td><strong>@c.DisplayName</strong>@if (!c.IsActive) { <span class="badge text-bg-secondary ms-2">Неактивна</span> }</td><td>@c.CountryCode · @(c.RegistrationType == "EIK" ? "ЕИК" : c.RegistrationType == "BULSTAT" ? "БУЛСТАТ" : "Чуждестранна")<br />@c.RegistrationNumber</td><td>@c.Phone<br />@c.Email</td><td>@c.Address.City</td><td><div class="d-flex gap-2"><a asp-action="CompanyEdit" asp-route-n="@c.N" class="btn btn-sm btn-outline-primary">Редакция</a><a asp-action="Partners" asp-route-all="true" asp-route-companyN="@c.N" class="btn btn-sm btn-outline-secondary">Обекти</a></div></td></tr>
+    <tr><td><strong>@c.DisplayName</strong>@if (!c.IsActive) { <span class="badge text-bg-secondary ms-2">Неактивна</span> }</td><td>@c.CountryCode · @(c.RegistrationType == "EIK" ? "ЕИК" : c.RegistrationType == "BULSTAT" ? "БУЛСТАТ" : "Чуждестранна")<br />@c.RegistrationNumber</td><td>@c.Phone<br />@c.Email</td><td>@c.Address.City</td><td><div class="d-flex gap-2"><a asp-action="CompanyEdit" asp-route-n="@c.N" class="btn btn-sm btn-outline-primary" staff-permission="Companies.View,Companies.Edit">Редакция</a><a asp-action="Partners" asp-route-all="true" asp-route-companyN="@c.N" class="btn btn-sm btn-outline-secondary" staff-permission="Partners.View">Обекти</a></div></td></tr>
 }
 @if (Model.Items.Count == 0) { <tr><td colspan="5" class="text-center text-muted p-4">Няма фирми за избраните условия.</td></tr> }
 </tbody></table></div>
 <nav class="d-flex align-items-center gap-3 mt-3" aria-label="Страници">
-@if (Model.Page > 1) { <a asp-action="Companies" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search" asp-route-active="@Model.Active" class="btn btn-outline-secondary">Назад</a> }
+@if (Model.Page > 1) { <a asp-action="Companies" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search" asp-route-active="@Model.Active" class="btn btn-outline-secondary" staff-permission="Companies.View">Назад</a> }
 <span>@Model.Page / @Model.TotalPages</span>
-@if (Model.Page < Model.TotalPages) { <a asp-action="Companies" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search" asp-route-active="@Model.Active" class="btn btn-outline-secondary">Напред</a> }
+@if (Model.Page < Model.TotalPages) { <a asp-action="Companies" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search" asp-route-active="@Model.Active" class="btn btn-outline-secondary" staff-permission="Companies.View">Напред</a> }
 </nav>

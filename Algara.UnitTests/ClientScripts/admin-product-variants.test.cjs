@@ -46,9 +46,9 @@ function color(n, fabricN = null, extra = {}) {
 function variant(n, catalogColorN, extra = {}) {
     return { n, catalogColorN, sku: 'SKU-' + n, stockQuantity: null, surcharge: 0, isActive: true, isDefault: false, ...extra };
 }
-function initialize(state = {}, mode = '1') {
+function initialize(state = {}, mode = '1', permissions = {}) {
     const form = new Element('form');
-    const editor = new Element('section', { 'data-product-variants-editor': '' });
+    const editor = new Element('section', { 'data-product-variants-editor': '', ...permissions });
     form.appendChild(editor);
     const nodes = {};
     const fields = {
@@ -76,7 +76,7 @@ function initialize(state = {}, mode = '1') {
         MutationObserver: class { constructor(callback) { galleryChanged = callback; } observe() {} }
     });
     return {
-        nodes, gallery, addImage, galleryChanged: () => galleryChanged(),
+        nodes, editor, gallery, addImage, galleryChanged: () => galleryChanged(),
         rows: () => editor.querySelectorAll('[data-variant-row]'),
         group(id) { return editor.querySelector('[data-fabric-group="' + id + '"]'); },
         removeFabric(id) { editor.querySelector('[data-remove-fabric="' + id + '"]').trigger('click'); },
@@ -277,4 +277,30 @@ test('adding an oversized fabric is rejected atomically without partial variant 
     assert.equal(ui.rows().length, 0);
     assert.equal(ui.group(10), null);
     assert.match(ui.nodes['variant-status'].textContent, /500/);
+});
+
+test('restricted prices and stock remain read only after a gallery redraw', () => {
+    const ui = initialize({ colors: [color(1)], variants: [variant(10, 1, { stockQuantity: 7, surcharge: 12 })] }, '1', {
+        'data-can-change-price': 'false', 'data-can-change-stock': 'false'
+    });
+    assert.equal(ui.input(0, 'StockQuantity').readOnly, true);
+    assert.equal(ui.input(0, 'Surcharge').readOnly, true);
+    ui.galleryChanged();
+    assert.equal(ui.input(0, 'StockQuantity').readOnly, true);
+    assert.equal(ui.input(0, 'StockQuantity').value, '7');
+    assert.equal(ui.input(0, 'Surcharge').readOnly, true);
+    assert.equal(ui.input(0, 'Surcharge').value, '12');
+});
+
+test('locked variant activity retains the saved true value in the submitted hidden field', () => {
+    const ui = initialize({ colors: [color(1, 3)], fabrics: [fabric(3)],
+        variants: [variant(10, 1, { isDefault: true })], surcharges: [{ fabricN: 3, surcharge: 0 }] }, '2', {
+        'data-can-change-active': 'false', 'data-can-change-structure': 'false', 'data-can-change-price': 'false'
+    });
+    const inputs = ui.editor.querySelectorAll('[name="Variants[0].IsActive"]');
+    assert.equal(inputs[0].disabled, true);
+    assert.equal(inputs[0].checked, true);
+    assert.equal(inputs[1].value, 'true');
+    assert.equal(ui.editor.querySelector('[data-remove-fabric="3"]').disabled, true);
+    assert.equal(ui.fee().readOnly, true);
 });

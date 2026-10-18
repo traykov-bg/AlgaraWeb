@@ -505,7 +505,7 @@ public class AdminProductVariantTests
 
     private sealed class Fixture : IDisposable
     {
-        private readonly IdentityDbContext _identity = new(new DbContextOptions<IdentityDbContext>());
+        private readonly StaffAccessTestContext _identity = new();
         private readonly string _parent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Algara.VariantEditor.Tests"));
         private readonly string _directory;
         private readonly ServiceProvider _services;
@@ -525,8 +525,8 @@ public class AdminProductVariantTests
             var environment = new Mock<IWebHostEnvironment>();
             environment.SetupGet(e => e.ContentRootPath).Returns(_directory);
             environment.SetupGet(e => e.WebRootPath).Returns(Path.Combine(_directory, "wwwroot"));
-            _services = new ServiceCollection().AddSingleton<IProductGalleryWriteLock, TestLock>().BuildServiceProvider();
-            var http = new DefaultHttpContext { RequestServices = _services, User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "admin")], "Test")) };
+            _services = _identity.AddServices(new ServiceCollection().AddSingleton<IProductGalleryWriteLock, TestLock>()).BuildServiceProvider();
+            var http = new DefaultHttpContext { RequestServices = _services, User = StaffAccessTestContext.Principal() };
             Controller = new AdminController(Db, _identity, repository.Object, Mock.Of<ICategoryRepository>(MockBehavior.Strict), Mock.Of<IOrderRepository>(MockBehavior.Strict), Mock.Of<IHeroSlideRepository>(MockBehavior.Strict), Mock.Of<IPromotionRepository>(MockBehavior.Strict), Mock.Of<IUserService>(MockBehavior.Strict), NullLogger<AdminController>.Instance, environment.Object)
             {
                 ControllerContext = new ControllerContext { HttpContext = http, RouteData = new RouteData() },

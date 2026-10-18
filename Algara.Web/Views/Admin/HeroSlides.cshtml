@@ -5,7 +5,7 @@
 }
 
 <div class="d-flex justify-content-end mb-3">
-    <a asp-action="HeroSlideCreate" class="btn btn-sm btn-primary">
+    <a asp-action="HeroSlideCreate" class="btn btn-sm btn-primary" staff-permission="Content.View,Content.Create">
         <i class="bi bi-plus-lg me-1"></i>Нов слайд
     </a>
 </div>
@@ -51,10 +51,10 @@
                         </td>
                         <td class="text-end">
                             <a asp-action="HeroSlideEdit" asp-route-n="@s.N"
-                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;">
+                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Content.View,Content.Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form asp-action="HeroSlideToggle" asp-route-n="@s.N" method="post" class="d-inline">
+                            <form asp-action="HeroSlideToggle" asp-route-n="@s.N" method="post" class="d-inline" staff-permission="Content.View,Content.Deactivate">
                                 <button type="submit" class="btn btn-xs @(s.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
                                         style="padding:.2rem .5rem;font-size:.78rem;"
                                         title="@(s.IsActive ? "Деактивирай" : "Активирай")">

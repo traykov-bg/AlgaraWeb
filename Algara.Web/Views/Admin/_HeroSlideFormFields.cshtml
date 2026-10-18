@@ -1,4 +1,6 @@
-﻿@model Algara.Web.ViewModels.Admin.AdminHeroSlideFormViewModel
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Content.Deactivate"); }
+@model Algara.Web.ViewModels.Admin.AdminHeroSlideFormViewModel
 
 @{
     var heroCategories = ViewBag.HeroSlideCategories as IEnumerable<Algara.Data.Models.Category>;
@@ -103,7 +105,8 @@
 
 <!-- ── Активен ── -->
 <div class="form-check mb-3">
-    <input class="form-check-input" asp-for="IsActive" />
+    @if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
+<input disabled="@(!canChangeActive)" class="form-check-input" asp-for="IsActive" />
     <label class="form-check-label" asp-for="IsActive">Активен (видим на началната страница)</label>
 </div>
 

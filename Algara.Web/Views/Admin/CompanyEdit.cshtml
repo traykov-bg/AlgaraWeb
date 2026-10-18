@@ -1,4 +1,6 @@
-﻿@model Algara.Web.ViewModels.Admin.CompanyForm
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Companies.Deactivate"); }
+@model Algara.Web.ViewModels.Admin.CompanyForm
 @{ Layout = "_AdminLayout"; ViewData["Title"] = Model.N.HasValue ? "Редакция на фирма" : "Нова фирма"; }
 <div class="card border-0 shadow-sm" style="max-width:65rem"><div class="card-body p-4">
     <p class="text-muted">Общите реквизити се използват от всички обекти на тази фирма. Всеки обект има собствени контакти и адрес.</p>
@@ -20,10 +22,11 @@
             <div class="col-12"><fieldset class="border rounded p-3"><legend class="float-none w-auto px-2 fs-6">Седалище и адрес на управление</legend>@Html.EditorFor(m => m.Address)</fieldset></div>
             <div class="col-12"><details class="border rounded p-3"><summary class="fw-semibold mb-2">Отделен адрес за кореспонденция (незадължителен)</summary>@Html.EditorFor(m => m.CorrespondenceAddress)</details></div>
             <div class="col-12"><label asp-for="Notes" class="form-label">Служебни бележки</label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
-            <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Активна фирма</label></div>
+            <div class="col-12 form-check ms-2">@if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
+<input disabled="@(!canChangeActive)" asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Активна фирма</label></div>
         </div>
-        <div class="d-flex flex-wrap gap-2 mt-4"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Companies" class="btn btn-outline-secondary">Откажи</a>
-        @if (Model.N.HasValue) { <a asp-action="CompanyEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary">Презареди записаното</a><a asp-action="Partners" asp-route-all="true" asp-route-companyN="@Model.N" class="btn btn-outline-primary">Обекти на фирмата</a> }</div>
+        <div class="d-flex flex-wrap gap-2 mt-4"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Companies" class="btn btn-outline-secondary" staff-permission="Companies.View">Откажи</a>
+        @if (Model.N.HasValue) { <a asp-action="CompanyEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary" staff-permission="Companies.View,Companies.Edit">Презареди записаното</a><a asp-action="Partners" asp-route-all="true" asp-route-companyN="@Model.N" class="btn btn-outline-primary" staff-permission="Partners.View">Обекти на фирмата</a> }</div>
     </form>
 </div></div>
 <partial name="_PartnerCatalogHistory" model="Model" />

@@ -233,7 +233,7 @@ namespace Algara.Identity.Services
             var securityStamp = context.Principal?.FindFirst("SecurityStamp")?.Value;
             var sessionId = context.Principal?.FindFirst("SessionId")?.Value;
 
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(securityStamp) || string.IsNullOrEmpty(sessionId))
+            if (string.IsNullOrEmpty(userId) || securityStamp == null || string.IsNullOrEmpty(sessionId))
             {
                 await context.HttpContext.SignOutAsync();
                 context.RejectPrincipal();
@@ -242,7 +242,7 @@ namespace Algara.Identity.Services
 
             var userStore = context.HttpContext.RequestServices.GetRequiredService<IUserStore<ApplicationUser>>();
             var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
-            if (user == null)
+            if (user == null || !user.IsActive)
             {
                 await context.HttpContext.SignOutAsync();
                 context.RejectPrincipal();
@@ -355,6 +355,8 @@ namespace Algara.Identity.Services
 
         public async Task<bool> AddUserToRoleAsync(string username, string roleName)
         {
+            // Registration may grant only the customer role; all staff changes require an audited actor.
+            if (!string.Equals(roleName, "User", StringComparison.Ordinal)) return false;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
             if (user == null) return false;
 
@@ -377,6 +379,7 @@ namespace Algara.Identity.Services
 
         public async Task<bool> RemoveUserFromRoleAsync(string username, string roleName)
         {
+            if (!string.Equals(roleName, "User", StringComparison.Ordinal)) return false;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
             if (user == null) return false;
 

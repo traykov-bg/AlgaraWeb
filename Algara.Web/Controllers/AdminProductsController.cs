@@ -1,4 +1,5 @@
-﻿using Algara.Data.Models;
+﻿using Algara.Web.Authorization;
+using Algara.Data.Models;
 using Algara.Data.Repositories;
 using Algara.Web.Services;
 using Algara.Web.ViewModels.Admin;
@@ -13,6 +14,7 @@ public partial class AdminController
     private const long ProductUploadLimit = 110L * 1024 * 1024;
 
     [HttpGet("products/create")]
+    [RequirePermission("Products.View", "Products.Create", "Products.ChangePrice")]
     public async Task<IActionResult> ProductCreate()
         => View(await PrepareProductFormAsync(new AdminProductFormViewModel()));
 
@@ -20,10 +22,12 @@ public partial class AdminController
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
     [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit, ValueCountLimit = 20000)]
+    [RequirePermission("Products.View", "Products.Create", "Products.ChangePrice")]
     public async Task<IActionResult> ProductCreate(AdminProductFormViewModel vm)
         => await SaveProductAsync(vm, null);
 
     [HttpGet("products/edit/{n}")]
+    [RequirePermission("Products.View", "Products.Edit")]
     public async Task<IActionResult> ProductEdit(int n)
     {
         var product = await LoadEditableProductAsync(n);
@@ -49,6 +53,7 @@ public partial class AdminController
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
     [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit, ValueCountLimit = 20000)]
+    [RequirePermission("Products.View", "Products.Edit")]
     public async Task<IActionResult> ProductEdit(AdminProductFormViewModel vm)
     {
         // Do not let a modified hidden field silently target a different route.
@@ -74,6 +79,9 @@ public partial class AdminController
     {
         vm.Images ??= [];
         vm.SelectedSubCategoryNs ??= [];
+        vm.Variants ??= [];
+        vm.FabricSurcharges ??= [];
+        if (!await ProductFieldPermissionsAsync(vm, existing)) return Forbid();
         vm.Sku = ProductSku.Normalize(vm.Sku);
         vm.Name = vm.Name?.Trim() ?? string.Empty;
         var originalImages = existing == null ? [] : ImageRows(existing);
@@ -142,6 +150,27 @@ public partial class AdminController
         RestoreImageRows(vm, originalImages);
         RestoreRetainedVariantRows(vm, existing);
         return View(await PrepareProductFormAsync(vm));
+    }
+
+    private async Task<bool> ProductFieldPermissionsAsync(AdminProductFormViewModel vm, Product? existing)
+    {
+        var previousVariants = existing?.Variants.ToDictionary(v => v.N) ?? [];
+        var previousFees = existing?.FabricSurcharges.ToDictionary(s => s.FabricN, s => s.Surcharge) ?? [];
+        var priceChanged = existing == null || existing.Price != vm.Price ||
+            vm.Variants.Any(v => v.Surcharge != (previousVariants.GetValueOrDefault(v.N)?.Surcharge ?? 0m)) ||
+            vm.FabricSurcharges.Any(s => s.Surcharge != previousFees.GetValueOrDefault(s.FabricN)) ||
+            previousFees.Any(s => s.Value != 0m && !vm.FabricSurcharges.Any(v => v.FabricN == s.Key));
+        if (priceChanged && !await CanAsync("Products.ChangePrice")) return false;
+
+        var effectiveStock = vm.OptionKind == ProductOptionKind.None ? vm.StockQuantity : null;
+        var stockChanged = effectiveStock != existing?.StockQuantity ||
+            vm.Variants.Any(v => v.StockQuantity != previousVariants.GetValueOrDefault(v.N)?.StockQuantity);
+        if (stockChanged && !await CanAsync("Products.ChangeStock")) return false;
+
+        var activityChanged = vm.IsActive != (existing?.IsActive ?? true) || existing != null &&
+            (vm.Variants.Any(v => v.IsActive != (previousVariants.GetValueOrDefault(v.N)?.IsActive ?? false)) ||
+             existing.Variants.Any(v => v.IsActive && !vm.Variants.Any(row => row.N == v.N && row.IsActive)));
+        return !activityChanged || await CanAsync("Products.Deactivate");
     }
 
     private void ValidateGallery(AdminProductFormViewModel vm, List<AdminProductImageViewModel> current)

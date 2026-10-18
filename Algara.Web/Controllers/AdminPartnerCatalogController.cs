@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using Algara.Web.Authorization;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Algara.Data.Models;
@@ -13,6 +14,7 @@ namespace Algara.Web.Controllers;
 public partial class AdminController
 {
     [HttpGet("companies")]
+    [RequirePermission("Companies.View")]
     public async Task<IActionResult> Companies(string? search = null, bool? active = null, int page = 1)
     {
         search = PartnerCatalogRules.Text(search);
@@ -36,9 +38,11 @@ public partial class AdminController
     }
 
     [HttpGet("companies/create")]
+    [RequirePermission("Companies.View", "Companies.Create")]
     public IActionResult CompanyCreate() => View("CompanyEdit", new CompanyForm());
 
     [HttpGet("companies/{n:int}/edit")]
+    [RequirePermission("Companies.View", "Companies.Edit")]
     public async Task<IActionResult> CompanyEdit([FromRoute] int n)
     {
         var c = await _shopDb.Companies.AsNoTracking().SingleOrDefaultAsync(c => c.N == n);
@@ -56,6 +60,7 @@ public partial class AdminController
     }
 
     [HttpPost("companies/create"), ValidateAntiForgeryToken]
+    [RequirePermission("Companies.View", "Companies.Create")]
     public Task<IActionResult> CompanyCreate(CompanyForm form)
     {
         form.N = null;
@@ -63,6 +68,7 @@ public partial class AdminController
     }
 
     [HttpPost("companies/{n:int}/edit"), ValidateAntiForgeryToken]
+    [RequirePermission("Companies.View", "Companies.Edit")]
     public Task<IActionResult> CompanyEdit([FromRoute] int n, CompanyForm form)
         => form.N != n ? Task.FromResult<IActionResult>(BadRequest()) : SaveCompany(form);
 
@@ -99,6 +105,7 @@ public partial class AdminController
         }, _ => Task.CompletedTask);
 
     [HttpGet("partners")]
+    [RequirePermission("Partners.View")]
     public async Task<IActionResult> Partners(string? search = null, bool? active = null,
         int? companyN = null, int groupN = 0, bool all = false, bool includeChildren = false, int page = 1)
     {
@@ -145,6 +152,7 @@ public partial class AdminController
     }
 
     [HttpGet("partners/create")]
+    [RequirePermission("Partners.View", "Partners.Create")]
     public async Task<IActionResult> PartnerCreate(int groupN = 0)
     {
         if (!await _shopDb.PartnerGroups.AnyAsync(g => g.N == groupN)) return NotFound();
@@ -154,6 +162,7 @@ public partial class AdminController
     }
 
     [HttpGet("partners/{n:int}/edit")]
+    [RequirePermission("Partners.View", "Partners.Edit")]
     public async Task<IActionResult> PartnerEdit([FromRoute] int n)
     {
         var p = await _shopDb.Partners.AsNoTracking().SingleOrDefaultAsync(p => p.N == n);
@@ -170,6 +179,7 @@ public partial class AdminController
     }
 
     [HttpPost("partners/create"), ValidateAntiForgeryToken]
+    [RequirePermission("Partners.View", "Partners.Create")]
     public Task<IActionResult> PartnerCreate(PartnerForm form)
     {
         form.N = null;
@@ -177,6 +187,7 @@ public partial class AdminController
     }
 
     [HttpPost("partners/{n:int}/edit"), ValidateAntiForgeryToken]
+    [RequirePermission("Partners.View", "Partners.Edit")]
     public Task<IActionResult> PartnerEdit([FromRoute] int n, PartnerForm form)
         => form.N != n ? Task.FromResult<IActionResult>(BadRequest()) : SavePartner(form);
 
@@ -225,9 +236,11 @@ public partial class AdminController
         }, PartnerChoices);
 
     [HttpGet("partner-groups")]
+    [RequirePermission("Partners.View")]
     public IActionResult PartnerGroups() => RedirectToAction(nameof(Partners));
 
     [HttpGet("partner-groups/create")]
+    [RequirePermission("Partners.View", "PartnerGroups.View", "PartnerGroups.Create")]
     public async Task<IActionResult> PartnerGroupCreate(int parentN = 0)
     {
         var form = new PartnerGroupForm { ParentN = parentN };
@@ -236,6 +249,7 @@ public partial class AdminController
     }
 
     [HttpGet("partner-groups/{n:int}/edit")]
+    [RequirePermission("Partners.View", "PartnerGroups.View", "PartnerGroups.Edit")]
     public async Task<IActionResult> PartnerGroupEdit([FromRoute] int n)
     {
         var g = await _shopDb.PartnerGroups.AsNoTracking().SingleOrDefaultAsync(g => g.N == n);
@@ -247,6 +261,7 @@ public partial class AdminController
     }
 
     [HttpPost("partner-groups/create"), ValidateAntiForgeryToken]
+    [RequirePermission("Partners.View", "PartnerGroups.View", "PartnerGroups.Create")]
     public Task<IActionResult> PartnerGroupCreate(PartnerGroupForm form)
     {
         form.N = null;
@@ -254,6 +269,7 @@ public partial class AdminController
     }
 
     [HttpPost("partner-groups/{n:int}/edit"), ValidateAntiForgeryToken]
+    [RequirePermission("Partners.View", "PartnerGroups.View", "PartnerGroups.Edit")]
     public Task<IActionResult> PartnerGroupEdit([FromRoute] int n, PartnerGroupForm form)
         => form.N != n ? Task.FromResult<IActionResult>(BadRequest()) : SavePartnerGroup(form);
 
@@ -296,6 +312,17 @@ public partial class AdminController
                 await LockPartnerCatalog();
                 var existing = form.N.HasValue ? await _shopDb.Set<TEntity>().FindAsync(form.N.Value) : null;
                 if (form.N.HasValue && existing == null) return NotFound();
+                if (form is CompanyForm companyForm && companyForm.IsActive != ((existing as Company)?.IsActive ?? true) &&
+                    !await CanAsync("Companies.Deactivate")) return Forbid();
+                if (form is PartnerForm partnerForm)
+                {
+                    if (partnerForm.IsActive != ((existing as Partner)?.IsActive ?? true) &&
+                        !await CanAsync("Partners.Deactivate")) return Forbid();
+                    if (existing is Partner partner && partner.GroupN != partnerForm.GroupN &&
+                        !await CanAsync("Partners.Move")) return Forbid();
+                }
+                if (existing is PartnerGroup previousGroup && form is PartnerGroupForm groupForm &&
+                    previousGroup.ParentN != groupForm.ParentN && !await CanAsync("PartnerGroups.Move")) return Forbid();
                 if (existing != null)
                 {
                     var current = (byte[])_shopDb.Entry(existing).Property("RowVersion").CurrentValue!;

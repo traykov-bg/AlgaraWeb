@@ -3,6 +3,10 @@
     document.querySelectorAll('[data-product-variants-editor]').forEach(function (editor) {
         var form = editor.closest('form');
         var state = JSON.parse(editor.querySelector('[data-variant-editor-data]').textContent);
+        var canPrice = editor.getAttribute('data-can-change-price') !== 'false';
+        var canStock = editor.getAttribute('data-can-change-stock') !== 'false';
+        var canActive = editor.getAttribute('data-can-change-active') !== 'false';
+        var canStructure = editor.getAttribute('data-can-change-structure') !== 'false';
         var kind = editor.querySelector('[data-option-kind]');
         var body = editor.querySelector('[data-variant-rows]');
         var groups = editor.querySelector('[data-fabric-groups]');
@@ -101,6 +105,7 @@
             input.value = row[key] == null ? '' : row[key];
             input.setAttribute('aria-label', title + ': ' + labelFor(row));
             Object.keys(options || {}).forEach(function (key) { input.setAttribute(key, options[key]); });
+            if (prop === 'Surcharge' && !canPrice || prop === 'StockQuantity' && !canStock) input.readOnly = true;
             input.addEventListener('input', function () { row[key] = type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value; });
             td.appendChild(input); tr.appendChild(td); return input;
         }
@@ -125,10 +130,11 @@
             hidden(activeCell, 'Variants[' + i + '].N', row.n || 0); hidden(activeCell, 'Variants[' + i + '].CatalogColorN', row.catalogColorN);
             var active = element('input', undefined, 'form-check-input'); active.type = 'checkbox'; active.checked = row.isActive;
             active.name = 'Variants[' + i + '].IsActive'; active.value = 'true'; active.setAttribute('aria-label', 'Включен: ' + labelFor(row));
-            active.disabled = !isAvailable(row) && !row.isActive;
-            activeCell.appendChild(active); hidden(activeCell, active.name, 'false'); tr.appendChild(activeCell);
+            active.disabled = !canActive || !isAvailable(row) && !row.isActive;
+            activeCell.appendChild(active); hidden(activeCell, active.name, !canActive && row.isActive ? 'true' : 'false'); tr.appendChild(activeCell);
             if (!row.n && !fabricMode) {
                 var remove = element('button', '×', 'btn btn-sm btn-outline-danger ms-2'); remove.type = 'button';
+                remove.disabled = !canStructure;
                 remove.setAttribute('data-remove-new-variant', ''); remove.setAttribute('aria-label', 'Премахни новия вариант: ' + labelFor(row));
                 remove.addEventListener('click', function () { rows = rows.filter(function (r) { return r !== row; }); repairDefault(); drawRows(); describeDefault(); });
                 activeCell.appendChild(remove);
@@ -169,6 +175,7 @@
                 var img = element('img'); img.src = fabric.imageUrl; img.alt = fabric.name; img.loading = 'lazy'; imageWrap.appendChild(img);
             } else imageWrap.appendChild(element('span', 'Няма снимка на дамаската', 'small text-muted text-center p-3'));
             var remove = element('button', '×', 'algara-fabric-editor-remove'); remove.type = 'button';
+            remove.disabled = !canStructure;
             remove.setAttribute('data-remove-fabric', id); remove.setAttribute('aria-label', 'Премахни дамаската: ' + (fabric ? fabric.name : id));
             remove.addEventListener('click', function () {
                 selectedFabrics.delete(id); removedFabrics.add(id);
@@ -182,6 +189,7 @@
             var label = element('label', 'Надценка (€)', 'form-label small'); label.htmlFor = 'fabricSurcharge' + id;
             var input = element('input', undefined, 'form-control form-control-sm'); input.type = 'number'; input.step = '0.01'; input.min = '0'; input.max = '9999999';
             input.id = label.htmlFor; input.name = 'FabricSurcharges[' + index + '].Surcharge'; input.value = fees.get(id); input.required = true;
+            input.readOnly = !canPrice;
             hidden(summary, 'FabricSurcharges[' + index + '].FabricN', id); hidden(summary, '__Invariant', input.name);
             input.addEventListener('input', function () { fees.set(id, input.value === '' ? null : Number(input.value)); });
             input.addEventListener('change', function () { repairDefault(); syncDefaultFields(); describeDefault(); });

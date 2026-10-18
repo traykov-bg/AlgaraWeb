@@ -12,6 +12,33 @@ public sealed class UserStoreTests
     public UserStoreTests() => _store = new UserStore(_database.Object);
 
     [Theory]
+    [InlineData(true, "Admin")]
+    [InlineData(false, "Admin")]
+    [InlineData(true, "Moderator")]
+    [InlineData(false, "CatalogEditor")]
+    [InlineData(true, "OrderManager")]
+    [InlineData(false, "Unknown")]
+    public async Task LegacyRoleChange_StaffOrUnknownRole_DoesNotBypassAuditedService(bool add, string roleName)
+    {
+        var user = RoleUser();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => add
+            ? _store.AddToRoleAsync(user, roleName, default)
+            : _store.RemoveFromRoleAsync(user, roleName, default));
+        Assert.Equal("old-stamp", user.SecurityStamp);
+        _database.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RawDeletion_RequiresAuthenticatedDeletionService()
+    {
+        var result = await _store.DeleteAsync(RoleUser(), default);
+        Assert.False(result.Succeeded);
+        Assert.Equal("UseAuditedAccountDeletion", Assert.Single(result.Errors).Code);
+        _database.VerifyNoOtherCalls();
+    }
+
+
+    [Theory]
     [InlineData("id")]
     [InlineData("number")]
     [InlineData("name")]
@@ -195,7 +222,7 @@ public sealed class UserStoreTests
 
         Assert.NotNull(commandParameters);
         Assert.Equal(user.N, Parameter<int>(commandParameters, "UserN"));
-        Assert.Equal("Admin", Parameter<string>(commandParameters, "RoleName"));
+        Assert.Equal("User", Parameter<string>(commandParameters, "RoleName"));
         var proposedStamp = Parameter<string>(commandParameters, "SecurityStamp");
         Assert.True(Guid.TryParse(proposedStamp, out _));
         Assert.NotEqual("old-stamp", proposedStamp);
@@ -206,8 +233,8 @@ public sealed class UserStoreTests
     }
 
     private Task ChangeRoleAsync(ApplicationUser user, bool add, CancellationToken cancellation) => add
-        ? _store.AddToRoleAsync(user, "Admin", cancellation)
-        : _store.RemoveFromRoleAsync(user, "Admin", cancellation);
+        ? _store.AddToRoleAsync(user, "User", cancellation)
+        : _store.RemoveFromRoleAsync(user, "User", cancellation);
 
     private static ApplicationUser RoleUser() => new()
     {

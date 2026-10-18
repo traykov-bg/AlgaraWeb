@@ -40,7 +40,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId FROM Users WHERE Id = @Id";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE Id = @Id";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { Id = userId });
         }
 
@@ -48,7 +48,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId FROM Users WHERE N = @N";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE N = @N";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { N = userN });
         }
 
@@ -56,7 +56,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId FROM Users WHERE LOWER(UserName) = @UserName";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE LOWER(UserName) = @UserName";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { UserName = normalizedUserName.ToLower() });
         }
 
@@ -143,17 +143,17 @@ namespace Algara.Identity.Services
         public async Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            string query = "DELETE FROM Users WHERE N = @N";
-            var parameters = new { user.N };
-
-            int result = await _databaseHelper.ExecuteAsync(query, parameters);
-            return result > 0 ? IdentityResult.Success : IdentityResult.Failed();
+            return await Task.FromResult(IdentityResult.Failed(new IdentityError
+            {
+                Code = "UseAuditedAccountDeletion", Description = "Use the authenticated account-deletion service."
+            }));
         }
 
         public async Task AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (!string.Equals(roleName, "User", StringComparison.Ordinal))
+                throw new InvalidOperationException("Staff role changes require AccessManagementService and an authenticated administrator.");
 
             const string query = """
                 SET NOCOUNT ON;
@@ -183,6 +183,8 @@ namespace Algara.Identity.Services
         public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (!string.Equals(roleName, "User", StringComparison.Ordinal))
+                throw new InvalidOperationException("Staff role changes require AccessManagementService and an authenticated administrator.");
 
             const string query = """
                 SET NOCOUNT ON;

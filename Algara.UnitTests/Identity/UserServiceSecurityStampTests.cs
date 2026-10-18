@@ -2,6 +2,7 @@
 using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
+using Algara.UnitTests.Controllers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -71,6 +72,48 @@ public sealed class UserServiceSecurityStampTests : IDisposable
         await _service.ValidateSecurityStampAsync(context);
 
         AssertRejectedAndSignedOut(context);
+        _users.Verify(s => s.FindByIdAsync("customer-id", CancellationToken.None), Times.Once);
+        _users.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ValidateSecurityStamp_InactiveUser_RejectsCookieBeforeQueryingSessions()
+    {
+        var context = CreateContext();
+        _users.Setup(s => s.FindByIdAsync("customer-id", CancellationToken.None))
+            .ReturnsAsync(new ApplicationUser { IsActive = false });
+        await _service.ValidateSecurityStampAsync(context);
+        AssertRejectedAndSignedOut(context);
+        _users.Verify(s => s.FindByIdAsync("customer-id", CancellationToken.None), Times.Once);
+        _users.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData("", true, true)]
+    [InlineData("changed-stamp", true, false)]
+    [InlineData("", false, false)]
+    public async Task ValidateSecurityStamp_LegacyEmptyVersionStillRequiresCurrentStampAndActiveSession(
+        string currentStamp, bool sessionActive, bool expectedValid)
+    {
+        using var database = new StaffAccessTestContext(sessionActive: sessionActive);
+        database.PrimaryUser.SecurityStamp = currentStamp;
+        var context = CreateContext();
+        var identity = (ClaimsIdentity)context.Principal!.Identity!;
+        identity.RemoveClaim(identity.FindFirst("SecurityStamp")!);
+        identity.RemoveClaim(identity.FindFirst("SessionId")!);
+        identity.AddClaim(new Claim("SecurityStamp", ""));
+        identity.AddClaim(new Claim("SessionId", "session-admin"));
+        _users.Setup(s => s.FindByIdAsync("customer-id", CancellationToken.None))
+            .ReturnsAsync(database.PrimaryUser);
+
+        await new UserService(database, NullLogger<UserService>.Instance).ValidateSecurityStampAsync(context);
+
+        if (expectedValid)
+        {
+            Assert.NotNull(context.Principal);
+            _authentication.VerifyNoOtherCalls();
+        }
+        else AssertRejectedAndSignedOut(context);
         _users.Verify(s => s.FindByIdAsync("customer-id", CancellationToken.None), Times.Once);
         _users.VerifyNoOtherCalls();
     }

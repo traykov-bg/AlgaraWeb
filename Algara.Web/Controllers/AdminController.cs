@@ -2,8 +2,10 @@
 using Algara.Data.Models;
 using Algara.Data.Repositories;
 using Algara.Identity.Data;
+using Algara.Identity.Authorization;
 using Algara.Web.Helpers;
 using Algara.Web.ViewModels.Admin;
+using Algara.Web.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -12,7 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace Algara.Web.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "Staff")]
     [Route("admin")]
     public partial class AdminController : Controller
     {
@@ -26,6 +28,10 @@ namespace Algara.Web.Controllers
         private readonly IUserService        _userService;
         private readonly ILogger<AdminController> _logger;
         private readonly IWebHostEnvironment _env;
+        private Algara.Identity.Authorization.StaffAccessService StaffAccess =>
+            HttpContext.RequestServices.GetRequiredService<Algara.Identity.Authorization.StaffAccessService>();
+
+        private Task<bool> CanAsync(string permission) => StaffAccess.HasPermissionAsync(User, permission);
 
         public AdminController(
             ShopDbContext shopDb,
@@ -57,18 +63,23 @@ namespace Algara.Web.Controllers
 
         [HttpGet("")]
         [HttpGet("index")]
+        [RequirePermission("Dashboard.View")]
         public async Task<IActionResult> Index()
         {
+            var products = await CanAsync("Products.View");
+            var categories = await CanAsync("Categories.View");
+            var users = await CanAsync("Users.View");
+            var orders = await CanAsync("Orders.View");
             var vm = new AdminDashboardViewModel
             {
-                TotalActiveProducts = await _shopDb.Products.CountAsync(p => p.IsActive),
-                TotalCategories     = await _shopDb.Categories.CountAsync(c => c.IsActive),
-                TotalUsers          = await _identityDb.Users.CountAsync(),
-                OrdersPending       = await _orderRepo.GetCountByStatusAsync(OrderStatus.Pending),
-                OrdersConfirmed     = await _orderRepo.GetCountByStatusAsync(OrderStatus.Confirmed),
-                OrdersShipped       = await _orderRepo.GetCountByStatusAsync(OrderStatus.Shipped),
-                OrdersDelivered     = await _orderRepo.GetCountByStatusAsync(OrderStatus.Delivered),
-                OrdersCancelled     = await _orderRepo.GetCountByStatusAsync(OrderStatus.Cancelled),
+                TotalActiveProducts = products ? await _shopDb.Products.CountAsync(p => p.IsActive) : 0,
+                TotalCategories     = categories ? await _shopDb.Categories.CountAsync(c => c.IsActive) : 0,
+                TotalUsers          = users ? await _identityDb.Users.CountAsync() : 0,
+                OrdersPending       = orders ? await _orderRepo.GetCountByStatusAsync(OrderStatus.Pending) : 0,
+                OrdersConfirmed     = orders ? await _orderRepo.GetCountByStatusAsync(OrderStatus.Confirmed) : 0,
+                OrdersShipped       = orders ? await _orderRepo.GetCountByStatusAsync(OrderStatus.Shipped) : 0,
+                OrdersDelivered     = orders ? await _orderRepo.GetCountByStatusAsync(OrderStatus.Delivered) : 0,
+                OrdersCancelled     = orders ? await _orderRepo.GetCountByStatusAsync(OrderStatus.Cancelled) : 0,
             };
             return View(vm);
         }
@@ -78,6 +89,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("products")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> Products(int page = 1, string sort = "name_asc", string cats = "")
         {
             const int pageSize = 20;
@@ -172,6 +184,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("products/toggle/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Products.View", "Products.Deactivate")]
         public async Task<IActionResult> ProductToggle(int n)
         {
             var product = await _shopDb.Products.FindAsync(n);
@@ -191,6 +204,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("categories")]
+        [RequirePermission("Categories.View")]
         public async Task<IActionResult> Categories()
         {
             var categories = await _shopDb.Categories
@@ -201,13 +215,16 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("categories/create")]
+        [RequirePermission("Categories.View", "Categories.Create")]
         public IActionResult CategoryCreate()
             => View(new AdminCategoryFormViewModel());
 
         [HttpPost("categories/create")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Categories.View", "Categories.Create")]
         public async Task<IActionResult> CategoryCreate(AdminCategoryFormViewModel vm)
         {
+            if (!vm.IsActive && !await CanAsync("Categories.Deactivate")) return Forbid();
             // Ако slug-ът е празен, го генерираме от Name
             if (string.IsNullOrWhiteSpace(vm.Slug))
                 vm.Slug = SlugHelper.Generate(vm.Name);
@@ -229,6 +246,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("categories/edit/{n}")]
+        [RequirePermission("Categories.View", "Categories.Edit")]
         public async Task<IActionResult> CategoryEdit(int n)
         {
             var category = await _shopDb.Categories
@@ -253,6 +271,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("categories/edit/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Categories.View", "Categories.Edit")]
         public async Task<IActionResult> CategoryEdit(AdminCategoryFormViewModel vm)
         {
             // Ако slug-ът е празен, го генерираме от Name
@@ -271,6 +290,7 @@ namespace Algara.Web.Controllers
 
             var category = await _shopDb.Categories.FindAsync(vm.N);
             if (category == null) return NotFound();
+            if (vm.IsActive != category.IsActive && !await CanAsync("Categories.Deactivate")) return Forbid();
 
             category.Name        = vm.Name;
             category.Slug        = vm.Slug;
@@ -286,6 +306,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("categories/{n}/subcategories/add")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Categories.View", "Categories.Create")]
         public async Task<IActionResult> SubCategoryAdd(int n, string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -313,6 +334,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("categories/subcategories/delete/{sn}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Categories.View", "Categories.Delete")]
         public async Task<IActionResult> SubCategoryDelete(int sn)
         {
             var sub = await _shopDb.SubCategories.FindAsync(sn);
@@ -328,8 +350,10 @@ namespace Algara.Web.Controllers
 
         // AJAX: връща под-категориите за дадена категория (използва се от формата за продукт)
         [HttpGet("categories/{n}/subcategories")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetSubCategories(int n)
         {
+            if (!await CanAsync("Products.Create") && !await CanAsync("Products.Edit")) return Forbid();
             var subs = await _shopDb.SubCategories
                 .Where(sc => sc.CategoryN == n && sc.IsActive)
                 .OrderBy(sc => sc.Name)
@@ -340,6 +364,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("categories/toggle/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Categories.View", "Categories.Deactivate")]
         public async Task<IActionResult> CategoryToggle(int n)
         {
             var category = await _shopDb.Categories.FindAsync(n);
@@ -359,6 +384,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("hero-slides")]
+        [RequirePermission("Content.View")]
         public async Task<IActionResult> HeroSlides()
         {
             var slides = await _heroSlideRepo.GetAllAsync();
@@ -367,6 +393,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("hero-slides/create")]
+        [RequirePermission("Content.View", "Content.Create")]
         public async Task<IActionResult> HeroSlideCreate()
         {
             ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
@@ -375,8 +402,10 @@ namespace Algara.Web.Controllers
 
         [HttpPost("hero-slides/create")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Content.View", "Content.Create")]
         public async Task<IActionResult> HeroSlideCreate(AdminHeroSlideFormViewModel vm)
         {
+            if (!vm.IsActive && !await CanAsync("Content.Deactivate")) return Forbid();
             if (!ModelState.IsValid)
             {
                 ViewBag.HeroSlideCategories = await _categoryRepo.GetAllAsync();
@@ -400,6 +429,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("hero-slides/edit/{n}")]
+        [RequirePermission("Content.View", "Content.Edit")]
         public async Task<IActionResult> HeroSlideEdit(int n)
         {
             var slide = await _heroSlideRepo.GetByNAsync(n);
@@ -423,6 +453,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("hero-slides/edit/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Content.View", "Content.Edit")]
         public async Task<IActionResult> HeroSlideEdit(AdminHeroSlideFormViewModel vm)
         {
             if (!ModelState.IsValid)
@@ -433,6 +464,7 @@ namespace Algara.Web.Controllers
 
             var slide = await _heroSlideRepo.GetByNAsync(vm.N);
             if (slide == null) return NotFound();
+            if (vm.IsActive != slide.IsActive && !await CanAsync("Content.Deactivate")) return Forbid();
 
             slide.ImageUrl     = vm.ImageUrl;
             slide.EyebrowText  = vm.EyebrowText;
@@ -450,6 +482,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("hero-slides/toggle/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Content.View", "Content.Deactivate")]
         public async Task<IActionResult> HeroSlideToggle(int n)
         {
             await _heroSlideRepo.ToggleActiveAsync(n);
@@ -459,8 +492,10 @@ namespace Algara.Web.Controllers
 
         [HttpPost("hero-slides/upload-image")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Content.View")]
         public async Task<IActionResult> HeroSlideUploadImage(IFormFile file)
         {
+            if (!await CanAsync("Content.Create") && !await CanAsync("Content.Edit")) return Forbid();
             if (file == null || file.Length == 0)
                 return BadRequest(new { error = "Не е избран файл." });
 
@@ -496,6 +531,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("orders")]
+        [RequirePermission("Orders.View")]
         public async Task<IActionResult> Orders(OrderStatus? status = null)
         {
             var allOrders = await _orderRepo.GetAllAsync();
@@ -519,6 +555,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("orders/{n}")]
+        [RequirePermission("Orders.View")]
         public async Task<IActionResult> OrderDetail(int n)
         {
             var order = await _orderRepo.GetByNAsync(n);
@@ -537,6 +574,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("orders/{n}/status")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Orders.View", "Orders.ChangeStatus")]
         public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status)
         {
             await _orderRepo.UpdateStatusAsync(n, status);
@@ -549,6 +587,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("users")]
+        [RequirePermission("Users.View")]
         public async Task<IActionResult> Users()
         {
             var users = await _identityDb.Users.OrderBy(u => u.UserName).ToListAsync();
@@ -560,8 +599,8 @@ namespace Algara.Web.Controllers
                 rows.Add(new AdminUserRowViewModel { User = user, Roles = roles.ToList() });
             }
 
-            ViewBag.AllRoles = (await _identityDb.Roles.OrderBy(r => r.Name).ToListAsync())
-                .Select(r => new SelectListItem(r.Name, r.Name))
+            ViewBag.AllRoles = (await _identityDb.Roles.Where(r => StaffRoles.All.Contains(r.Name) || r.Name == "User").OrderBy(r => r.Name).ToListAsync())
+                .Select(r => new SelectListItem(AdminAccessFormViewModel.RoleLabel(r.Name), r.Name))
                 .ToList();
 
             return View(new AdminUserListViewModel { Rows = rows });
@@ -569,24 +608,35 @@ namespace Algara.Web.Controllers
 
         [HttpPost("users/assign-role")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Users.View", "Access.AssignRoles")]
         public async Task<IActionResult> AssignRole(AdminUserRoleViewModel vm)
         {
-            var result = await _userService.AddUserToRoleAsync(vm.Username, vm.RoleName);
-            TempData[result ? "Success" : "Error"] = result
-                ? $"Ролята \"{vm.RoleName}\" е добавена на {vm.Username}."
-                : $"Неуспешно добавяне на роля (потребителят може вече да я има).";
+            var result = await ChangeUserRoleAsync(vm, add: true);
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded
+                ? (result.Changed ? "Ролята е добавена. Потребителят трябва да влезе отново." : "Потребителят вече има тази роля.")
+                : result.Error;
             return RedirectToAction(nameof(Users));
         }
 
         [HttpPost("users/remove-role")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Users.View", "Access.AssignRoles")]
         public async Task<IActionResult> RemoveRole(AdminUserRoleViewModel vm)
         {
-            var result = await _userService.RemoveUserFromRoleAsync(vm.Username, vm.RoleName);
-            TempData[result ? "Success" : "Error"] = result
-                ? $"Ролята \"{vm.RoleName}\" е премахната от {vm.Username}."
-                : $"Неуспешно премахване на роля.";
+            var result = await ChangeUserRoleAsync(vm, add: false);
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded
+                ? (result.Changed ? "Ролята е отнета. Предишните сесии на потребителя вече са невалидни." : "Потребителят няма тази роля.")
+                : result.Error;
             return RedirectToAction(nameof(Users));
+        }
+
+        private async Task<AccessChangeResult> ChangeUserRoleAsync(AdminUserRoleViewModel vm, bool add)
+        {
+            if (!ModelState.IsValid) return AccessChangeResult.Reject("Невалидни данни. Презаредете страницата.");
+            var target = await _identityDb.Users.AsNoTracking().SingleOrDefaultAsync(u => u.UserName == vm.Username, HttpContext.RequestAborted);
+            if (target == null) return AccessChangeResult.Reject("Потребителят не е намерен.");
+            return await HttpContext.RequestServices.GetRequiredService<AccessManagementService>()
+                .SetUserRoleAsync(User, target.Id, vm.RoleName, add, vm.ExpectedSecurityStamp, HttpContext.RequestAborted);
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -594,6 +644,7 @@ namespace Algara.Web.Controllers
         // ═══════════════════════════════════════════════════════════
 
         [HttpGet("promotions")]
+        [RequirePermission("Promotions.View")]
         public async Task<IActionResult> Promotions()
         {
             var promotions = await _promotionRepo.GetAllAsync();
@@ -601,6 +652,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("promotions/create")]
+        [RequirePermission("Promotions.View", "Promotions.Create")]
         public async Task<IActionResult> PromotionCreate()
         {
             var vm = new AdminPromotionFormViewModel
@@ -616,8 +668,10 @@ namespace Algara.Web.Controllers
 
         [HttpPost("promotions/create")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Promotions.View", "Promotions.Create")]
         public async Task<IActionResult> PromotionCreate(AdminPromotionFormViewModel vm)
         {
+            if (!vm.IsActive && !await CanAsync("Promotions.Deactivate")) return Forbid();
             await PreparePromotionPricesAsync(vm, new Dictionary<int, ProductPromotion>());
             await ValidatePromotionAsync(vm, excludePromotionN: null);
 
@@ -661,6 +715,7 @@ namespace Algara.Web.Controllers
         }
 
         [HttpGet("promotions/edit/{n}")]
+        [RequirePermission("Promotions.View", "Promotions.Edit")]
         public async Task<IActionResult> PromotionEdit(int n)
         {
             var promotion = await _promotionRepo.GetByNWithProductsAsync(n);
@@ -683,12 +738,14 @@ namespace Algara.Web.Controllers
 
         [HttpPost("promotions/edit/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Promotions.View", "Promotions.Edit")]
         public async Task<IActionResult> PromotionEdit(AdminPromotionFormViewModel vm)
         {
             var promotion = await _shopDb.Promotions
                 .Include(pr => pr.ProductPromotions)
                 .FirstOrDefaultAsync(pr => pr.N == vm.N);
             if (promotion == null) return NotFound();
+            if (vm.IsActive != promotion.IsActive && !await CanAsync("Promotions.Deactivate")) return Forbid();
 
             var existingMap = promotion.ProductPromotions.ToDictionary(pp => pp.ProductN);
             await PreparePromotionPricesAsync(vm, existingMap);
@@ -746,6 +803,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("promotions/toggle/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Promotions.View", "Promotions.Deactivate")]
         public async Task<IActionResult> PromotionToggle(int n)
         {
             var promotion = await _shopDb.Promotions.FindAsync(n);
@@ -762,6 +820,7 @@ namespace Algara.Web.Controllers
 
         [HttpPost("promotions/delete/{n}")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Promotions.View", "Promotions.Delete")]
         public async Task<IActionResult> PromotionDelete(int n)
         {
             await _promotionRepo.DeleteAsync(n);

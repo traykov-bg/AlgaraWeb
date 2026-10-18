@@ -26,7 +26,7 @@
 }
 
 <div class="mb-3">
-    <a asp-action="Orders" class="btn btn-sm btn-outline-secondary">
+    <a asp-action="Orders" class="btn btn-sm btn-outline-secondary" staff-permission="Orders.View">
         <i class="bi bi-arrow-left me-1"></i>Обратно към поръчките
     </a>
 </div>
@@ -73,7 +73,7 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold">Промяна на статус</div>
             <div class="card-body">
-                <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post">
+                <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post" staff-permission="Orders.View,Orders.ChangeStatus">
                     <select name="status" class="form-select form-select-sm mb-2">
                         @foreach (var s in Model.AllStatuses)
                         {

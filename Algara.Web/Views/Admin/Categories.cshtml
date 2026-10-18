@@ -5,7 +5,7 @@
 }
 
 <div class="d-flex justify-content-end mb-3">
-    <a asp-action="CategoryCreate" class="btn btn-sm btn-primary">
+    <a asp-action="CategoryCreate" class="btn btn-sm btn-primary" staff-permission="Categories.View,Categories.Create">
         <i class="bi bi-plus-lg me-1"></i>Нова категория
     </a>
 </div>
@@ -47,10 +47,10 @@
                         </td>
                         <td class="text-end">
                             <a asp-action="CategoryEdit" asp-route-n="@c.N"
-                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;">
+                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Categories.View,Categories.Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form asp-action="CategoryToggle" asp-route-n="@c.N" method="post" class="d-inline">
+                            <form asp-action="CategoryToggle" asp-route-n="@c.N" method="post" class="d-inline" staff-permission="Categories.View,Categories.Deactivate">
                                 <button type="submit" class="btn btn-xs @(c.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
                                         style="padding:.2rem .5rem;font-size:.78rem;"
                                         title="@(c.IsActive ? "Деактивирай" : "Активирай")">

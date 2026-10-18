@@ -5,13 +5,13 @@
 }
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <p class="text-muted mb-0">Общи колекции дамаски. Надценките и наличностите се задават в съответния продукт.</p>
-    <a asp-action="FabricCreate" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Нова дамаска</a>
+    <a asp-action="FabricCreate" class="btn btn-primary" staff-permission="Options.View,Options.Create"><i class="bi bi-plus-lg me-1"></i>Нова дамаска</a>
 </div>
-<form method="get" asp-action="Fabrics" class="d-flex flex-wrap gap-2 mb-4" role="search">
+<form method="get" asp-action="Fabrics" class="d-flex flex-wrap gap-2 mb-4" role="search" staff-permission="Options.View">
     <label for="fabric-search" class="visually-hidden">Търсене на дамаска</label>
     <input id="fabric-search" name="search" value="@Model.Search" class="form-control" style="max-width:26rem" placeholder="Име или код на дамаска" />
     <button class="btn btn-outline-primary" type="submit">Търси</button>
-    <a asp-action="Fabrics" class="btn btn-outline-secondary">Всички</a>
+    <a asp-action="Fabrics" class="btn btn-outline-secondary" staff-permission="Options.View">Всички</a>
 </form>
 <div class="card border-0 shadow-sm">
     <div class="card-body table-responsive">
@@ -32,10 +32,10 @@
                             }
                         </td>
                         <td><code>@fabric.Code</code></td>
-                        <td><a asp-action="FabricEdit" asp-route-n="@fabric.N" class="fw-semibold">@fabric.Name</a></td>
-                        <td><a asp-action="Colors" asp-route-fabricN="@fabric.N">@fabric.Colors.Count цвята</a></td>
+                        <td><a asp-action="FabricEdit" asp-route-n="@fabric.N" class="fw-semibold" staff-permission="Options.View,Options.Edit">@fabric.Name</a></td>
+                        <td><a asp-action="Colors" asp-route-fabricN="@fabric.N" staff-permission="Options.View">@fabric.Colors.Count цвята</a></td>
                         <td><span class="badge @(fabric.IsActive ? "text-bg-success" : "text-bg-secondary")">@(fabric.IsActive ? "Активна" : "Неактивна")</span></td>
-                        <td class="text-end"><a asp-action="ColorCreate" asp-route-fabricN="@fabric.N" class="btn btn-sm btn-outline-primary">Добави цвят</a></td>
+                        <td class="text-end"><a asp-action="ColorCreate" asp-route-fabricN="@fabric.N" class="btn btn-sm btn-outline-primary" staff-permission="Options.View,Options.Create">Добави цвят</a></td>
                     </tr>
                 }
                 @if (Model.Fabrics.Count == 0)

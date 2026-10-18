@@ -1,14 +1,18 @@
 ﻿@model Algara.Web.ViewModels.Admin.PartnerListModel
+@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Контрагенти";
     string? ListUrl(int group, bool all = false, int page = 1) => Url.Action("Partners", new { search = Model.Search, active = Model.Active, companyN = Model.CompanyN, groupN = group, all, includeChildren = Model.IncludeChildren, page });
     var parents = Model.Groups.Where(g => g.ParentN.HasValue).Select(g => g.ParentN!.Value).ToHashSet();
     var selectedGroup = Model.Groups.FirstOrDefault(g => g.N == Model.GroupN);
+    var canMovePartners = await StaffAccess.HasPermissionAsync(User, "Partners.Move");
+    var canMoveGroups = await StaffAccess.HasPermissionAsync(User, "PartnerGroups.View") && await StaffAccess.HasPermissionAsync(User, "PartnerGroups.Move");
+    var canMove = canMovePartners || canMoveGroups;
 }
 <link rel="stylesheet" href="~/css/admin-partner-tree.css" asp-append-version="true" />
-<div data-partner-move data-move-url="@Url.Action("MovePartners")" data-move-key="@Model.MoveSelectionKey" data-move-scope="@ListUrl(Model.GroupN, Model.All)">
-<div class="d-flex flex-wrap gap-2 mb-3" data-move-source-actions><a asp-action="PartnerCreate" asp-route-groupN="@Model.GroupN" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Нов контрагент</a><a asp-action="Companies" class="btn btn-outline-secondary">Фирми</a></div>
+<div data-partner-move data-can-move-partners="@canMovePartners.ToString().ToLowerInvariant()" data-can-move-groups="@canMoveGroups.ToString().ToLowerInvariant()" data-move-url="@Url.Action("MovePartners")" data-move-key="@Model.MoveSelectionKey" data-move-scope="@ListUrl(Model.GroupN, Model.All)">
+<div class="d-flex flex-wrap gap-2 mb-3" data-move-source-actions><a asp-action="PartnerCreate" asp-route-groupN="@Model.GroupN" class="btn btn-primary" staff-permission="Partners.View,Partners.Create"><i class="bi bi-plus-lg" aria-hidden="true"></i> Нов контрагент</a><a asp-action="Companies" class="btn btn-outline-secondary" staff-permission="Companies.View">Фирми</a></div>
 <div class="card card-body mb-3" data-move-toggle-panel hidden>
     <div class="form-check form-switch mb-0"><input id="partner-move-mode" type="checkbox" role="switch" class="form-check-input" data-move-mode aria-describedby="partner-move-help" /><label class="form-check-label fw-semibold" for="partner-move-mode">Режим преместване</label></div>
     <p id="partner-move-help" class="small text-muted mb-0 mt-1">Включете, маркирайте записите и посочете целевата група с клик върху името ѝ.</p>
@@ -32,14 +36,14 @@
                 {
                     <span class="partner-tree-spacer" aria-hidden="true"></span>
                 }
-                @if (group.N != 0)
+                @if (group.N != 0 && canMoveGroups)
                 {
                     <span class="partner-move-check" data-move-only hidden><input type="checkbox" class="form-check-input" data-move-group="@group.N" aria-label="Маркирай група @group.Name за преместване" /></span>
                 }
                 <a href="@ListUrl(group.N)" title="@group.Path" class="partner-tree-link" data-tree-link aria-current="@(selected ? "page" : null)"><i class="bi bi-folder me-1" aria-hidden="true"></i><span class="partner-tree-name">@group.Name</span><span class="partner-tree-count">@group.Count</span><span class="partner-move-target-badge" data-move-target-badge hidden>ЦЕЛ</span><span class="partner-move-included" data-move-group-included hidden>С групата</span></a>
                 <span class="partner-tree-actions" data-move-source-actions>
-                    <a asp-action="PartnerGroupEdit" asp-route-n="@group.N" class="partner-tree-action" title="Редакция на група" aria-label="Редакция на група @group.Name"><i class="bi bi-pencil" aria-hidden="true"></i></a>
-                    <a asp-action="PartnerGroupCreate" asp-route-parentN="@group.N" class="partner-tree-action" title="Добави подгрупа" aria-label="Добави подгрупа в @group.Name"><i class="bi bi-folder-plus" aria-hidden="true"></i></a>
+                    <a asp-action="PartnerGroupEdit" asp-route-n="@group.N" class="partner-tree-action" title="Редакция на група" aria-label="Редакция на група @group.Name" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Edit"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    <a asp-action="PartnerGroupCreate" asp-route-parentN="@group.N" class="partner-tree-action" title="Добави подгрупа" aria-label="Добави подгрупа в @group.Name" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Create"><i class="bi bi-folder-plus" aria-hidden="true"></i></a>
                 </span>
             </div>
         </li>
@@ -69,14 +73,14 @@
             <div class="col-md-4"><button type="submit" class="btn btn-outline-primary w-100">Търси</button></div>
         </div>
         </fieldset>
-        <a asp-action="Partners" asp-route-groupN="@Model.GroupN" asp-route-all="@Model.All" class="small mt-2" data-move-source-link>Изчисти филтрите</a>
+        <a asp-action="Partners" asp-route-groupN="@Model.GroupN" asp-route-all="@Model.All" class="small mt-2" data-move-source-link staff-permission="Partners.View">Изчисти филтрите</a>
     </form>
     <div class="alert alert-info small" data-move-only hidden>Списъкът остава в изходната група. Кликът върху група вляво избира само целта. За избор от различни групи отворете „Всички контрагенти“ преди включване на режима.</div>
     <div class="d-flex flex-wrap justify-content-between gap-2 mb-2"><span class="text-muted">Намерени: @Model.Total</span><span class="small">@(Model.All ? "Всички контрагенти" : selectedGroup?.Path)</span></div>
     <div class="card table-responsive"><table class="table align-middle mb-0"><thead><tr><th class="partner-move-column" data-move-only hidden><span class="visually-hidden">Маркиране за преместване</span></th><th>Код</th><th>Име на обекта / фирма</th><th>Контакти</th><th>Адрес / група</th><th></th></tr></thead><tbody>
     @foreach (var p in Model.Items)
     {
-        <tr data-move-partner-row="@p.N" data-partner-group="@p.GroupN" data-row-version="@Convert.ToBase64String(p.RowVersion)" data-partner-name="@p.DisplayName"><td class="partner-move-column" data-move-only hidden><input type="checkbox" class="form-check-input" data-move-partner="@p.N" aria-label="Маркирай @p.DisplayName за преместване" /></td><td class="text-nowrap">@p.Code</td><td><strong>@p.DisplayName</strong><span class="partner-move-included ms-1" data-move-partner-included hidden>С групата</span>@if (!p.IsActive) { <span class="badge text-bg-secondary ms-1">Неактивен</span> }@if (p.Company != null) { <div class="small text-muted">@p.Company.DisplayName</div><div class="small">@p.Company.RegistrationNumber</div> }</td><td class="text-break">@p.Phone<br />@p.Email</td><td>@p.Address.City @p.Address.Street @p.Address.Building<div class="small text-muted">@p.Group?.Name</div></td><td><a asp-action="PartnerEdit" asp-route-n="@p.N" class="btn btn-sm btn-outline-primary" data-move-source-actions>Редакция</a></td></tr>
+        <tr data-move-partner-row="@p.N" data-partner-group="@p.GroupN" data-row-version="@Convert.ToBase64String(p.RowVersion)" data-partner-name="@p.DisplayName"><td class="partner-move-column" data-move-only hidden><input staff-permission="Partners.Move" type="checkbox" class="form-check-input" data-move-partner="@p.N" aria-label="Маркирай @p.DisplayName за преместване" /></td><td class="text-nowrap">@p.Code</td><td><strong>@p.DisplayName</strong><span class="partner-move-included ms-1" data-move-partner-included hidden>С групата</span>@if (!p.IsActive) { <span class="badge text-bg-secondary ms-1">Неактивен</span> }@if (p.Company != null) { <div class="small text-muted">@p.Company.DisplayName</div><div class="small">@p.Company.RegistrationNumber</div> }</td><td class="text-break">@p.Phone<br />@p.Email</td><td>@p.Address.City @p.Address.Street @p.Address.Building<div class="small text-muted">@p.Group?.Name</div></td><td><a asp-action="PartnerEdit" asp-route-n="@p.N" class="btn btn-sm btn-outline-primary" data-move-source-actions staff-permission="Partners.View,Partners.Edit">Редакция</a></td></tr>
     }
     @if (Model.Items.Count == 0) { <tr><td colspan="6" class="text-center text-muted p-4">Няма контрагенти за избраните условия.</td></tr> }
     </tbody></table></div>
@@ -90,5 +94,8 @@
 </div>
 @section Scripts {
     <script src="~/js/admin-partner-tree.js" asp-append-version="true"></script>
-    <script src="~/js/admin-partner-move.js" asp-append-version="true"></script>
+    @if (canMove)
+    {
+        <script src="~/js/admin-partner-move.js" asp-append-version="true"></script>
+    }
 }

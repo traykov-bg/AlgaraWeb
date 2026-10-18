@@ -1,10 +1,10 @@
 ﻿@model List<Algara.Web.ViewModels.Admin.PartnerGroupRow>
 @{ Layout = "_AdminLayout"; ViewData["Title"] = "Групи контрагенти"; }
-<div class="d-flex gap-2 mb-3"><a asp-action="PartnerGroupCreate" class="btn btn-primary">Нова група</a><a asp-action="Partners" class="btn btn-outline-secondary">Контрагенти</a></div>
+<div class="d-flex gap-2 mb-3"><a asp-action="PartnerGroupCreate" class="btn btn-primary" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Create">Нова група</a><a asp-action="Partners" class="btn btn-outline-secondary" staff-permission="Partners.View">Контрагенти</a></div>
 <div class="card table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Група / път</th><th>Действия</th></tr></thead><tbody>
 @foreach (var group in Model)
 {
-    <tr><td style="padding-left:@(12 + Math.Min(group.Depth, 10) * 20)px"><i class="bi bi-folder me-2"></i>@group.Name<div class="small text-muted">@group.Path</div></td><td><div class="d-flex flex-wrap gap-2"><a asp-action="PartnerGroupEdit" asp-route-n="@group.N" class="btn btn-sm btn-outline-primary">Редакция / преместване</a><a asp-action="PartnerGroupCreate" asp-route-parentN="@group.N" class="btn btn-sm btn-outline-secondary">Добави подгрупа</a><a asp-action="Partners" asp-route-groupN="@group.N" class="btn btn-sm btn-outline-secondary">Контрагенти</a></div></td></tr>
+    <tr><td style="padding-left:@(12 + Math.Min(group.Depth, 10) * 20)px"><i class="bi bi-folder me-2"></i>@group.Name<div class="small text-muted">@group.Path</div></td><td><div class="d-flex flex-wrap gap-2"><a asp-action="PartnerGroupEdit" asp-route-n="@group.N" class="btn btn-sm btn-outline-primary" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Edit">Редакция / преместване</a><a asp-action="PartnerGroupCreate" asp-route-parentN="@group.N" class="btn btn-sm btn-outline-secondary" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Create">Добави подгрупа</a><a asp-action="Partners" asp-route-groupN="@group.N" class="btn btn-sm btn-outline-secondary" staff-permission="Partners.View">Контрагенти</a></div></td></tr>
 }
 @if (Model.Count == 0) { <tr><td colspan="2" class="text-muted text-center p-4">Все още няма групи.</td></tr> }
 </tbody></table></div>

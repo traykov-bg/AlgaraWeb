@@ -3,6 +3,7 @@ using Algara.Data.Repositories;
 using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
+using Algara.Identity.Authorization;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -353,29 +354,14 @@ namespace Algara.Web.Controllers
                 return View("Profile", await BuildProfileViewModelAsync(user, deleteAccount: deleteAccount, activeTab: "privacy"));
             }
 
-            var marker = Guid.NewGuid().ToString("N");
-            user.IsActive = false;
-            user.FirstName = null;
-            user.LastName = null;
-            user.FullName = "Изтрит потребител";
-            user.DisplayName = "Изтрит потребител";
-            user.PhoneNumber = null;
-            user.AddressLine1 = null;
-            user.AddressLine2 = null;
-            user.City = null;
-            user.PostalCode = null;
-            user.Country = null;
-            user.MarketingConsent = false;
-            user.Email = $"deleted-{user.N}-{marker}@deleted.local";
-            user.UserName = user.Email;
-            user.SecurityStamp = Guid.NewGuid().ToString();
-
-            var addresses = await _identityDb.UsersAddresses.Where(a => a.UserN == user.N).ToListAsync();
-            _identityDb.UsersAddresses.RemoveRange(addresses);
-            _identityDb.UserConsents.Add(BuildMarketingConsent(user.N, granted: false));
-
-            await _identityDb.SaveChangesAsync();
-            await _userService.ForceSignOutAllSessionsAsync(user.Id);
+            var access = HttpContext.RequestServices.GetRequiredService<AccessManagementService>();
+            var result = await access.DeleteOwnAccountAsync(User, user.SecurityStamp,
+                HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), HttpContext.RequestAborted);
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("DeleteAccount.ConfirmDeletion", result.Error ?? "Акаунтът не е изтрит.");
+                return View("Profile", await BuildProfileViewModelAsync(user, deleteAccount: deleteAccount, activeTab: "privacy"));
+            }
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }

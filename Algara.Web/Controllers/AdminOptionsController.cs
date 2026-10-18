@@ -1,4 +1,5 @@
-﻿using Algara.Data.Models;
+﻿using Algara.Web.Authorization;
+using Algara.Data.Models;
 using Algara.Web.Services;
 using Algara.Web.ViewModels.Admin;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,7 @@ namespace Algara.Web.Controllers;
 public partial class AdminController
 {
     [HttpGet("fabrics")]
+    [RequirePermission("Options.View")]
     public async Task<IActionResult> Fabrics(string? search = null)
     {
         search = search?.Trim();
@@ -26,10 +28,12 @@ public partial class AdminController
     }
 
     [HttpGet("fabrics/create")]
+    [RequirePermission("Options.View", "Options.Create")]
     public IActionResult FabricCreate() => View("FabricEdit", new FabricFormViewModel());
 
     [HttpPost("fabrics/create"), ValidateAntiForgeryToken]
     [RequestSizeLimit(6 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
+    [RequirePermission("Options.View", "Options.Create")]
     public Task<IActionResult> FabricCreate(FabricFormViewModel form)
     {
         // The route, not a posted identity, determines whether a row is created.
@@ -39,6 +43,7 @@ public partial class AdminController
     }
 
     [HttpGet("fabrics/{n:int}/edit")]
+    [RequirePermission("Options.View", "Options.Edit")]
     public async Task<IActionResult> FabricEdit(int n)
     {
         var fabric = await _shopDb.Fabrics.AsNoTracking().SingleOrDefaultAsync(f => f.N == n);
@@ -53,6 +58,7 @@ public partial class AdminController
 
     [HttpPost("fabrics/{n:int}/edit"), ValidateAntiForgeryToken]
     [RequestSizeLimit(6 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
+    [RequirePermission("Options.View", "Options.Edit")]
     public async Task<IActionResult> FabricEdit(int n, FabricFormViewModel form)
     {
         if (form.N != n) return BadRequest();
@@ -64,6 +70,7 @@ public partial class AdminController
 
     private async Task<IActionResult> SaveFabricAsync(FabricFormViewModel form, Fabric? fabric)
     {
+        if (form.IsActive != (fabric?.IsActive ?? true) && !await CanAsync("Options.Deactivate")) return Forbid();
         form.Code = string.IsNullOrWhiteSpace(form.Code) ? CatalogCode.FromName(form.Name) : CatalogCode.Normalize(form.Code);
         if (!CatalogCode.IsValid(form.Code, CatalogCode.FabricMaxLength))
             ModelState.AddModelError(nameof(form.Code), "Кодът трябва да съдържа до 200 видими знака. Може да използвате кирилица.");
@@ -116,6 +123,7 @@ public partial class AdminController
     }
 
     [HttpGet("colors")]
+    [RequirePermission("Options.View")]
     public async Task<IActionResult> Colors(string? search = null, int? fabricN = null)
     {
         search = search?.Trim();
@@ -135,6 +143,7 @@ public partial class AdminController
     }
 
     [HttpGet("colors/create")]
+    [RequirePermission("Options.View", "Options.Create")]
     public async Task<IActionResult> ColorCreate(int? fabricN = null)
     {
         if (fabricN == 0) fabricN = null;
@@ -146,6 +155,7 @@ public partial class AdminController
 
     [HttpPost("colors/create"), ValidateAntiForgeryToken]
     [RequestSizeLimit(6 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
+    [RequirePermission("Options.View", "Options.Create")]
     public Task<IActionResult> ColorCreate(ColorFormViewModel form)
     {
         form.N = null;
@@ -154,6 +164,7 @@ public partial class AdminController
     }
 
     [HttpGet("colors/{n:int}/edit")]
+    [RequirePermission("Options.View", "Options.Edit")]
     public async Task<IActionResult> ColorEdit(int n)
     {
         var color = await _shopDb.CatalogColors.AsNoTracking().SingleOrDefaultAsync(c => c.N == n);
@@ -170,6 +181,7 @@ public partial class AdminController
 
     [HttpPost("colors/{n:int}/edit"), ValidateAntiForgeryToken]
     [RequestSizeLimit(6 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
+    [RequirePermission("Options.View", "Options.Edit")]
     public async Task<IActionResult> ColorEdit(int n, ColorFormViewModel form)
     {
         if (form.N != n) return BadRequest();
@@ -183,6 +195,7 @@ public partial class AdminController
 
     private async Task<IActionResult> SaveColorAsync(ColorFormViewModel form, CatalogColor? color)
     {
+        if (form.IsActive != (color?.IsActive ?? true) && !await CanAsync("Options.Deactivate")) return Forbid();
         form.Code = CatalogCode.Normalize(form.Code);
         if (!CatalogCode.IsValid(form.Code))
             ModelState.AddModelError(nameof(form.Code), "Кодът трябва да съдържа до 64 видими знака. Може да използвате кирилица.");

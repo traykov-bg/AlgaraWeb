@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace Algara.UnitTests.Controllers;
@@ -282,7 +283,8 @@ public sealed class AdminPromotionControllerTests
 
     private sealed class Fixture : IDisposable
     {
-        private readonly IdentityDbContext _identityDb = new(new DbContextOptions<IdentityDbContext>());
+        private readonly StaffAccessTestContext _identityDb = new();
+        private readonly ServiceProvider _services;
         public PromotionTestContext Db { get; }
         public Mock<IPromotionRepository> Promotions { get; } = new(MockBehavior.Strict);
         public AdminController Controller { get; }
@@ -290,7 +292,8 @@ public sealed class AdminPromotionControllerTests
         public Fixture(Product[] products, Promotion? promotion = null)
         {
             Db = new PromotionTestContext(products, promotion == null ? [] : [promotion]);
-            var http = new DefaultHttpContext();
+            _services = _identityDb.AddServices(new ServiceCollection()).BuildServiceProvider();
+            var http = new DefaultHttpContext { RequestServices = _services, User = StaffAccessTestContext.Principal() };
             Controller = new AdminController(Db, _identityDb,
                 Mock.Of<IProductRepository>(MockBehavior.Strict), Mock.Of<ICategoryRepository>(MockBehavior.Strict),
                 Mock.Of<IOrderRepository>(MockBehavior.Strict), Mock.Of<IHeroSlideRepository>(MockBehavior.Strict),
@@ -307,6 +310,7 @@ public sealed class AdminPromotionControllerTests
 
         public void Dispose()
         {
+            _services.Dispose();
             Db.Dispose();
             _identityDb.Dispose();
         }

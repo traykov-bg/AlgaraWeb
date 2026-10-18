@@ -1,4 +1,6 @@
-﻿@model Algara.Web.ViewModels.Admin.AdminPromotionFormViewModel
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Promotions.Deactivate"); }
+@model Algara.Web.ViewModels.Admin.AdminPromotionFormViewModel
 @using Algara.Data.Models
 
 <div asp-validation-summary="All" class="alert alert-danger mb-3"></div>
@@ -75,7 +77,8 @@
                     <div class="d-flex flex-column align-items-center pb-1">
                         <label class="form-label text-muted small mb-1">Активна</label>
                         <div class="form-check form-switch m-0">
-                            <input asp-for="IsActive" type="checkbox" class="form-check-input" role="switch"
+                            @if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
+<input disabled="@(!canChangeActive)" asp-for="IsActive" type="checkbox" class="form-check-input" role="switch"
                                    style="width:2.5em; height:1.4em; cursor:pointer;" />
                         </div>
                     </div>

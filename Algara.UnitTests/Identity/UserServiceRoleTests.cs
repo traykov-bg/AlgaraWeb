@@ -9,12 +9,33 @@ namespace Algara.UnitTests.Identity;
 public sealed class UserServiceRoleTests
 {
     [Theory]
+    [InlineData(true, "Admin")]
+    [InlineData(false, "Admin")]
+    [InlineData(true, "Moderator")]
+    [InlineData(false, "CatalogEditor")]
+    [InlineData(true, "OrderManager")]
+    [InlineData(false, "Unknown")]
+    public async Task LegacyRoleChange_StaffOrUnknownRole_RequiresAuditedManagement(bool add, string roleName)
+    {
+        var user = User();
+        using var context = new IdentityServiceTestContext([user]);
+        var service = Service(context);
+
+        var changed = add ? await service.AddUserToRoleAsync(user.UserName, roleName)
+            : await service.RemoveUserFromRoleAsync(user.UserName, roleName);
+
+        Assert.False(changed);
+        Assert.Equal(0, context.SaveCount);
+        Assert.Equal("old-stamp", user.SecurityStamp);
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task RoleChange_SavesAssignmentAndNewSecurityStampTogether(bool add)
     {
         var user = User();
-        var role = new ApplicationRole { N = 3, Name = "Admin" };
+        var role = new ApplicationRole { N = 3, Name = "User" };
         using var context = new IdentityServiceTestContext([user], [role],
             add ? [] : [new UserRole { UserN = user.N, RoleN = role.N }]);
         context.OnSave = () =>
@@ -47,7 +68,7 @@ public sealed class UserServiceRoleTests
     public async Task RoleChange_NoChange_DoesNotSaveOrInvalidateSessions(bool add, string noChange)
     {
         var user = User();
-        var role = new ApplicationRole { N = 3, Name = "Admin" };
+        var role = new ApplicationRole { N = 3, Name = "User" };
         using var context = new IdentityServiceTestContext(
             noChange == "user" ? [] : [user],
             noChange == "role" ? [] : [role],
@@ -67,7 +88,7 @@ public sealed class UserServiceRoleTests
     public async Task RoleChange_FailedSave_PropagatesTheFailure(bool add)
     {
         var user = User();
-        var role = new ApplicationRole { N = 3, Name = "Admin" };
+        var role = new ApplicationRole { N = 3, Name = "User" };
         using var context = new IdentityServiceTestContext([user], [role],
             add ? [] : [new UserRole { UserN = user.N, RoleN = role.N }]);
         var failure = new DbUpdateException("Storage unavailable");
@@ -91,6 +112,6 @@ public sealed class UserServiceRoleTests
     private static UserService Service(IdentityServiceTestContext context) => new(context, NullLogger<UserService>.Instance);
 
     private static Task<bool> ChangeRole(UserService service, bool add) => add
-        ? service.AddUserToRoleAsync("customer@example.test", "Admin")
-        : service.RemoveUserFromRoleAsync("customer@example.test", "Admin");
+        ? service.AddUserToRoleAsync("customer@example.test", "User")
+        : service.RemoveUserFromRoleAsync("customer@example.test", "User");
 }

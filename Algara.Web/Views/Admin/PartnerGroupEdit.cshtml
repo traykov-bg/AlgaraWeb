@@ -1,5 +1,7 @@
 ﻿@model Algara.Web.ViewModels.Admin.PartnerGroupForm
 @{ Layout = "_AdminLayout"; ViewData["Title"] = Model.N.HasValue ? "Редакция на група контрагенти" : "Нова група контрагенти"; }
+@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canMove = !Model.N.HasValue || await StaffAccess.HasPermissionAsync(User, "PartnerGroups.Move"); }
 <div class="card card-body" style="max-width:45rem">
 <form asp-action="@(Model.N.HasValue ? "PartnerGroupEdit" : "PartnerGroupCreate")" asp-route-n="@Model.N" method="post">
     <input asp-for="N" type="hidden" /><input asp-for="RowVersion" type="hidden" />
@@ -11,11 +13,12 @@
     }
     else
     {
-        <label asp-for="ParentN" class="form-label">Родителска група</label><select asp-for="ParentN" asp-items="Model.Parents" class="form-select mb-3"></select>
+        @if (!canMove) { <input type="hidden" asp-for="ParentN" /> }
+        <label asp-for="ParentN" class="form-label">Родителска група</label><select asp-for="ParentN" asp-items="Model.Parents" class="form-select mb-3" disabled="@(!canMove)"></select>
         <p class="form-text">Смяната на родителя премества групата заедно с всички нейни подгрупи и контрагенти.</p>
     }
-    <div class="d-flex flex-wrap gap-2"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Partners" asp-route-groupN="@(Model.N ?? Model.ParentN ?? 0)" class="btn btn-outline-secondary">Откажи</a>
-    @if (Model.N.HasValue) { <a asp-action="PartnerGroupEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary">Презареди записаното</a> }</div>
+    <div class="d-flex flex-wrap gap-2"><button type="submit" class="btn btn-primary">Запиши</button><a asp-action="Partners" asp-route-groupN="@(Model.N ?? Model.ParentN ?? 0)" class="btn btn-outline-secondary" staff-permission="Partners.View">Откажи</a>
+    @if (Model.N.HasValue) { <a asp-action="PartnerGroupEdit" asp-route-n="@Model.N" class="btn btn-outline-secondary" staff-permission="Partners.View,PartnerGroups.View,PartnerGroups.Edit">Презареди записаното</a> }</div>
 </form>
 </div>
 <partial name="_PartnerCatalogHistory" model="Model" />

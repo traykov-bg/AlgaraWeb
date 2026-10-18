@@ -1,4 +1,6 @@
-﻿@model Algara.Web.ViewModels.Admin.ColorFormViewModel
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Options.Deactivate"); }
+@model Algara.Web.ViewModels.Admin.ColorFormViewModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = Model.N.HasValue ? "Редакция на цвят" : "Нов цвят";
@@ -58,7 +60,8 @@
                 }
                 <div class="col-12">
                     <div class="form-check">
-                        <input asp-for="IsActive" class="form-check-input" />
+                        @if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
+<input disabled="@(!canChangeActive)" asp-for="IsActive" class="form-check-input" />
                         <label asp-for="IsActive" class="form-check-label">Активен цвят</label>
                     </div>
                     <div class="form-text">Неактивните цветове не се предлагат на клиентите. Записаните варианти се запазват.</div>
@@ -66,7 +69,7 @@
             </div>
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Запиши</button>
-                <a asp-action="Colors" asp-route-fabricN="@(Model.FabricN ?? 0)" class="btn btn-outline-secondary">Откажи</a>
+                <a asp-action="Colors" asp-route-fabricN="@(Model.FabricN ?? 0)" class="btn btn-outline-secondary" staff-permission="Options.View">Откажи</a>
             </div>
         </form>
     </div>

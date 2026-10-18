@@ -3,6 +3,8 @@
 
     const page = document.querySelector('[data-partner-move]');
     if (!page) return;
+    const canMoveGroups = page.dataset.canMoveGroups !== 'false';
+    const canMovePartners = page.dataset.canMovePartners !== 'false';
     const query = selector => page.querySelector(selector);
     const queryAll = selector => Array.from(page.querySelectorAll(selector));
     const mode = query('[data-move-mode]');
@@ -58,8 +60,8 @@
             && saved.groups.length + saved.partners.length <= limit
             && saved.groups.every(item => validItem(item) && groupById.has(item.n))
             && saved.partners.every(item => validItem(item) && Number.isInteger(item.groupN))) {
-            for (const item of saved.groups) selectedGroups.set(item.n, item);
-            for (const item of saved.partners) selectedPartners.set(item.n, item);
+            if (canMoveGroups) for (const item of saved.groups) selectedGroups.set(item.n, item);
+            if (canMovePartners) for (const item of saved.partners) selectedPartners.set(item.n, item);
             if (validItem(saved.destination, true) && groupById.has(saved.destination.n)) destination = saved.destination;
             mode.checked = true;
         } else sessionStorage.removeItem(storageKey);
@@ -122,8 +124,10 @@
         }
         for (const partner of partners) {
             const inherited = selectedAncestor(partner.groupN, true) !== null;
-            partner.checkbox.checked = selectedPartners.has(partner.n) || inherited;
-            partner.checkbox.disabled = busy || inherited;
+            if (partner.checkbox) {
+                partner.checkbox.checked = selectedPartners.has(partner.n) || inherited;
+                partner.checkbox.disabled = busy || inherited || !canMovePartners;
+            }
             partner.included.hidden = !enabled || !inherited;
         }
         let summary = `Маркирани групи: ${selectedGroups.size}; контрагенти: ${selectedPartners.size}`;

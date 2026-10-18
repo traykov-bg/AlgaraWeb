@@ -29,13 +29,13 @@
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
         <a class="nav-link @(Model.StatusFilter == null ? "active" : "")"
-           asp-action="Orders">Всички</a>
+           asp-action="Orders" staff-permission="Orders.View">Всички</a>
     </li>
     @foreach (OrderStatus s in Enum.GetValues<OrderStatus>())
     {
         <li class="nav-item">
             <a class="nav-link @(Model.StatusFilter == s ? "active" : "")"
-               asp-action="Orders" asp-route-status="@((int)s)">@StatusLabel(s)</a>
+               asp-action="Orders" asp-route-status="@((int)s)" staff-permission="Orders.View">@StatusLabel(s)</a>
         </li>
     }
 </ul>
@@ -69,7 +69,7 @@
                         <td class="small text-muted">@row.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
                         <td class="text-end">
                             <a asp-action="OrderDetail" asp-route-n="@row.Order.N"
-                               class="btn btn-xs btn-outline-primary" style="padding:.2rem .5rem;font-size:.78rem;">
+                               class="btn btn-xs btn-outline-primary" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Orders.View">
                                 <i class="bi bi-eye"></i> Детайли
                             </a>
                         </td>

@@ -1,0 +1,38 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminAccessHistoryViewModel
+@using Algara.Web.Helpers
+@using Algara.Web.ViewModels.Admin
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "История на достъпа";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h4 mb-1">История на достъпа</h1><p class="text-muted mb-0">Промени в роли и права, с извършител и стойности преди и след записа. Часовете са в UTC.</p></div>
+    <a class="btn btn-outline-secondary" asp-action="Index" staff-permission="Access.ManagePermissions">Роли и права</a>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Дата (UTC)</th><th>Извършител</th><th>Действие / за кого</th><th>Промяна</th></tr></thead>
+            <tbody>
+                @foreach (var entry in Model.Events)
+                {
+                    <tr>
+                        <td class="small text-nowrap">@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                        <td class="small text-break">@entry.ActorName</td>
+                        <td class="small"><strong>@AccessHistoryDisplay.ActionLabel(entry.Action)</strong><div class="text-break text-muted">@AdminAccessFormViewModel.RoleLabel(entry.TargetName)</div></td>
+                        <td style="min-width:220px;max-width:700px"><details><summary class="small">Преди и след</summary><div class="small mt-2"><strong>Преди:</strong> @AccessHistoryDisplay.Snapshot(entry.BeforeJson)</div><div class="small mt-2"><strong>След:</strong> @AccessHistoryDisplay.Snapshot(entry.AfterJson)</div></details></td>
+                    </tr>
+                }
+                @if (Model.Events.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-muted text-center py-4">Няма записани промени в достъпа.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Страници на историята">
+    <div>@if (Model.Page > 1) { <a class="btn btn-outline-secondary btn-sm" asp-action="History" asp-route-page="@(Model.Page - 1)">Предишна</a> }</div>
+    <span class="small text-muted">Страница @Model.Page</span>
+    <div>@if (Model.HasNextPage) { <a class="btn btn-outline-secondary btn-sm" asp-action="History" asp-route-page="@(Model.Page + 1)">Следваща</a> }</div>
+</nav>

@@ -6,12 +6,12 @@
 }
 
 <div class="mb-3">
-    <a asp-action="Promotions" class="btn btn-outline-secondary btn-sm">
+    <a asp-action="Promotions" class="btn btn-outline-secondary btn-sm" staff-permission="Promotions.View">
         <i class="bi bi-arrow-left me-1"></i>Към промоциите
     </a>
 </div>
 
-<form asp-action="PromotionEdit" asp-route-n="@Model.N" method="post">
+<form asp-action="PromotionEdit" asp-route-n="@Model.N" method="post" staff-permission="Promotions.View,Promotions.Edit">
     @await Html.PartialAsync("_PromotionFormFields", Model)
     <div class="mt-3">
         <button type="submit" class="btn btn-primary">

@@ -1,4 +1,5 @@
 ﻿@model Algara.Web.ViewModels.Admin.AdminUserListViewModel
+@using Algara.Web.ViewModels.Admin
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Потребители";
@@ -15,7 +16,7 @@
                     <th>Имейл</th>
                     <th class="text-center">Статус</th>
                     <th>Роли</th>
-                    <th class="text-end">Управление на роли</th>
+                    <th class="text-end" staff-permission="Access.AssignRoles">Управление на роли</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,34 +39,37 @@
                         <td>
                             @foreach (var role in row.Roles)
                             {
-                                <span class="badge bg-primary me-1">@role</span>
+                                <span class="badge bg-primary me-1">@AdminAccessFormViewModel.RoleLabel(role)</span>
                             }
                             @if (!row.Roles.Any())
                             {
                                 <span class="text-muted small">—</span>
                             }
                         </td>
-                        <td class="text-end">
+                        <td class="text-end" staff-permission="Access.AssignRoles">
+                            @if (row.User.IsActive)
+                            {
                             <div class="d-flex gap-1 justify-content-end flex-wrap">
                                 <!-- Премахване на роля -->
-                                @foreach (var role in row.Roles)
+                                @foreach (var role in row.Roles.Where(r => r == "User" || Algara.Identity.Authorization.StaffRoles.IsStaff(r)))
                                 {
-                                    <form asp-action="RemoveRole" method="post" class="d-inline">
-                                        <input type="hidden" name="Username" value="@row.User.UserName" />
+                                    <form asp-action="RemoveRole" method="post" class="d-inline" staff-permission="Users.View,Access.AssignRoles">
+                                        <input type="hidden" name="Username" value="@row.User.UserName" /><input type="hidden" name="ExpectedSecurityStamp" value="@row.User.SecurityStamp" />
                                         <input type="hidden" name="RoleName" value="@role" />
                                         <button type="submit" class="btn btn-xs btn-outline-danger"
                                                 style="padding:.15rem .45rem;font-size:.75rem;"
-                                                title="Премахни роля @role">
-                                            <i class="bi bi-x"></i> @role
+                                                title="Премахни роля @AdminAccessFormViewModel.RoleLabel(role)">
+                                            <i class="bi bi-x"></i> @AdminAccessFormViewModel.RoleLabel(role)
                                         </button>
                                     </form>
                                 }
                                 <!-- Добавяне на роля -->
-                                <form asp-action="AssignRole" method="post" class="d-inline d-flex gap-1">
-                                    <input type="hidden" name="Username" value="@row.User.UserName" />
-                                    <select name="RoleName" class="form-select form-select-sm"
+                                <form asp-action="AssignRole" method="post" class="d-inline d-flex gap-1" staff-permission="Users.View,Access.AssignRoles">
+                                    <input type="hidden" name="Username" value="@row.User.UserName" /><input type="hidden" name="ExpectedSecurityStamp" value="@row.User.SecurityStamp" />
+                                    <select name="RoleName" class="form-select form-select-sm" required aria-label="Роля за добавяне"
                                             style="font-size:.78rem;padding:.15rem .4rem;min-width:90px;">
-                                        @foreach (var r in allRoles)
+                                        <option value="">Изберете роля…</option>
+                                        @foreach (var r in allRoles.Where(r => !row.Roles.Contains(r.Value)))
                                         {
                                             <option value="@r.Value">@r.Text</option>
                                         }
@@ -76,6 +80,7 @@
                                     </button>
                                 </form>
                             </div>
+                            }
                         </td>
                     </tr>
                 }

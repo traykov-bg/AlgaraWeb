@@ -5,6 +5,9 @@ using Algara.Web.Data;
 using Algara.Web.Localization;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
+using Algara.Identity.Authorization;
+using Algara.Web.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Algara.Utils;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -27,7 +30,7 @@ try
     builder.Host.UseNLog();
 
     // Add services to the container.
-    builder.Services.AddControllersWithViews();
+    builder.Services.AddControllersWithViews(options => options.Conventions.Add(new StaffPermissionConvention()));
     builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
     builder.Services.Configure<RequestLocalizationOptions>(CatalogLocalization.Configure);
 
@@ -71,6 +74,10 @@ try
 
     // Регистрираме UserService
     builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<StaffAccessService>();
+    builder.Services.AddScoped<AccessManagementService>();
+    builder.Services.AddSingleton<IAuthorizationPolicyProvider, StaffPolicyProvider>();
+    builder.Services.AddScoped<IAuthorizationHandler, StaffAuthorizationHandler>();
 
     // Регистрираме Shop repositories
     builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -132,7 +139,7 @@ try
 
             var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
 
-            if (user == null)
+            if (user == null || !user.IsActive)
             {
                 logger.LogWarning("⛔ Потребителят не е намерен. Излизане...");
                 context.RejectPrincipal();

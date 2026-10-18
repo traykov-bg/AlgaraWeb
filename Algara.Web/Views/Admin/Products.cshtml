@@ -22,7 +22,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <span class="text-muted small">Страница @Model.CurrentPage от @Model.TotalPages</span>
-    <a asp-action="ProductCreate" class="btn btn-sm btn-primary">
+    <a asp-action="ProductCreate" class="btn btn-sm btn-primary" staff-permission="Products.View,Products.Create,Products.ChangePrice">
         <i class="bi bi-plus-lg me-1"></i>Нов продукт
     </a>
 </div>
@@ -132,10 +132,10 @@
                         </td>
                         <td class="text-end">
                             <a asp-action="ProductEdit" asp-route-n="@p.N"
-                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;">
+                               class="btn btn-xs btn-outline-primary me-1" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Products.View,Products.Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form asp-action="ProductToggle" asp-route-n="@p.N" method="post" class="d-inline">
+                            <form asp-action="ProductToggle" asp-route-n="@p.N" method="post" class="d-inline" staff-permission="Products.View,Products.Deactivate">
                                 <button type="submit" class="btn btn-xs @(p.IsActive ? "btn-outline-secondary" : "btn-outline-success")"
                                         style="padding:.2rem .5rem;font-size:.78rem;"
                                         title="@(p.IsActive ? "Деактивирай" : "Активирай")">
@@ -162,7 +162,7 @@
             {
                 <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
                     <a class="page-link" asp-action="Products" asp-route-page="@i"
-                       asp-route-sort="@Model.Sort" asp-route-cats="@Model.CategoryFilter">@i</a>
+                       asp-route-sort="@Model.Sort" asp-route-cats="@Model.CategoryFilter" staff-permission="Products.View">@i</a>
                 </li>
             }
         </ul>

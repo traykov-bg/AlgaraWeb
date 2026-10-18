@@ -15,14 +15,14 @@
                 {
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
                 }
-                <form asp-action="CategoryEdit" asp-route-n="@Model.N" method="post">
+                <form asp-action="CategoryEdit" asp-route-n="@Model.N" method="post" staff-permission="Categories.View,Categories.Edit">
                     <input type="hidden" asp-for="N" />
                     @await Html.PartialAsync("_CategoryFormFields", Model)
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-floppy me-1"></i>Запиши
                         </button>
-                        <a asp-action="Categories" class="btn btn-outline-secondary">Откажи</a>
+                        <a asp-action="Categories" class="btn btn-outline-secondary" staff-permission="Categories.View">Откажи</a>
                     </div>
                 </form>
             </div>
@@ -46,7 +46,7 @@
                                     <br />
                                     <code class="text-muted small">/kategorii/@Model.Slug/@sub.Slug</code>
                                 </div>
-                                <form asp-action="SubCategoryDelete" asp-route-sn="@sub.N" method="post" class="d-inline">
+                                <form asp-action="SubCategoryDelete" asp-route-sn="@sub.N" method="post" class="d-inline" staff-permission="Categories.View,Categories.Delete">
                                     <button type="submit" class="btn btn-outline-danger btn-sm"
                                             style="padding:.2rem .5rem;font-size:.78rem;"
                                             onclick="return confirm('Изтриване на под-категория?')">
@@ -64,7 +64,7 @@
 
                 <hr class="my-3" />
                 <p class="fw-semibold small mb-2">Добави нова под-категория</p>
-                <form asp-action="SubCategoryAdd" asp-route-n="@Model.N" method="post" class="d-flex gap-2">
+                <form asp-action="SubCategoryAdd" asp-route-n="@Model.N" method="post" class="d-flex gap-2" staff-permission="Categories.View,Categories.Create">
                     <input type="text" name="name" class="form-control form-control-sm"
                            placeholder="Напр. Дивани, Кресла..." required maxlength="200" />
                     <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">

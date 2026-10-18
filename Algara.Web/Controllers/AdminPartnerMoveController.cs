@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using Algara.Web.Authorization;
+using System.Security.Claims;
 using Algara.Data.Models;
 using Algara.Web.ViewModels.Admin;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +11,14 @@ namespace Algara.Web.Controllers;
 public partial class AdminController
 {
     [HttpPost("partners/move"), ValidateAntiForgeryToken, RequestSizeLimit(262144)]
+    [RequirePermission("Partners.View")]
     public async Task<IActionResult> MovePartners([FromBody] PartnerMoveRequest? request)
     {
         if (!ModelState.IsValid || request?.DestinationGroupN is not >= 0 || request.Groups == null || request.Partners == null)
             return BadRequest(new { message = "Невалидни данни за преместване. Обновете страницата и маркирайте записите отново." });
+        if (request.Partners.Count > 0 && !await CanAsync("Partners.Move") ||
+            request.Groups.Count > 0 && (!await CanAsync("PartnerGroups.View") || !await CanAsync("PartnerGroups.Move")))
+            return Forbid();
         var count = request.Groups.Count + request.Partners.Count;
         if (count == 0 || count > PartnerMoveRequest.SelectionLimit)
             return BadRequest(new { message = $"Маркирайте между 1 и {PartnerMoveRequest.SelectionLimit} групи и контрагенти общо." });

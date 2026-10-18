@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using Algara.Web.Authorization;
+using System.Data.Common;
 using System.Security.Claims;
 using Algara.Data.Models;
 using Algara.Web.Services;
@@ -17,8 +18,10 @@ public partial class AdminController
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ProductUploadLimit)]
     [RequestFormLimits(MultipartBodyLengthLimit = ProductUploadLimit)]
+    [RequirePermission("Products.View")]
     public async Task<IActionResult> ProductImagesUpload(int productN, string? draftId, List<IFormFile> files, string? rowVersion = null)
     {
+        if (!await CanAsync(productN == 0 ? "Products.Create" : "Products.Edit")) return Forbid();
         var storage = new ProductImageStorage(_env);
         IReadOnlyList<string> savedUrls = [];
         var committed = false;
@@ -61,8 +64,10 @@ public partial class AdminController
 
     [HttpPost("products/images/delete")]
     [ValidateAntiForgeryToken]
+    [RequirePermission("Products.View")]
     public async Task<IActionResult> ProductImageDelete(int productN, string? draftId, int imageN, string? uploadId, string? rowVersion = null)
     {
+        if (!await CanAsync(productN == 0 ? "Products.Create" : "Products.Edit")) return Forbid();
         try
         {
             if (productN == 0)
@@ -103,6 +108,7 @@ public partial class AdminController
 
     [HttpGet("products/images/draft")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [RequirePermission("Products.View", "Products.Create")]
     public async Task<IActionResult> ProductImageDraft(string draftId, string uploadId)
     {
         try

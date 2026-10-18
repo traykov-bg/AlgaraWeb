@@ -211,15 +211,20 @@ public class PartnerCatalogTests
     }
 
     [Fact]
-    public void EveryNewWriteRequiresAdminAndAntiforgeryAndEditsTakeRouteIdentity()
+    public void EveryNewWriteRequiresStaffPermissionAndAntiforgeryAndEditsTakeRouteIdentity()
     {
-        Assert.Equal("Admin", typeof(AdminController).GetCustomAttribute<AuthorizeAttribute>()!.Roles);
+        Assert.Equal("Staff", typeof(AdminController).GetCustomAttribute<AuthorizeAttribute>()!.Policy);
         var names = new[] { "PartnerCreate", "PartnerEdit", "CompanyCreate", "CompanyEdit", "PartnerGroupCreate", "PartnerGroupEdit" };
         var methods = typeof(AdminController).GetMethods().Where(m => names.Contains(m.Name) && m.GetCustomAttribute<HttpPostAttribute>() != null).ToArray();
         Assert.Equal(6, methods.Length);
         foreach (var method in methods)
         {
             Assert.NotNull(method.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
+            var permissions = method.GetCustomAttributes<Algara.Web.Authorization.RequirePermissionAttribute>().SelectMany(a => a.Permissions).ToArray();
+            var module = method.Name.StartsWith("PartnerGroup", StringComparison.Ordinal) ? "PartnerGroups"
+                : method.Name.StartsWith("Company", StringComparison.Ordinal) ? "Companies" : "Partners";
+            Assert.Contains(module + ".View", permissions);
+            Assert.Contains(module + (method.Name.EndsWith("Edit", StringComparison.Ordinal) ? ".Edit" : ".Create"), permissions);
             if (method.Name.EndsWith("Edit", StringComparison.Ordinal))
                 Assert.NotNull(method.GetParameters().Single(p => p.Name == "n").GetCustomAttribute<FromRouteAttribute>());
         }

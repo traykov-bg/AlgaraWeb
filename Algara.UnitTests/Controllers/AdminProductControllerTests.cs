@@ -423,7 +423,7 @@ public sealed class AdminProductControllerTests
         Assert.Empty(fixture.UploadedFiles());
     }
 
-    private static ClaimsPrincipal Principal(string id) => new(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, id)], "Test"));
+    private static ClaimsPrincipal Principal(string id) => StaffAccessTestContext.Principal(id);
 
     private static Product Existing() => new() { N = 7, Sku = "SAVED-01", Name = "Original", Price = 75m, CategoryN = 1 };
     private static Product GalleryProduct()
@@ -461,7 +461,7 @@ public sealed class AdminProductControllerTests
 
     private sealed class Fixture : IDisposable
     {
-        private readonly IdentityDbContext _identityDb = new(new DbContextOptions<IdentityDbContext>());
+        private readonly StaffAccessTestContext _identityDb = new();
         private readonly string _testRoot = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Algara.AdminProduct.Tests"));
         private readonly string _root;
         private readonly ServiceProvider _services;
@@ -494,6 +494,7 @@ public sealed class AdminProductControllerTests
             environment.SetupGet(e => e.ContentRootPath).Returns(_root);
             var services = new ServiceCollection();
             services.AddSingleton<IProductGalleryWriteLock, TestGalleryLock>();
+            _identityDb.AddServices(services);
             _services = services.BuildServiceProvider();
             var http = new DefaultHttpContext { RequestServices = _services, User = Principal("admin") };
             Controller = new AdminController(Db, _identityDb, Products.Object,

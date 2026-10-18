@@ -14,6 +14,9 @@ namespace Algara.Identity.Data
         public DbSet<UserSession> UserSessions { get; set; }
         public DbSet<UserConsent> UserConsents { get; set; }
         public DbSet<UserAddress> UsersAddresses { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<AccessAuditEvent> AccessAuditEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,6 +38,36 @@ namespace Algara.Identity.Data
 
             modelBuilder.Entity<ApplicationRole>()
                 .HasKey(r => r.N); // Казваме, че Primary Key е N
+
+            modelBuilder.Entity<ApplicationRole>().Property(r => r.PermissionsVersion).IsConcurrencyToken();
+            modelBuilder.Entity<ApplicationRole>().Property(r => r.Name).HasMaxLength(256).IsRequired();
+            modelBuilder.Entity<ApplicationRole>().HasIndex(r => r.Name).IsUnique();
+            modelBuilder.Entity<Permission>(b =>
+            {
+                b.HasKey(p => p.Key);
+                b.Property(p => p.Key).HasMaxLength(100);
+                b.Property(p => p.Module).HasMaxLength(100).IsRequired();
+                b.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            });
+            modelBuilder.Entity<RolePermission>(b =>
+            {
+                b.HasKey(p => new { p.RoleN, p.PermissionKey });
+                b.Property(p => p.PermissionKey).HasMaxLength(100);
+                b.HasOne(p => p.Role).WithMany().HasForeignKey(p => p.RoleN).OnDelete(DeleteBehavior.Cascade);
+                b.HasOne(p => p.Permission).WithMany().HasForeignKey(p => p.PermissionKey).OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<AccessAuditEvent>(b =>
+            {
+                b.HasKey(e => e.Id);
+                b.Property(e => e.ActorId).HasMaxLength(100).IsRequired();
+                b.Property(e => e.ActorName).HasMaxLength(256).IsRequired();
+                b.Property(e => e.Action).HasMaxLength(100).IsRequired();
+                b.Property(e => e.Target).HasMaxLength(256).IsRequired();
+                b.Property(e => e.TargetName).HasMaxLength(256).IsRequired();
+                b.Property(e => e.BeforeJson).IsRequired();
+                b.Property(e => e.AfterJson).IsRequired();
+                b.HasIndex(e => e.OccurredAtUtc);
+            });
 
             // Non-clustered index за Role Id
             modelBuilder.Entity<ApplicationRole>()

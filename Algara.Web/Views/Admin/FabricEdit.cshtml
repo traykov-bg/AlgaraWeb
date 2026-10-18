@@ -1,4 +1,6 @@
-﻿@model Algara.Web.ViewModels.Admin.FabricFormViewModel
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Options.Deactivate"); }
+@model Algara.Web.ViewModels.Admin.FabricFormViewModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = Model.N.HasValue ? "Редакция на дамаска" : "Нова дамаска";
@@ -49,7 +51,8 @@
                 </div>
                 <div class="col-12">
                     <div class="form-check">
-                        <input asp-for="IsActive" class="form-check-input" />
+                        @if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
+<input disabled="@(!canChangeActive)" asp-for="IsActive" class="form-check-input" />
                         <label asp-for="IsActive" class="form-check-label">Активна дамаска</label>
                     </div>
                     <div class="form-text">Неактивните дамаски не се предлагат на клиентите. Записаните варианти се запазват.</div>
@@ -57,10 +60,10 @@
             </div>
             <div class="d-flex flex-wrap gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Запиши</button>
-                <a asp-action="Fabrics" class="btn btn-outline-secondary">Откажи</a>
+                <a asp-action="Fabrics" class="btn btn-outline-secondary" staff-permission="Options.View">Откажи</a>
                 @if (Model.N.HasValue)
                 {
-                    <a asp-action="Colors" asp-route-fabricN="@Model.N" class="btn btn-outline-primary">Цветове на дамаската</a>
+                    <a asp-action="Colors" asp-route-fabricN="@Model.N" class="btn btn-outline-primary" staff-permission="Options.View">Цветове на дамаската</a>
                 }
             </div>
         </form>

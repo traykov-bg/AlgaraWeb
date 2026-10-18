@@ -1,4 +1,5 @@
-﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
+﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
 @inject Algara.Data.Repositories.ICategoryRepository _catRepo
 @inject Algara.Identity.Data.IdentityDbContext _identityDb
 @using Microsoft.EntityFrameworkCore
@@ -8,6 +9,24 @@
     var languageReturnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
     var navCategories = await _catRepo.GetAllWithSubCategoriesAsync();
     string? navDisplayName = null;
+    string? staffEntryUrl = null;
+    if (await StaffAccess.IsStaffAsync(User))
+    {
+        foreach (var entry in new[] {
+            ("Dashboard.View", "~/admin"), ("Products.View", "~/admin/products"),
+            ("Options.View", "~/admin/fabrics"), ("Categories.View", "~/admin/categories"),
+            ("Content.View", "~/admin/hero-slides"), ("Promotions.View", "~/admin/promotions"),
+            ("Orders.View", "~/admin/orders"), ("Companies.View", "~/admin/companies"),
+            ("Partners.View", "~/admin/partners"), ("Users.View", "~/admin/users"),
+            ("Access.ManagePermissions", "~/admin/access"), ("Access.ViewHistory", "~/admin/access/history") })
+        {
+            if (await StaffAccess.HasPermissionAsync(User, entry.Item1))
+            {
+                staffEntryUrl = Url.Content(entry.Item2);
+                break;
+            }
+        }
+    }
 
     if (User.Identity?.IsAuthenticated == true)
     {
@@ -64,10 +83,10 @@
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Home" asp-action="Contact">@T["Contact"]</a>
                 </li>
-                @if (User.IsInRole("Admin"))
+                @if (staffEntryUrl != null)
                 {
                     <li class="nav-item">
-                        <a class="nav-link algara-nav-admin" asp-controller="Admin" asp-action="Index">
+                        <a class="nav-link algara-nav-admin" href="@staffEntryUrl">
                             <i class="bi bi-shield-lock me-1"></i>@T["Administration"]
                         </a>
                     </li>

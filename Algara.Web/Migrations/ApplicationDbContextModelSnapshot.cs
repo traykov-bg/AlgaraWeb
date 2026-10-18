@@ -22,6 +22,57 @@ namespace Algara.Web.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Algara.Identity.Data.AccessAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("AfterJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("TargetName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.ToTable("AccessAuditEvents");
+                });
+
             modelBuilder.Entity("Algara.Identity.Data.ApplicationRole", b =>
                 {
                     b.Property<int>("N")
@@ -38,15 +89,63 @@ namespace Algara.Web.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<long>("PermissionsVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
 
                     b.HasKey("N");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.HasIndex(new[] { "Id" }, "IX_Roles_Id")
                         .IsUnique()
                         .HasFilter("[Id] IS NOT NULL");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Data.Permission", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("AdminOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("Permissions");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Data.RolePermission", b =>
+                {
+                    b.Property<int>("RoleN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PermissionKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("RoleN", "PermissionKey");
+
+                    b.HasIndex("PermissionKey");
+
+                    b.ToTable("RolePermissions");
                 });
 
             modelBuilder.Entity("Algara.Identity.Data.UserConsent", b =>
@@ -303,7 +402,26 @@ namespace Algara.Web.Migrations
 
                     b.HasIndex("UserN");
 
-                    b.ToTable("UsersAddresses");
+                    b.ToTable("UsersAddresses", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Identity.Data.RolePermission", b =>
+                {
+                    b.HasOne("Algara.Identity.Data.Permission", "Permission")
+                        .WithMany()
+                        .HasForeignKey("PermissionKey")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Algara.Identity.Data.ApplicationRole", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Algara.Identity.Data.UserConsent", b =>

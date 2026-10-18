@@ -12,7 +12,7 @@
                 {
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
                 }
-                <form asp-action="CategoryCreate" method="post">
+                <form asp-action="CategoryCreate" method="post" staff-permission="Categories.View,Categories.Create">
                     @await Html.PartialAsync("_CategoryFormFields", Model)
                     <div class="alert alert-info small mt-3 mb-0">
                         <i class="bi bi-info-circle me-1"></i>
@@ -22,7 +22,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-floppy me-1"></i>Запиши
                         </button>
-                        <a asp-action="Categories" class="btn btn-outline-secondary">Откажи</a>
+                        <a asp-action="Categories" class="btn btn-outline-secondary" staff-permission="Categories.View">Откажи</a>
                     </div>
                 </form>
             </div>

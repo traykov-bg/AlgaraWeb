@@ -5,9 +5,9 @@
 }
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <p class="text-muted mb-0">Цветове към дамаска или самостоятелни цветове за останалите продукти.</p>
-    <a asp-action="ColorCreate" asp-route-fabricN="@Model.FabricN" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Нов цвят</a>
+    <a asp-action="ColorCreate" asp-route-fabricN="@Model.FabricN" class="btn btn-primary" staff-permission="Options.View,Options.Create"><i class="bi bi-plus-lg me-1"></i>Нов цвят</a>
 </div>
-<form asp-action="Colors" method="get" class="row g-2 mb-4" role="search">
+<form asp-action="Colors" method="get" class="row g-2 mb-4" role="search" staff-permission="Options.View">
     <div class="col-md-6">
         <label for="color-search" class="form-label">Име или код</label>
         <input id="color-search" name="search" value="@Model.Search" class="form-control" placeholder="Търсене на цвят" />
@@ -18,7 +18,7 @@
     </div>
     <div class="col-md-2 d-flex align-items-end gap-2">
         <button type="submit" class="btn btn-outline-primary">Търси</button>
-        <a asp-action="Colors" class="btn btn-outline-secondary" title="Изчисти филтрите" aria-label="Изчисти филтрите"><i class="bi bi-x-lg"></i></a>
+        <a asp-action="Colors" class="btn btn-outline-secondary" title="Изчисти филтрите" aria-label="Изчисти филтрите" staff-permission="Options.View"><i class="bi bi-x-lg"></i></a>
     </div>
 </form>
 <div class="card border-0 shadow-sm">
@@ -40,10 +40,10 @@
                             }
                         </td>
                         <td><code>@color.Code</code></td>
-                        <td><a asp-action="ColorEdit" asp-route-n="@color.N" class="fw-semibold">@color.Name</a></td>
+                        <td><a asp-action="ColorEdit" asp-route-n="@color.N" class="fw-semibold" staff-permission="Options.View,Options.Edit">@color.Name</a></td>
                         <td>@(color.Fabric?.Name ?? "Самостоятелен цвят")</td>
                         <td><span class="badge @(color.IsActive ? "text-bg-success" : "text-bg-secondary")">@(color.IsActive ? "Активен" : "Неактивен")</span></td>
-                        <td class="text-end"><a asp-action="ColorEdit" asp-route-n="@color.N" class="btn btn-sm btn-outline-primary">Редактирай</a></td>
+                        <td class="text-end"><a asp-action="ColorEdit" asp-route-n="@color.N" class="btn btn-sm btn-outline-primary" staff-permission="Options.View,Options.Edit">Редактирай</a></td>
                     </tr>
                 }
                 @if (Model.Colors.Count == 0)

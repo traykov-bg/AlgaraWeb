@@ -1,5 +1,7 @@
 ﻿using Algara.Identity.Data;
 using Algara.Identity.Models;
+using Algara.Identity.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace Algara.Web.Data
 {
@@ -30,10 +32,11 @@ namespace Algara.Web.Data
             }
 
             // 3. Default admin потребител (само за чисто нова среда)
-            if (!identityDb.Users.Any(u => u.UserName == "admin@algara.bg"))
+            if (!await identityDb.UserRoles.AnyAsync(r => r.Role.Name == StaffRoles.Admin && r.User.IsActive)
+                && !identityDb.Users.Any(u => u.UserName == "admin@algara.bg"))
             {
                 await userService.RegisterUserAsync("admin@algara.bg", "admin@algara.bg", "Admin@algara1");
-                await userService.AddUserToRoleAsync("admin@algara.bg", "Admin");
+                await new AccessManagementService(identityDb).BootstrapAdminAsync("admin@algara.bg");
             }
         }
     }

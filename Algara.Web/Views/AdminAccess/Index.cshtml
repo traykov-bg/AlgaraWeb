@@ -1,0 +1,64 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminAccessFormViewModel
+@using Algara.Web.ViewModels.Admin
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Роли и права";
+}
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+    <div>
+        <h1 class="h4 mb-1">Роли и права</h1>
+        <p class="text-muted mb-0">Изберете какво могат да правят служителите във всяка роля.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="History" staff-permission="Access.ViewHistory"><i class="bi bi-clock-history me-1"></i>История на достъпа</a>
+</div>
+<nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Служебни роли">
+    @foreach (var role in Model.AvailableRoles)
+    {
+        <a class="btn @(role == Model.RoleName ? "btn-dark" : "btn-outline-dark")" asp-action="Index" asp-route-roleName="@role" aria-current="@(role == Model.RoleName ? "page" : null)">@AdminAccessFormViewModel.RoleLabel(role)</a>
+    }
+</nav>
+<div class="alert alert-info">
+    Даване и отнемане на роли, промени в тази матрица и критични настройки са запазени за Администратора.
+    Клиентите не участват в служебната матрица. При няколко служебни роли разрешенията им се обединяват.
+</div>
+@if (Model.IsReadOnly)
+{
+    <div class="alert alert-secondary">Администраторът има пълен достъп. Правата му са защитени и не могат да се изключват.</div>
+}
+<form asp-action="Index" method="post">
+    <input type="hidden" asp-for="RoleName" />
+    <input type="hidden" asp-for="ExpectedVersion" />
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white py-3"><h2 class="h5 mb-1">@AdminAccessFormViewModel.RoleLabel(Model.RoleName)</h2><div class="small text-muted">За работа в раздел включете „Преглед“ и нужните действия. За нов продукт е необходимо и „Промяна на цени“. Групите изискват и преглед на Контрагенти.</div></div>
+        <div class="card-body">
+            <div class="row g-4">
+                @foreach (var module in Model.Definitions.GroupBy(p => p.Module))
+                {
+                    <fieldset class="col-12 col-md-6 col-xl-4">
+                        <legend class="fs-6 fw-semibold border-bottom pb-2">@module.Key</legend>
+                        @foreach (var permission in module)
+                        {
+                            var selected = Model.PermissionKeys.Contains(permission.Key);
+                            var disabled = Model.IsReadOnly || permission.AdminOnly;
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="PermissionKeys" value="@permission.Key" id="permission-@permission.Key.Replace('.', '-')" checked="@selected" disabled="@disabled" />
+                                <label class="form-check-label" for="permission-@permission.Key.Replace('.', '-')">@permission.Name
+                                    @if (permission.AdminOnly) { <span class="text-muted small">(само Администратор)</span> }
+                                </label>
+                            </div>
+                        }
+                    </fieldset>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (!Model.IsReadOnly)
+        {
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-1"></i>Запази правата</button>
+        }
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-roleName="@Model.RoleName">Презареди актуалните права</a>
+        <a class="btn btn-link" asp-controller="Admin" asp-action="Users" staff-permission="Users.View">Роли на потребителите</a>
+    </div>
+</form>

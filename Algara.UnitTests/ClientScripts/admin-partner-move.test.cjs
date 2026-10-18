@@ -21,24 +21,25 @@ function element(selector, dataset = {}, parent = null) {
 }
 
 function openPage({ stored = null, scope = '/admin/partners?groupN=0', blocked = false,
-    pagePartners = [[101, 2], [102, 4]], fetchResponse = null } = {}) {
+    pagePartners = [[101, 2], [102, 4]], fetchResponse = null, canMoveGroups = true, canMovePartners = true } = {}) {
     let storage = stored;
     let redirect = null;
     let reloaded = false;
     const requests = [];
-    const page = element('[data-partner-move]', { moveKey: 'user-test', moveScope: scope, moveUrl: '/admin/partners/move' });
+    const page = element('[data-partner-move]', { moveKey: 'user-test', moveScope: scope, moveUrl: '/admin/partners/move',
+        canMoveGroups: String(canMoveGroups), canMovePartners: String(canMovePartners) });
     const names = ['move-mode', 'move-submit', 'move-error', 'move-filters', 'move-summary', 'move-destination', 'move-storage-warning', 'move-filter-form', 'move-toggle-panel', 'move-reload'];
     for (const name of names) page.children[`[data-${name}]`] = element(`[data-${name}]`);
     page.children['[name="__RequestVerificationToken"]'] = { value: 'csrf-test' };
     const groups = [[0, null], [1, 0], [2, 1], [3, 2], [4, 0]].map(([n, parent]) => {
         const row = element('[data-group]', { group: String(n), parent: parent === null ? '' : String(parent), rowVersion: `version-${n}`, groupName: `Group ${n}`, groupPath: `Root / Group ${n}` });
         for (const name of ['tree-link', 'move-target-badge', 'move-group-included']) row.children[`[data-${name}]`] = element(`[data-${name}]`, {}, row);
-        if (n) row.children['[data-move-group]'] = element('[data-move-group]', { moveGroup: String(n) }, row);
+        if (n && canMoveGroups) row.children['[data-move-group]'] = element('[data-move-group]', { moveGroup: String(n) }, row);
         return row;
     });
     const partners = pagePartners.map(([n, groupN]) => {
         const row = element('[data-move-partner-row]', { movePartnerRow: String(n), partnerGroup: String(groupN), rowVersion: `version-${n}`, partnerName: `Partner ${n}` });
-        row.children['[data-move-partner]'] = element('[data-move-partner]', { movePartner: String(n) }, row);
+        if (canMovePartners) row.children['[data-move-partner]'] = element('[data-move-partner]', { movePartner: String(n) }, row);
         row.children['[data-move-partner-included]'] = element('[data-move-partner-included]', {}, row);
         return row;
     });
@@ -237,4 +238,29 @@ test('authentication redirects never report a successful move or clear selection
 
 test('pages without bulk move controls are unaffected', () => {
     assert.doesNotThrow(() => vm.runInNewContext(source, { document: { querySelector: () => null } }));
+});
+
+test('a group mover can move groups when partner selection controls are absent', async () => {
+    const ui = openPage({ canMovePartners: false });
+    ui.enable();
+    ui.selectGroup(1);
+    ui.target(4);
+    await ui.submit();
+    assert.equal(ui.requests.length, 1);
+    assert.equal(ui.requests[0].body.groups.length, 1);
+    assert.equal(ui.requests[0].body.partners.length, 0);
+});
+
+test('revoked group moving clears saved groups but keeps allowed partner selections', async () => {
+    const previous = openPage();
+    previous.enable();
+    previous.selectGroup(1);
+    previous.selectPartner(102);
+    const ui = openPage({ stored: previous.stored(), canMoveGroups: false });
+    ui.target(0);
+    await ui.submit();
+    assert.equal(ui.requests.length, 1);
+    assert.equal(ui.requests[0].body.groups.length, 0);
+    assert.equal(ui.requests[0].body.partners.length, 1);
+    assert.equal(ui.requests[0].body.partners[0].n, 102);
 });

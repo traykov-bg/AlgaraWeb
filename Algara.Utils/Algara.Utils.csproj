@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.7" />
+    <!-- Override SqlClient's vulnerable transitive PKCS dependency (CVE-2026-70162 / CVE-2026-84008). -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="System.Data.Odbc" Version="10.0.12" />
     <PackageReference Include="System.Data.OleDb" Version="10.0.12" />

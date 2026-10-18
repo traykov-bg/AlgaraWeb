@@ -317,14 +317,15 @@ public sealed class AdminOptionCatalogTests
     }
 
     [Fact]
-    public void CatalogMutationsKeepAdminAuthorizationAndAntiforgery()
+    public void CatalogMutationsKeepStaffPermissionAuthorizationAndAntiforgery()
     {
-        Assert.Contains(typeof(AdminController).GetCustomAttributes<AuthorizeAttribute>(), a => a.Roles == "Admin");
+        Assert.Contains(typeof(AdminController).GetCustomAttributes<AuthorizeAttribute>(), a => a.Policy == "Staff");
         var actions = typeof(AdminController).GetMethods().Where(m =>
             m.Name is "FabricCreate" or "FabricEdit" or "ColorCreate" or "ColorEdit");
         foreach (var action in actions)
         {
             Assert.Null(action.GetCustomAttribute<AllowAnonymousAttribute>());
+            Assert.NotEmpty(action.GetCustomAttributes<Algara.Web.Authorization.RequirePermissionAttribute>());
             if (action.GetCustomAttribute<HttpPostAttribute>() is not null)
                 Assert.NotNull(action.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
         }
@@ -344,7 +345,8 @@ public sealed class AdminOptionCatalogTests
 
     private sealed class Fixture : IDisposable
     {
-        private readonly IdentityDbContext _identityDb = new(new DbContextOptions<IdentityDbContext>());
+        private readonly StaffAccessTestContext _identityDb = new();
+        private readonly ServiceProvider _services;
         private readonly string _ownedParent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Algara.OptionCatalog.Tests"));
         private readonly string _root;
         public ProductAdminTestContext Db { get; }
@@ -363,7 +365,8 @@ public sealed class AdminOptionCatalogTests
             _root = Path.Combine(_ownedParent, Guid.NewGuid().ToString("N"));
             var environment = new Mock<IWebHostEnvironment>();
             environment.SetupGet(e => e.WebRootPath).Returns(Path.Combine(_root, "wwwroot"));
-            var http = new DefaultHttpContext();
+            _services = _identityDb.AddServices(new ServiceCollection()).BuildServiceProvider();
+            var http = new DefaultHttpContext { RequestServices = _services, User = StaffAccessTestContext.Principal() };
             Controller = new AdminController(Db, _identityDb, Mock.Of<IProductRepository>(), Mock.Of<ICategoryRepository>(),
                 Mock.Of<IOrderRepository>(), Mock.Of<IHeroSlideRepository>(), Mock.Of<IPromotionRepository>(),
                 Mock.Of<IUserService>(), NullLogger<AdminController>.Instance, environment.Object)
@@ -385,6 +388,7 @@ public sealed class AdminOptionCatalogTests
 
         public void Dispose()
         {
+            _services.Dispose();
             Db.Dispose();
             _identityDb.Dispose();
             var resolved = Path.GetFullPath(_root);
