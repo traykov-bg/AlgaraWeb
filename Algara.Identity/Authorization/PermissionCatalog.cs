@@ -28,7 +28,11 @@ public static class PermissionCatalog
     public static class Companies { public const string View = "Companies.View", Create = "Companies.Create", Edit = "Companies.Edit", Deactivate = "Companies.Deactivate"; }
     public static class Partners { public const string View = "Partners.View", Create = "Partners.Create", Edit = "Partners.Edit", Deactivate = "Partners.Deactivate", Move = "Partners.Move"; }
     public static class PartnerGroups { public const string View = "PartnerGroups.View", Create = "PartnerGroups.Create", Edit = "PartnerGroups.Edit", Move = "PartnerGroups.Move"; }
-    public static class Users { public const string View = "Users.View"; }
+    public static class Users
+    {
+        public const string View = "Users.View", ViewDossier = "Users.ViewDossier", AddNotes = "Users.AddNotes",
+            ManagePartnerLinks = "Users.ManagePartnerLinks", ViewDossierHistory = "Users.ViewDossierHistory";
+    }
     public static class Access { public const string AssignRoles = "Access.AssignRoles", ManagePermissions = "Access.ManagePermissions", ViewHistory = "Access.ViewHistory"; }
     public static class Settings { public const string Manage = "Settings.Manage"; }
 
@@ -45,14 +49,20 @@ public static class PermissionCatalog
         new(Companies.View,"Фирми","Преглед"), new(Companies.Create,"Фирми","Създаване"), new(Companies.Edit,"Фирми","Редакция"), new(Companies.Deactivate,"Фирми","Активиране и деактивиране"),
         new(Partners.View,"Контрагенти","Преглед"), new(Partners.Create,"Контрагенти","Създаване"), new(Partners.Edit,"Контрагенти","Редакция"), new(Partners.Deactivate,"Контрагенти","Активиране и деактивиране"), new(Partners.Move,"Контрагенти","Преместване"),
         new(PartnerGroups.View,"Групи контрагенти","Преглед"), new(PartnerGroups.Create,"Групи контрагенти","Създаване"), new(PartnerGroups.Edit,"Групи контрагенти","Редакция"), new(PartnerGroups.Move,"Групи контрагенти","Преместване"),
-        new(Users.View,"Потребители","Преглед"), new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
+        new(Users.View,"Потребители","Преглед"), new(Users.ViewDossier,"Потребители","Преглед на клиентско досие"),
+        new(Users.AddNotes,"Потребители","Добавяне на вътрешни бележки"), new(Users.ManagePartnerLinks,"Потребители","Свързване и откачане на контрагент"),
+        new(Users.ViewDossierHistory,"Потребители","Преглед на историята на досието"), new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
         new(Access.ManagePermissions,"Достъп","Матрица на правата",true), new(Access.ViewHistory,"Достъп","Преглед на историята"),
         new(Settings.Manage,"Настройки","Критични настройки",true)
     });
 
     public static PermissionDefinition? Find(string key) => All.FirstOrDefault(p => p.Key == key);
 
-    public static IReadOnlyList<string> DefaultGrants(string role) => All.Where(p => role switch
+    // Dossier rights require an explicit grant, including for future staff-role defaults.
+    public static IReadOnlyList<string> DefaultGrants(string role) => All
+        .Where(p => role == StaffRoles.Admin || p.Key is not
+            (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory))
+        .Where(p => role switch
     {
         StaffRoles.Admin => true,
         StaffRoles.Moderator => !p.AdminOnly,

@@ -63,6 +63,11 @@ public sealed class AccessManagementService(IdentityDbContext db)
             return AccessChangeResult.Reject("Създаването на продукт изисква право за задаване на цена.");
         if (keys.Any(k => k.StartsWith("PartnerGroups.", StringComparison.Ordinal)) && !keys.Contains(PermissionCatalog.Partners.View, StringComparer.Ordinal))
             return AccessChangeResult.Reject("Работата с групи изисква преглед на контрагентите, където се намира дървото на групите.");
+        if (keys.Any(k => k is PermissionCatalog.Users.AddNotes or PermissionCatalog.Users.ManagePartnerLinks or PermissionCatalog.Users.ViewDossierHistory) &&
+            !keys.Contains(PermissionCatalog.Users.ViewDossier, StringComparer.Ordinal))
+            return AccessChangeResult.Reject("Бележките, свързванията и историята изискват право за преглед на клиентското досие.");
+        if (keys.Contains(PermissionCatalog.Users.ManagePartnerLinks, StringComparer.Ordinal) && !keys.Contains(PermissionCatalog.Partners.View, StringComparer.Ordinal))
+            return AccessChangeResult.Reject("Свързването на акаунт изисква право за преглед на контрагентите.");
         await using var transaction = await AcquireAsync(cancellationToken);
         var administrator = await FindAdministratorAsync(actor, cancellationToken);
         if (administrator == null) return AccessChangeResult.Reject("Само администратор може да променя матрицата на правата.");

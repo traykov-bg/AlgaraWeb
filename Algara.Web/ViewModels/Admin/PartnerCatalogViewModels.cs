@@ -53,6 +53,10 @@ public sealed class PartnerForm : CatalogEditForm, IValidatableObject
     public bool IsActive { get; set; } = true;
     [BindNever, ValidateNever] public List<SelectListItem> Companies { get; set; } = [];
     [BindNever, ValidateNever] public List<SelectListItem> Groups { get; set; } = [];
+    [BindNever, ValidateNever] public bool CanViewLinkedAccounts { get; set; }
+    [BindNever, ValidateNever] public List<PartnerLinkedAccountViewModel> LinkedAccounts { get; set; } = [];
+    [BindNever, ValidateNever] public int LinkedAccountsPage { get; set; } = 1;
+    [BindNever, ValidateNever] public bool HasMoreLinkedAccounts { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

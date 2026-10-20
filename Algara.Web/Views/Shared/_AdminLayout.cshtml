@@ -136,7 +136,7 @@
                     </a>
                 </li>
                 <li>
-                    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("User") == true ? "active" : "")"
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminCustomers" || ViewContext.RouteData.Values["action"]?.ToString()?.StartsWith("User") == true ? "active" : "")"
                        asp-controller="Admin" asp-action="Users" staff-permission="Users.View">
                         <i class="bi bi-people"></i> Потребители
                     </a>

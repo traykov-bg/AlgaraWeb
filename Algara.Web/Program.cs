@@ -76,6 +76,7 @@ try
     builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<StaffAccessService>();
     builder.Services.AddScoped<AccessManagementService>();
+    builder.Services.AddScoped<Algara.Web.Services.CustomerDossierService>();
     builder.Services.AddSingleton<IAuthorizationPolicyProvider, StaffPolicyProvider>();
     builder.Services.AddScoped<IAuthorizationHandler, StaffAuthorizationHandler>();
 

@@ -205,6 +205,61 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.CustomerDossierEvent", b =>
+                {
+                    b.Property<long>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("N"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("UserN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VerificationMethod")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("UserN", "OccurredAtUtc", "N");
+
+                    b.ToTable("CustomerDossierEvents");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Fabric", b =>
                 {
                     b.Property<int>("N")
@@ -374,6 +429,11 @@ namespace Algara.Web.ShopMigrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<bool>("AllowAccountLinks")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -474,6 +534,27 @@ namespace Algara.Web.ShopMigrations
 
                             t.HasCheckConstraint("CK_Partners_Phone", "[Phone] IS NULL OR [Phone] = N'0' OR (LEFT([Phone],1) = N'+' AND LEN([Phone]) BETWEEN 8 AND 16 AND SUBSTRING([Phone],2,15) COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%')");
                         });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PartnerAccountLink", b =>
+                {
+                    b.Property<int>("UserN")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PartnerN")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("UserN");
+
+                    b.HasIndex("PartnerN");
+
+                    b.ToTable("PartnerAccountLinks");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.PartnerCatalogChange", b =>
@@ -1164,6 +1245,16 @@ namespace Algara.Web.ShopMigrations
                         .IsRequired();
 
                     b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PartnerAccountLink", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Partner", "Partner")
+                        .WithMany()
+                        .HasForeignKey("PartnerN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Partner");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.PartnerGroup", b =>

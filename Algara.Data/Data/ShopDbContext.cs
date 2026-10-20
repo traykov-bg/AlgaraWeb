@@ -27,6 +27,7 @@ namespace Algara.Data.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             ConfigurePartnerCatalog(modelBuilder);
+            ConfigureCustomerDossiers(modelBuilder);
             modelBuilder.HasSequence<long>("ProductSkuNumbers").StartsAt(1).IncrementsBy(1);
             modelBuilder.HasSequence<long>("ProductVariantSkuNumbers").StartsAt(1).IncrementsBy(1);
 

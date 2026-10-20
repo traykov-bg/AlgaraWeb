@@ -163,7 +163,7 @@ public partial class AdminController
 
     [HttpGet("partners/{n:int}/edit")]
     [RequirePermission("Partners.View", "Partners.Edit")]
-    public async Task<IActionResult> PartnerEdit([FromRoute] int n)
+    public async Task<IActionResult> PartnerEdit([FromRoute] int n, int linkedPage = 1)
     {
         var p = await _shopDb.Partners.AsNoTracking().SingleOrDefaultAsync(p => p.N == n);
         if (p == null) return NotFound();
@@ -171,7 +171,8 @@ public partial class AdminController
         {
             N = n, RowVersion = Convert.ToBase64String(p.RowVersion), Code = p.Code, SiteName = p.SiteName,
             CompanyN = p.CompanyN, GroupN = p.GroupN, Phone = p.Phone, Email = p.Email, ContactPerson = p.ContactPerson,
-            Address = p.Address, DeliveryAddress = p.DeliveryAddress, Notes = p.Notes, IsActive = p.IsActive
+            Address = p.Address, DeliveryAddress = p.DeliveryAddress, Notes = p.Notes, IsActive = p.IsActive,
+            LinkedAccountsPage = Math.Clamp(linkedPage, 1, 100000)
         };
         await PartnerChoices(form);
         await CatalogHistory(form, "Partner");
@@ -407,6 +408,20 @@ public partial class AdminController
         form.Companies = await CompanyChoices();
         form.Groups = GroupRows(await _shopDb.PartnerGroups.AsNoTracking().ToListAsync())
             .Select(g => new SelectListItem(g.Path, g.N.ToString())).ToList();
+        form.CanViewLinkedAccounts = form.N.HasValue && await CanAsync("Users.View") && await CanAsync("Users.ViewDossier");
+        if (form.CanViewLinkedAccounts)
+        {
+            var numbers = await _shopDb.PartnerAccountLinks.AsNoTracking().Where(l => l.PartnerN == form.N)
+                .OrderBy(l => l.UserN).Skip((form.LinkedAccountsPage - 1) * 20).Take(21)
+                .Select(l => l.UserN).ToListAsync(HttpContext.RequestAborted);
+            form.HasMoreLinkedAccounts = numbers.Count > 20;
+            var pageNumbers = numbers.Take(20).ToArray();
+            form.LinkedAccounts = await _identityDb.Users.AsNoTracking().Where(u => pageNumbers.Contains(u.N))
+                .OrderBy(u => u.N).Select(u => new PartnerLinkedAccountViewModel
+                {
+                    N = u.N, UserName = u.UserName, DisplayName = u.DisplayName, Email = u.Email, IsActive = u.IsActive
+                }).ToListAsync(HttpContext.RequestAborted);
+        }
     }
 
     private async Task GroupChoices(PartnerGroupForm form)

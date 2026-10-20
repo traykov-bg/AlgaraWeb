@@ -1,0 +1,279 @@
+﻿@model Algara.Web.ViewModels.Admin.CustomerDossierViewModel
+@using Algara.Data.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Клиентско досие";
+    var customer = Model.Customer;
+    var customerName = string.IsNullOrWhiteSpace(customer.DisplayName) ? customer.UserName : customer.DisplayName;
+    string Text(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+    string Address(params string?[] values) => string.Join(", ", values.Where(v => !string.IsNullOrWhiteSpace(v)));
+    string OrderStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending => "Чакаща", OrderStatus.Confirmed => "Потвърдена", OrderStatus.Shipped => "Изпратена",
+        OrderStatus.Delivered => "Доставена", OrderStatus.Cancelled => "Отказана", _ => "Неизвестен"
+    };
+    string ActionLabel(string action) => action switch
+    {
+        "NoteAdded" => "Добавена служебна бележка", "PartnerLinked" => "Свързване с контрагент",
+        "PartnerUnlinked" => "Прекратяване на връзка", _ => "Промяна в досието"
+    };
+    string VerificationLabel(string? method) => method switch
+    {
+        "in_person" => "Лична проверка", "known_contact" => "Проверка чрез познат контакт",
+        "documented_request" => "Документирано искане", _ => "—"
+    };
+}
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-secondary">Към потребителите</a>
+    <h2 class="h5 mb-0 flex-grow-1">@customerName <span class="text-muted fw-normal">· акаунт #@customer.N</span></h2>
+    <span class="badge @(customer.IsActive ? "bg-success" : "bg-secondary")">@(customer.IsActive ? "Активен" : "Неактивен")</span>
+    <a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-sm btn-outline-secondary">Презареди досието</a>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger"></div>
+@if (!customer.IsActive)
+{
+    <div class="alert alert-secondary">Акаунтът е неактивен. Ново свързване с контрагент е възможно само за активен акаунт.</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="profile-title">
+            <div class="card-header bg-white"><h3 id="profile-title" class="h6 mb-0">Профил и контакти</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Потребителско име</dt><dd class="col-sm-8 text-break">@customer.UserName</dd>
+                    <dt class="col-sm-4">Име</dt><dd class="col-sm-8">@Text(customer.FirstName)</dd>
+                    <dt class="col-sm-4">Фамилия</dt><dd class="col-sm-8">@Text(customer.LastName)</dd>
+                    @if (!string.IsNullOrWhiteSpace(customer.FullName))
+                    {
+                        <dt class="col-sm-4">Пълно име</dt><dd class="col-sm-8">@customer.FullName</dd>
+                    }
+                    <dt class="col-sm-4">Имейл</dt><dd class="col-sm-8 text-break">@Text(customer.Email)</dd>
+                    <dt class="col-sm-4">Телефон</dt><dd class="col-sm-8">@Text(customer.PhoneNumber)</dd>
+                    <dt class="col-sm-4">Регистрация</dt><dd class="col-sm-8">@customer.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <dt class="col-sm-4">Последен вход</dt><dd class="col-sm-8">@(customer.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Няма записан вход")</dd>
+                    <dt class="col-sm-4">Неуспешни опити</dt><dd class="col-sm-8">@customer.FailedLoginAttempts</dd>
+                    @if (customer.LockoutUntil.HasValue)
+                    {
+                        <dt class="col-sm-4">Блокиране до</dt><dd class="col-sm-8">@customer.LockoutUntil.Value.ToString("dd.MM.yyyy HH:mm")</dd>
+                    }
+                </dl>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="addresses-title">
+            <div class="card-header bg-white"><h3 id="addresses-title" class="h6 mb-0">Адреси на клиента</h3></div>
+            <div class="card-body">
+                @{
+                    var profileAddress = Address(customer.AddressLine1, customer.AddressLine2, customer.PostalCode, customer.City, customer.Country);
+                }
+                @if (!string.IsNullOrEmpty(profileAddress))
+                {
+                    <div class="mb-3"><div class="fw-semibold small text-muted">Адрес в профила</div><div>@profileAddress</div></div>
+                }
+                @foreach (var address in Model.Addresses)
+                {
+                    <div class="border rounded p-3 mb-2">
+                        <div class="fw-semibold">@address.FirstName @address.LastName @if (address.IsDefault) { <span class="badge bg-light text-dark">Основен</span> }</div>
+                        <div>@Address(address.AddressLine1, address.AddressLine2, address.PostalCode, address.City, address.Country)</div>
+                        <div class="small text-muted text-break">@Address(address.PhoneNumber, address.Email)</div>
+                    </div>
+                }
+                @if (Model.Addresses.Count == 0 && string.IsNullOrEmpty(profileAddress))
+                {
+                    <p class="text-muted mb-0">Няма записани адреси на тази страница.</p>
+                }
+                @if (Model.AddressPage > 1 || Model.HasMoreAddresses)
+                {
+                    <nav aria-label="Страници с адреси" class="d-flex gap-2 mt-3">
+                        @if (Model.AddressPage > 1) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-addressPage="@(Model.AddressPage - 1)" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                        <span class="align-self-center small">Страница @Model.AddressPage</span>
+                        @if (Model.HasMoreAddresses) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-addressPage="@(Model.AddressPage + 1)" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+                    </nav>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+@if (Model.CanViewPartners)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="partner-title">
+        <div class="card-header bg-white"><h3 id="partner-title" class="h6 mb-0">Свързан контрагент</h3></div>
+        <div class="card-body">
+            @if (Model.Partner is { } partner)
+            {
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <strong>@partner.Code · @partner.Name</strong>
+                    <span class="badge @(partner.IsActive ? "bg-success" : "bg-secondary")">@(partner.IsActive ? "Активен" : "Неактивен")</span>
+                    <a asp-controller="Admin" asp-action="PartnerEdit" asp-route-n="@partner.N" class="btn btn-sm btn-outline-secondary" staff-permission="Partners.View,Partners.Edit">Отвори контрагента</a>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(partner.CompanyName))
+                {
+                    <p class="mb-1">@partner.CompanyName <span class="text-muted">· ЕИК/рег. № @Text(partner.RegistrationNumber)</span></p>
+                }
+                <p class="text-muted">@Address(partner.City, partner.Street, partner.Phone, partner.Email)</p>
+                @if (Model.CanManageLinks)
+                {
+                    <details class="border-top pt-3">
+                        <summary class="text-danger">Прекрати връзката с този контрагент</summary>
+                        <form asp-action="Unlink" asp-route-n="@customer.N" method="post" class="mt-3">
+                            <input asp-for="UnlinkForm.ExpectedAccountVersion" type="hidden" />
+                            <input asp-for="UnlinkForm.ExpectedLinkVersion" type="hidden" />
+                            <p>Прекратяване на връзката на <strong>#@customer.N · @customer.UserName · @customer.Email</strong> с <strong>@partner.Code · @partner.Name</strong>.</p>
+                            <label asp-for="UnlinkForm.Reason" class="form-label">Основание *</label>
+                            <textarea asp-for="UnlinkForm.Reason" class="form-control" maxlength="2000" rows="3" required></textarea>
+                            <p class="form-text">Историята се запазва. За друг контрагент първо прекратете текущата връзка, след което направете нова проверка.</p>
+                            <button type="submit" class="btn btn-outline-danger">Прекрати връзката</button>
+                        </form>
+                    </details>
+                }
+            }
+            else
+            {
+                <p class="text-muted">Този акаунт няма свързан контрагент.</p>
+                @if (Model.CanManageLinks && customer.IsActive)
+                {
+                    <p class="small">Изберете точния човек или обект и проверете принадлежността и искането на клиента. Съвпадение на имейл или телефон само по себе си не е достатъчно.</p>
+                    <form asp-action="Dossier" asp-route-n="@customer.N" method="get" class="row g-2 align-items-end mb-3">
+                        <div class="col-md-9"><label for="partner-search" class="form-label">Търси активен контрагент</label><input id="partner-search" name="partnerSearch" value="@Model.PartnerSearch" type="search" maxlength="200" class="form-control" placeholder="Код, име на обект, фирма или ЕИК" /></div>
+                        <div class="col-md-3"><button class="btn btn-outline-primary" type="submit">Търси</button></div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Код / обект</th><th>Фирма / ЕИК</th><th>Населено място</th><th class="text-end">Избор</th></tr></thead>
+                            <tbody>
+                                @foreach (var choice in Model.PartnerChoices)
+                                {
+                                    <tr class="@(choice.N == Model.SelectedPartner?.N ? "table-primary" : "")">
+                                        <td><strong>@choice.Code</strong><div>@choice.Name</div></td>
+                                        <td>@Text(choice.CompanyName)<div class="small text-muted">@choice.RegistrationNumber</div></td>
+                                        <td>@Text(choice.City)</td>
+                                        <td class="text-end"><a asp-action="Dossier" asp-route-n="@customer.N" asp-route-partnerSearch="@Model.PartnerSearch" asp-route-partnerPage="@Model.PartnerPage" asp-route-selectedPartnerN="@choice.N" asp-fragment="link-confirmation" class="btn btn-sm btn-outline-primary">Избери</a></td>
+                                    </tr>
+                                }
+                                @if (Model.PartnerChoices.Count == 0) { <tr><td colspan="4" class="text-muted py-3">Няма намерени активни контрагенти на тази страница.</td></tr> }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.PartnerPage > 1 || Model.HasMorePartners)
+                    {
+                        <nav aria-label="Страници с контрагенти" class="d-flex gap-2 mb-3">
+                            @if (Model.PartnerPage > 1) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-partnerSearch="@Model.PartnerSearch" asp-route-partnerPage="@(Model.PartnerPage - 1)" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                            <span class="align-self-center small">Страница @Model.PartnerPage</span>
+                            @if (Model.HasMorePartners) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-partnerSearch="@Model.PartnerSearch" asp-route-partnerPage="@(Model.PartnerPage + 1)" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+                        </nav>
+                    }
+                    @if (Model.SelectedPartner is { } selected)
+                    {
+                        <form asp-action="Link" asp-route-n="@customer.N" method="post" id="link-confirmation" class="border rounded p-3 bg-light">
+                            <input asp-for="LinkForm.PartnerN" type="hidden" />
+                            <input asp-for="LinkForm.ExpectedAccountVersion" type="hidden" />
+                            <input asp-for="LinkForm.ExpectedLinkVersion" type="hidden" />
+                            <input asp-for="LinkForm.ExpectedPartnerVersion" type="hidden" />
+                            <h4 class="h6">Потвърждение на точната връзка</h4>
+                            <dl class="row mb-2">
+                                <dt class="col-md-3">Акаунт</dt><dd class="col-md-9">#@customer.N · @customer.UserName · @customerName<br />@customer.Email · @Text(customer.PhoneNumber)</dd>
+                                <dt class="col-md-3">Контрагент</dt><dd class="col-md-9"><strong>@selected.Code · @selected.Name</strong><br />@Address(selected.CompanyName, selected.RegistrationNumber, selected.City, selected.Street)<br />@Address(selected.Phone, selected.Email)</dd>
+                            </dl>
+                            @if (!selected.AllowAccountLinks)
+                            {
+                                <p class="small">Това ще разреши свързване на акаунти с избрания конкретен контрагент след Вашето потвърждение.</p>
+                            }
+                            <div class="form-check mb-2"><input asp-for="LinkForm.ConfirmedSpecificPartner" class="form-check-input" required /><label asp-for="LinkForm.ConfirmedSpecificPartner" class="form-check-label">Проверих, че това е точният човек или обект, а не общ запис за различни клиенти.</label></div>
+                            <div class="form-check mb-3"><input asp-for="LinkForm.ConfirmedCustomerRequest" class="form-check-input" required /><label asp-for="LinkForm.ConfirmedCustomerRequest" class="form-check-label">Проверих принадлежността на акаунта и искането на клиента за тази връзка.</label></div>
+                            <label asp-for="LinkForm.VerificationMethod" class="form-label">Начин на проверка *</label>
+                            <select asp-for="LinkForm.VerificationMethod" class="form-select mb-3" required>
+                                <option value="">Изберете…</option><option value="in_person">Лична проверка</option><option value="known_contact">Проверка чрез познат контакт</option><option value="documented_request">Документирано искане</option>
+                            </select>
+                            <label asp-for="LinkForm.Reason" class="form-label">Основание и извършена проверка *</label>
+                            <textarea asp-for="LinkForm.Reason" class="form-control" rows="3" maxlength="2000" required aria-describedby="link-reason-help"></textarea>
+                            <p id="link-reason-help" class="form-text">Опишете искането на клиента, как проверихте принадлежността и при нужда референция към документ. Не записвайте пароли или копия на лични документи.</p>
+                            <p class="small">Контактите и адресите на акаунта и контрагента се поддържат отделно. Поръчките остават към конкретния акаунт.</p>
+                            <button type="submit" class="btn btn-primary">Свържи с този контрагент</button>
+                            <a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-outline-secondary">Откажи избора</a>
+                        </form>
+                    }
+                }
+            }
+        </div>
+    </section>
+}
+
+@if (Model.CanViewOrders)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="orders-title">
+        <div class="card-header bg-white"><h3 id="orders-title" class="h6 mb-0">Поръчки на този акаунт</h3></div>
+        <div class="card-body">
+            <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Поръчка</th><th>Дата</th><th>Статус</th><th class="text-end">Сума</th></tr></thead>
+                <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr><td><a asp-controller="Admin" asp-action="OrderDetail" asp-route-n="@order.N">#@order.N</a></td><td>@order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td><td>@OrderStatusLabel(order.Status)</td><td class="text-end">@order.TotalAmount.ToString("N2") €</td></tr>
+                    }
+                    @if (Model.Orders.Count == 0) { <tr><td colspan="4" class="text-muted py-3">Няма поръчки на тази страница.</td></tr> }
+                </tbody>
+            </table></div>
+            @if (Model.OrderPage > 1 || Model.HasMoreOrders)
+            {
+                <nav aria-label="Страници с поръчки" class="d-flex gap-2 mt-3">
+                    @if (Model.OrderPage > 1) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-orderPage="@(Model.OrderPage - 1)" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                    <span class="align-self-center small">Страница @Model.OrderPage</span>
+                    @if (Model.HasMoreOrders) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-orderPage="@(Model.OrderPage + 1)" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+                </nav>
+            }
+        </div>
+    </section>
+}
+
+@if (Model.CanAddNotes)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="note-title">
+        <div class="card-header bg-white"><h3 id="note-title" class="h6 mb-0">Добави служебна бележка</h3></div>
+        <form asp-action="AddNote" asp-route-n="@customer.N" method="post" class="card-body">
+            <input asp-for="NoteForm.ExpectedAccountVersion" type="hidden" />
+            <label asp-for="NoteForm.Note" class="form-label">Бележка * (до 4000 знака)</label>
+            <textarea asp-for="NoteForm.Note" class="form-control mb-2" maxlength="4000" rows="3" required></textarea>
+            <p class="form-text">Бележката остава в историята с автор и време. За поправка добавете нова бележка.</p>
+            <button type="submit" class="btn btn-primary">Добави бележка</button>
+        </form>
+    </section>
+}
+
+@if (Model.CanViewHistory)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="history-title">
+        <div class="card-header bg-white"><h3 id="history-title" class="h6 mb-0">Служебни бележки и история</h3></div>
+        <div class="card-body">
+            @foreach (var item in Model.History)
+            {
+                <article class="border-bottom pb-3 mb-3">
+                    <div class="d-flex flex-wrap gap-2"><strong>@ActionLabel(item.Action)</strong><span class="text-muted small">@item.ActorName · @item.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm") UTC</span></div>
+                    @if (item.Action == "NoteAdded")
+                    {
+                        <p class="mb-0 mt-2 text-break" style="white-space:pre-wrap">@item.Note</p>
+                    }
+                    else
+                    {
+                        <div class="small mt-2">Преди: @(item.BeforePartner ?? "Без връзка")</div>
+                        <div class="small">След: @(item.AfterPartner ?? "Без връзка")</div>
+                        @if (!string.IsNullOrWhiteSpace(item.VerificationMethod)) { <div class="small">Проверка: @VerificationLabel(item.VerificationMethod)</div> }
+                        <p class="mb-0 mt-2 text-break" style="white-space:pre-wrap">@item.Reason</p>
+                    }
+                </article>
+            }
+            @if (Model.History.Count == 0) { <p class="text-muted mb-0">Няма записи на тази страница.</p> }
+            @if (Model.HistoryPage > 1 || Model.HasMoreHistory)
+            {
+                <nav aria-label="Страници с история" class="d-flex gap-2">
+                    @if (Model.HistoryPage > 1) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-historyPage="@(Model.HistoryPage - 1)" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                    <span class="align-self-center small">Страница @Model.HistoryPage</span>
+                    @if (Model.HasMoreHistory) { <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-historyPage="@(Model.HistoryPage + 1)" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+                </nav>
+            }
+        </div>
+    </section>
+}

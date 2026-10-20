@@ -27,6 +27,8 @@ public class Partner
     public CatalogAddress DeliveryAddress { get; set; } = new();
     public string? Notes { get; set; }
     public bool IsActive { get; set; } = true;
+    // Only the verified account-linking workflow can enable this permission for a specific customer/site.
+    public bool AllowAccountLinks { get; set; }
     public byte[] RowVersion { get; set; } = [];
 
     [NotMapped]

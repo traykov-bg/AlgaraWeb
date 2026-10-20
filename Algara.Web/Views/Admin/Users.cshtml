@@ -6,6 +6,22 @@
     var allRoles = ViewBag.AllRoles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
 }
 
+<form asp-action="Users" method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-7">
+        <label for="user-search" class="form-label">Търси потребител</label>
+        <input id="user-search" name="search" value="@Model.Search" class="form-control" type="search" maxlength="200" placeholder="Номер, име, потребителско име, имейл или телефон" />
+    </div>
+    <div class="col-md-3">
+        <label for="user-active" class="form-label">Статус</label>
+        <select id="user-active" name="active" class="form-select">
+            <option value="" selected="@(Model.Active == null)">Всички</option>
+            <option value="true" selected="@(Model.Active == true)">Активни</option>
+            <option value="false" selected="@(Model.Active == false)">Неактивни</option>
+        </select>
+    </div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary">Търси</button></div>
+</form>
+<p class="text-muted small">@Model.Total потребители · страница @Model.Page от @Model.TotalPages</p>
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover table-sm mb-0 align-middle">
@@ -13,9 +29,10 @@
                 <tr>
                     <th>#</th>
                     <th>Потребител</th>
-                    <th>Имейл</th>
+                    <th>Имейл / телефон</th>
                     <th class="text-center">Статус</th>
                     <th>Роли</th>
+                    <th staff-permission="Users.View,Users.ViewDossier">Клиентско досие</th>
                     <th class="text-end" staff-permission="Access.AssignRoles">Управление на роли</th>
                 </tr>
             </thead>
@@ -24,8 +41,8 @@
                 {
                     <tr>
                         <td class="text-muted small">@row.User.N</td>
-                        <td class="fw-semibold small">@(row.User.DisplayName ?? row.User.UserName)</td>
-                        <td class="small text-muted">@row.User.Email</td>
+                        <td class="fw-semibold small">@(string.IsNullOrWhiteSpace(row.User.DisplayName) ? row.User.UserName : row.User.DisplayName)<div class="fw-normal text-muted">@row.User.UserName</div></td>
+                        <td class="small text-muted">@row.User.Email<div>@row.User.PhoneNumber</div></td>
                         <td class="text-center">
                             @if (row.User.IsActive)
                             {
@@ -46,6 +63,7 @@
                                 <span class="text-muted small">—</span>
                             }
                         </td>
+                        <td staff-permission="Users.View,Users.ViewDossier"><a asp-controller="AdminCustomers" asp-action="Dossier" asp-route-n="@row.User.N" class="btn btn-sm btn-outline-primary">Досие</a></td>
                         <td class="text-end" staff-permission="Access.AssignRoles">
                             @if (row.User.IsActive)
                             {
@@ -86,9 +104,17 @@
                 }
                 @if (!Model.Rows.Any())
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">Няма потребители.</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">Няма намерени потребители.</td></tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
+@if (Model.TotalPages > 1)
+{
+    <nav class="d-flex gap-2 mt-3" aria-label="Страници с потребители">
+        @if (Model.Page > 1) { <a asp-action="Users" asp-route-search="@Model.Search" asp-route-active="@Model.Active" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-secondary">Предишни</a> }
+        <span class="align-self-center">Страница @Model.Page от @Model.TotalPages</span>
+        @if (Model.Page < Model.TotalPages) { <a asp-action="Users" asp-route-search="@Model.Search" asp-route-active="@Model.Active" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-secondary">Следващи</a> }
+    </nav>
+}

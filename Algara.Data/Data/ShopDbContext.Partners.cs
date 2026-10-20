@@ -80,6 +80,7 @@ public partial class ShopDbContext
             b.Property(p => p.Email).HasMaxLength(256);
             b.Property(p => p.ContactPerson).HasMaxLength(200);
             b.Property(p => p.Notes).HasMaxLength(4000);
+            b.Property(p => p.AllowAccountLinks).HasDefaultValue(false);
             b.Property(p => p.RowVersion).IsRowVersion();
             b.HasOne(p => p.Company).WithMany().HasForeignKey(p => p.CompanyN).OnDelete(DeleteBehavior.Restrict);
             b.Property(p => p.GroupN).HasDefaultValue(0);

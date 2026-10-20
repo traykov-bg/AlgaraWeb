@@ -588,22 +588,47 @@ namespace Algara.Web.Controllers
 
         [HttpGet("users")]
         [RequirePermission("Users.View")]
-        public async Task<IActionResult> Users()
+        public async Task<IActionResult> Users(string? search = null, bool? active = null, int page = 1)
         {
-            var users = await _identityDb.Users.OrderBy(u => u.UserName).ToListAsync();
-
-            var rows = new List<AdminUserRowViewModel>();
-            foreach (var user in users)
+            search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+            if (search?.Length > 200) search = search[..200];
+            var query = _identityDb.Users.AsNoTracking();
+            if (active.HasValue) query = query.Where(u => u.IsActive == active.Value);
+            if (search != null)
             {
-                var roles = await _userService.GetRolesAsync(user);
-                rows.Add(new AdminUserRowViewModel { User = user, Roles = roles.ToList() });
+                var numericId = int.TryParse(search, out var parsedId) ? parsedId : -1;
+                query = query.Where(u => u.N == numericId || u.UserName.Contains(search) ||
+                    u.DisplayName.Contains(search) || u.FullName.Contains(search) || u.Email.Contains(search) ||
+                    (u.FirstName != null && u.FirstName.Contains(search)) ||
+                    (u.LastName != null && u.LastName.Contains(search)) ||
+                    (u.PhoneNumber != null && u.PhoneNumber.Contains(search)));
             }
-
-            ViewBag.AllRoles = (await _identityDb.Roles.Where(r => StaffRoles.All.Contains(r.Name) || r.Name == "User").OrderBy(r => r.Name).ToListAsync())
-                .Select(r => new SelectListItem(AdminAccessFormViewModel.RoleLabel(r.Name), r.Name))
-                .ToList();
-
-            return View(new AdminUserListViewModel { Rows = rows });
+            var ct = HttpContext.RequestAborted;
+            var total = await query.CountAsync(ct);
+            var totalPages = Math.Max(1, (int)Math.Ceiling(total / 20d));
+            page = Math.Clamp(page, 1, totalPages);
+            var canAssignRoles = await CanAsync("Access.AssignRoles");
+            var users = await query.OrderBy(u => u.UserName).ThenBy(u => u.N)
+                .Skip((page - 1) * 20).Take(20).Select(u => new AdminUserSummaryViewModel
+                {
+                    N = u.N, UserName = u.UserName, DisplayName = u.DisplayName, Email = u.Email,
+                    PhoneNumber = u.PhoneNumber, IsActive = u.IsActive,
+                    SecurityStamp = canAssignRoles ? u.SecurityStamp : null
+                }).ToListAsync(ct);
+            var userNumbers = users.Select(u => u.N).ToArray();
+            var roleRows = await _identityDb.UserRoles.AsNoTracking().Where(r => userNumbers.Contains(r.UserN))
+                .Select(r => new { r.UserN, r.Role.Name }).ToListAsync(ct);
+            var roles = roleRows.ToLookup(r => r.UserN, r => r.Name);
+            ViewBag.AllRoles = canAssignRoles
+                ? (await _identityDb.Roles.AsNoTracking().Where(r => StaffRoles.All.Contains(r.Name) || r.Name == "User")
+                    .OrderBy(r => r.Name).Select(r => r.Name).ToListAsync(ct))
+                    .Select(name => new SelectListItem(AdminAccessFormViewModel.RoleLabel(name), name)).ToList()
+                : new List<SelectListItem>();
+            return View(new AdminUserListViewModel
+            {
+                Rows = users.Select(u => new AdminUserRowViewModel { User = u, Roles = roles[u.N].OrderBy(r => r).ToList() }).ToList(),
+                Search = search, Active = active, Page = page, TotalPages = totalPages, Total = total
+            });
         }
 
         [HttpPost("users/assign-role")]

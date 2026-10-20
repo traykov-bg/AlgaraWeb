@@ -32,3 +32,35 @@
     </form>
 </div></div>
 <partial name="_PartnerCatalogHistory" model="Model" />
+@if (Model.CanViewLinkedAccounts)
+{
+    <section class="card border-0 shadow-sm mt-3" style="max-width:65rem" aria-labelledby="linked-accounts-title">
+        <div class="card-header bg-white"><h2 id="linked-accounts-title" class="h6 mb-0">Свързани клиентски акаунти</h2></div>
+        <div class="card-body">
+            <p class="small text-muted">Свързването се извършва от досието на конкретния акаунт след проверка на принадлежността и искането на клиента.</p>
+            <div class="table-responsive"><table class="table table-sm align-middle">
+                <thead><tr><th>Акаунт</th><th>Имейл</th><th>Статус</th><th>Досие</th></tr></thead>
+                <tbody>
+                    @foreach (var account in Model.LinkedAccounts)
+                    {
+                        <tr>
+                            <td><strong>#@account.N · @(string.IsNullOrWhiteSpace(account.DisplayName) ? account.UserName : account.DisplayName)</strong><div class="small text-muted">@account.UserName</div></td>
+                            <td>@account.Email</td>
+                            <td><span class="badge @(account.IsActive ? "bg-success" : "bg-secondary")">@(account.IsActive ? "Активен" : "Неактивен")</span></td>
+                            <td><a asp-controller="AdminCustomers" asp-action="Dossier" asp-route-n="@account.N" class="btn btn-sm btn-outline-primary">Отвори досието</a></td>
+                        </tr>
+                    }
+                    @if (Model.LinkedAccounts.Count == 0) { <tr><td colspan="4" class="text-muted py-3">Няма свързани акаунти на тази страница.</td></tr> }
+                </tbody>
+            </table></div>
+            @if (Model.LinkedAccountsPage > 1 || Model.HasMoreLinkedAccounts)
+            {
+                <nav aria-label="Страници със свързани акаунти" class="d-flex gap-2">
+                    @if (Model.LinkedAccountsPage > 1) { <a asp-action="PartnerEdit" asp-route-n="@Model.N" asp-route-linkedPage="@(Model.LinkedAccountsPage - 1)" asp-fragment="linked-accounts-title" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                    <span class="align-self-center small">Страница @Model.LinkedAccountsPage</span>
+                    @if (Model.HasMoreLinkedAccounts) { <a asp-action="PartnerEdit" asp-route-n="@Model.N" asp-route-linkedPage="@(Model.LinkedAccountsPage + 1)" asp-fragment="linked-accounts-title" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+                </nav>
+            }
+        </div>
+    </section>
+}
