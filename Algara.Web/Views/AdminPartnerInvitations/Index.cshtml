@@ -1,0 +1,93 @@
+﻿@model Algara.Web.ViewModels.Admin.PartnerInvitationPage
+@using Algara.Web.ViewModels.Admin
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Покани за клиентски акаунти";
+    string Verification(string? method) => method switch { "in_person" => "Лична проверка", "known_contact" => "Проверка чрез познат контакт", "documented_request" => "Документирано искане", _ => "—" };
+}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <a asp-controller="Admin" asp-action="Partners" class="btn btn-sm btn-outline-secondary">Към контрагентите</a>
+    <h1 class="h5 mb-0 flex-grow-1">Покани · @Model.PartnerCode · @Model.PartnerName</h1>
+    <a asp-action="Index" asp-route-n="@Model.PartnerN" class="btn btn-sm btn-outline-secondary">Презареди</a>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger"></div>
+@if (Model.PartnerActive)
+{
+    <section class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white"><h2 class="h6 mb-0">Покани нов клиент</h2></div>
+        <form asp-action="Create" asp-route-n="@Model.PartnerN" method="post" class="card-body">
+            <input asp-for="Form.ExpectedPartnerVersion" type="hidden" />
+            <p>Клиентът ще получи връзка, валидна 72 часа, за създаване на акаунт към този контрагент. Той сам избира парола и приема условията.</p>
+            <p class="small text-muted">За вече съществуващ акаунт използвайте провереното свързване от клиентското досие. Съвпадението на имейл не доказва принадлежност към обекта.</p>
+            <label asp-for="Form.Email" class="form-label">Имейл на клиента *</label>
+            <input asp-for="Form.Email" class="form-control mb-3" autocomplete="off" maxlength="256" />
+            <div class="form-check mb-2"><input asp-for="Form.ConfirmedSpecificPartner" class="form-check-input" /><label asp-for="Form.ConfirmedSpecificPartner" class="form-check-label">Проверих, че това е точният конкретен клиент и обект, а не общ запис за клиенти на дребно.</label></div>
+            <div class="form-check mb-3"><input asp-for="Form.ConfirmedCustomerRequest" class="form-check-input" /><label asp-for="Form.ConfirmedCustomerRequest" class="form-check-label">Проверих принадлежността на получателя към този обект и искането му за акаунт.</label></div>
+            <label asp-for="Form.VerificationMethod" class="form-label">Начин на проверка *</label>
+            <select asp-for="Form.VerificationMethod" class="form-select mb-3" required><option value="">Изберете...</option><option value="in_person">Лична проверка</option><option value="known_contact">Проверка чрез познат контакт</option><option value="documented_request">Документирано искане</option></select>
+            <label asp-for="Form.Reason" class="form-label">Основание и извършена проверка *</label>
+            <textarea asp-for="Form.Reason" class="form-control" rows="3" maxlength="2000" required></textarea>
+            <p class="form-text">Опишете искането на клиента и проверката. Не записвайте пароли или копия на лични документи.</p>
+            <button type="submit" class="btn btn-primary">Създай и изпрати покана</button>
+        </form>
+    </section>
+}
+else { <div class="alert alert-secondary">Контрагентът е неактивен. Не могат да се създават или подновяват покани.</div> }
+<section class="card border-0 shadow-sm">
+    <div class="card-header bg-white"><h2 class="h6 mb-0">Покани за този контрагент</h2></div>
+    <div class="card-body">
+        <p class="small text-muted">„Прието от SMTP“ означава приемане от пощенския сървър, а не потвърдена доставка до получателя. Подновяването обезсилва предишната връзка.</p>
+        @foreach (var item in Model.Items)
+        {
+            var available = item.ConsumedAtUtc == null && item.RevokedAtUtc == null;
+            var status = item.ConsumedAtUtc.HasValue ? "Приета" : item.RevokedAtUtc.HasValue ? "Отменена" : item.ExpiresAtUtc <= DateTime.UtcNow ? "Изтекла" : "Очаква приемане";
+            <article class="border rounded p-3 mb-3">
+                <div class="d-flex flex-wrap gap-2"><strong class="text-break">@item.Email</strong><span class="badge bg-light text-dark">@status</span><span class="small text-muted">@AccountEmailLabels.Delivery(item.DeliveryState)</span></div>
+                <div class="small text-muted mt-1">@item.CreatedByName · @item.CreatedAtUtc.ToString("dd.MM.yyyy HH:mm") UTC · Валидна до @item.ExpiresAtUtc.ToString("dd.MM.yyyy HH:mm") UTC</div>
+                <div class="small mt-2">Проверка: @Verification(item.VerificationMethod)</div>
+                <p class="small text-break" style="white-space:pre-wrap">@item.Reason</p>
+                @if (available)
+                {
+                    @if (Model.PartnerActive)
+                    {
+                        <form asp-action="Resend" asp-route-n="@Model.PartnerN" asp-route-id="@item.Id" method="post" class="mb-2">
+                            <input type="hidden" name="ExpectedVersion" value="@item.Version" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Поднови и изпрати нова покана</button>
+                        </form>
+                    }
+                    <form asp-action="Cancel" asp-route-n="@Model.PartnerN" asp-route-id="@item.Id" method="post" class="d-flex flex-wrap gap-2 align-items-end">
+                        <input type="hidden" name="ExpectedVersion" value="@item.Version" />
+                        <div class="flex-grow-1"><label for="cancel-@item.Id" class="form-label small">Основание за отмяна *</label><input id="cancel-@item.Id" name="Reason" class="form-control form-control-sm" maxlength="2000" required /></div>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Отмени поканата</button>
+                    </form>
+                }
+            </article>
+        }
+        @if (Model.Items.Count == 0) { <p class="text-muted">Няма покани на тази страница.</p> }
+        @if (Model.Page > 1 || Model.HasMore)
+        {
+            <nav aria-label="Страници с покани" class="d-flex gap-2">
+                @if (Model.Page > 1) { <a asp-action="Index" asp-route-n="@Model.PartnerN" asp-route-page="@(Model.Page - 1)" class="btn btn-sm btn-outline-secondary">Предишни</a> }
+                <span class="align-self-center small">Страница @Model.Page</span>
+                @if (Model.HasMore) { <a asp-action="Index" asp-route-n="@Model.PartnerN" asp-route-page="@(Model.Page + 1)" class="btn btn-sm btn-outline-secondary">Следващи</a> }
+            </nav>
+        }
+    </div>
+</section>
+@if (Model.CanViewHistory)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="invitation-history-title">
+        <div class="card-header bg-white"><h2 id="invitation-history-title" class="h6 mb-0">Последни 20 действия по поканите</h2></div>
+        <div class="card-body">
+            @foreach (var item in Model.History)
+            {
+                <article class="border-bottom pb-2 mb-2">
+                    <strong>@AccountEmailLabels.Action(item.Action)</strong>
+                    <div class="small text-muted">@item.ActorName · @item.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm") UTC</div>
+                    <p class="small mb-0 text-break" style="white-space:pre-wrap">@item.Reason</p>
+                </article>
+            }
+            @if (Model.History.Count == 0) { <p class="text-muted mb-0">Няма записани действия.</p> }
+        </div>
+    </section>
+}

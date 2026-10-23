@@ -45,7 +45,7 @@
                                    name="RememberMe" value="true" />
                             <label class="form-check-label" for="loginModalRemember">Запомни ме</label>
                         </div>
-                        <a asp-controller="Account" asp-action="ForgotPassword" class="algara-link-accent small">
+                        <a asp-controller="AccountEmail" asp-action="ForgotPassword" class="algara-link-accent small">
                             Забравена парола?
                         </a>
                     </div>
@@ -54,6 +54,7 @@
                         Вход
                     </button>
                 </form>
+                <div class="text-center mt-3"><a asp-controller="AccountEmail" asp-action="ResendConfirmation" class="algara-link-accent small">Ново писмо за потвърждение на имейл</a></div>
 
                 <div class="text-center mt-3 pt-3 border-top">
                     <span class="text-muted small">Нямаш акаунт?</span>

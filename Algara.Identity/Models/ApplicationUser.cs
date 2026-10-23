@@ -23,6 +23,11 @@ namespace Algara.Identity.Models
 
         public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
 
+        public bool EmailConfirmed { get; set; }
+        // Existing accounts retain access without inventing a historical verification event.
+        public bool RequireEmailConfirmation { get; set; }
+        public DateTime? EmailConfirmedAtUtc { get; set; }
+
         /// <summary>
         /// Runtime cache на ролите — зарежда се от UserRoles таблицата, не се пази в Users.
         /// </summary>

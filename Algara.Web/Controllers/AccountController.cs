@@ -5,11 +5,13 @@ using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Identity.Authorization;
 using Algara.Web.ViewModels;
+using Algara.Web.Services.Email;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace Algara.Web.Controllers
@@ -19,15 +21,18 @@ namespace Algara.Web.Controllers
         private readonly IUserService _userService;
         private readonly IdentityDbContext _identityDb;
         private readonly IOrderRepository _orderRepository;
+        private readonly IAccountEmailService _accountEmail;
 
         public AccountController(
             IUserService userService,
             IdentityDbContext identityDb,
-            IOrderRepository orderRepository)
+            IOrderRepository orderRepository,
+            IAccountEmailService accountEmail)
         {
             _userService = userService;
             _identityDb = identityDb;
             _orderRepository = orderRepository;
+            _accountEmail = accountEmail;
         }
 
         [HttpGet]
@@ -43,10 +48,14 @@ namespace Algara.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("AccountEmail")]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
+            {
+                ClearRegistrationPasswords(model);
                 return View(model);
+            }
 
             var data = new RegistrationData
             {
@@ -56,20 +65,20 @@ namespace Algara.Web.Controllers
                 LastName = model.LastName.Trim(),
                 PhoneNumber = model.PhoneNumber,
                 MarketingConsent = model.MarketingConsent,
+                TermsAccepted = model.TermsAccepted,
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers.UserAgent.ToString()
             };
 
-            var user = await _userService.RegisterUserAsync(data);
-            if (user == null)
+            var result = await _accountEmail.RegisterAsync(data, HttpContext.RequestAborted);
+            ClearRegistrationPasswords(model);
+            if (!result.Success)
             {
-                ModelState.AddModelError(string.Empty, "Имейлът вече е регистриран.");
+                ModelState.AddModelError(string.Empty, result.Error ?? "Регистрацията не е завършена. Опитайте отново.");
                 return View(model);
             }
 
-            await _userService.AddUserToRoleAsync(user.UserName, "User");
-            await _userService.SignInAsync(HttpContext, user, rememberMe: false);
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(AccountEmailController.RegistrationPending), "AccountEmail");
         }
 
         [HttpGet]
@@ -106,13 +115,28 @@ namespace Algara.Web.Controllers
                 return LoginFailure(model, returnUrl, isAjax);
             }
 
+            if (user.IsActive && user.RequireEmailConfirmation && !user.EmailConfirmed &&
+                await _userService.VerifyPasswordAsync(model.Email, model.Password))
+            {
+                ModelState.AddModelError(string.Empty, "Потвърдете имейла си преди първия вход. Можете да поискате ново писмо за потвърждение.");
+                return LoginFailure(model, returnUrl, isAjax);
+            }
+
             if (!await _userService.ValidateUserAsync(model.Email, model.Password))
             {
                 ModelState.AddModelError(string.Empty, "Грешен имейл или парола.");
                 return LoginFailure(model, returnUrl, isAjax);
             }
 
-            await _userService.SignInAsync(HttpContext, user, model.RememberMe, model.TimeZoneOffset);
+            try
+            {
+                await _userService.SignInAsync(HttpContext, user, model.RememberMe, model.TimeZoneOffset);
+            }
+            catch (InvalidOperationException)
+            {
+                ModelState.AddModelError(string.Empty, "Достъпът е променен. Опитайте да влезете отново.");
+                return LoginFailure(model, returnUrl, isAjax);
+            }
 
             if (isAjax)
             {
@@ -123,12 +147,6 @@ namespace Algara.Web.Controllers
             }
 
             return RedirectToLocal(returnUrl);
-        }
-
-        [HttpGet]
-        public IActionResult ForgotPassword()
-        {
-            return View();
         }
 
         [HttpPost]
@@ -306,10 +324,17 @@ namespace Algara.Web.Controllers
                 return View("Profile", await BuildProfileViewModelAsync(user, password: password, activeTab: "password"));
             }
 
-            await _userService.ChangePasswordAsync(user.UserName, password.NewPassword);
+            if (!await _userService.ChangePasswordAsync(user.UserName, password.NewPassword))
+            {
+                ModelState.AddModelError("Password.CurrentPassword", "Акаунтът е променен. Презаредете страницата и влезте отново.");
+                return View("Profile", await BuildProfileViewModelAsync(user, activeTab: "password"));
+            }
             user = await GetCurrentUserAsync();
             if (user != null)
-                await _userService.SignInAsync(HttpContext, user, rememberMe: false);
+            {
+                try { await _userService.SignInAsync(HttpContext, user, rememberMe: false); }
+                catch (InvalidOperationException) { return RedirectToAction(nameof(Login)); }
+            }
 
             TempData["ProfileStatus"] = "Паролата е сменена успешно.";
             return RedirectToAction(nameof(Profile), new { tab = "password" });
@@ -412,6 +437,13 @@ namespace Algara.Web.Controllers
 
             ViewBag.ReturnUrl = returnUrl;
             return View(model);
+        }
+
+        private void ClearRegistrationPasswords(RegisterViewModel model)
+        {
+            model.Password = model.ConfirmPassword = string.Empty;
+            foreach (var key in new[] { nameof(model.Password), nameof(model.ConfirmPassword) })
+                if (ModelState.TryGetValue(key, out var entry)) entry.RawValue = entry.AttemptedValue = null;
         }
 
         private async Task<ApplicationUser?> GetCurrentUserAsync()

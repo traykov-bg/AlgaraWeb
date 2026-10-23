@@ -32,6 +32,11 @@
     </form>
 </div></div>
 <partial name="_PartnerCatalogHistory" model="Model" />
+@if (Model.CanManageInvitations)
+{
+    <a asp-controller="AdminPartnerInvitations" asp-action="Index" asp-route-n="@Model.N" class="btn btn-outline-primary mb-3">Покани за нови клиентски акаунти</a>
+}
+
 @if (Model.CanViewLinkedAccounts)
 {
     <section class="card border-0 shadow-sm mt-3" style="max-width:65rem" aria-labelledby="linked-accounts-title">

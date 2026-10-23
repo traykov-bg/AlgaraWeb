@@ -40,19 +40,15 @@ public class CustomerRegistrationValidationTests
         Assert.Single(ValidationErrors(registration));
     }
 
-    [Theory]
-    [InlineData(false, true, nameof(RegisterViewModel.AgeConfirmed))]
-    [InlineData(true, false, nameof(RegisterViewModel.TermsAccepted))]
-    public void Registration_requires_each_mandatory_confirmation(
-        bool ageConfirmed, bool termsAccepted, string expectedMember)
+    [Fact]
+    public void Registration_requires_terms_acceptance()
     {
         var registration = ValidRegistration();
-        registration.AgeConfirmed = ageConfirmed;
-        registration.TermsAccepted = termsAccepted;
+        registration.TermsAccepted = false;
 
         var error = Assert.Single(ValidationErrors(registration));
 
-        Assert.Contains(expectedMember, error.MemberNames);
+        Assert.Contains(nameof(RegisterViewModel.TermsAccepted), error.MemberNames);
     }
 
     [Theory]
@@ -130,7 +126,6 @@ public class CustomerRegistrationValidationTests
         PhoneNumber = null,
         Password = "abcdef",
         ConfirmPassword = "abcdef",
-        AgeConfirmed = true,
         TermsAccepted = true,
         MarketingConsent = false
     };

@@ -29,6 +29,7 @@ namespace Algara.Web.ViewModels
         [Required(ErrorMessage = "Паролата е задължителна")]
         [DataType(DataType.Password)]
         [MinLength(6, ErrorMessage = "Паролата трябва да е поне 6 символа")]
+        [StringLength(1024, ErrorMessage = "Паролата не може да е над 1024 символа")]
         [DisplayName("Парола")]
         public string Password { get; set; } = string.Empty;
 
@@ -37,9 +38,6 @@ namespace Algara.Web.ViewModels
         [Compare("Password", ErrorMessage = "Паролите не съвпадат")]
         [DisplayName("Потвърди паролата")]
         public string ConfirmPassword { get; set; } = string.Empty;
-
-        [MustBeTrue(ErrorMessage = "Трябва да потвърдите, че сте над 18 години")]
-        public bool AgeConfirmed { get; set; }
 
         [MustBeTrue(ErrorMessage = "Трябва да приемете Общите условия и Политиката за поверителност")]
         public bool TermsAccepted { get; set; }

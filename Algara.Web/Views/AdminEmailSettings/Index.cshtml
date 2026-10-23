@@ -1,0 +1,145 @@
+﻿@model Algara.Web.ViewModels.Admin.SmtpSettingsForm
+@using Algara.Identity.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Имейл настройки";
+}
+
+<div class="mb-3">
+    <h1 class="h4 mb-1">Имейл настройки</h1>
+    <p class="text-muted mb-0">SMTP сървър и подател на служебните имейли. Достъпът е само за Администратор.</p>
+</div>
+
+@if (Model.DeliverySetupWarning != null)
+{
+    <div class="alert alert-warning" role="alert">
+        <p class="mb-1">@Model.DeliverySetupWarning</p>
+        <p class="mb-0">Успешната проверка на SMTP връзката потвърждава само свързването и удостоверяването.</p>
+    </div>
+}
+
+@if (Model.HasPassword && !Model.PasswordReadable)
+{
+    <div class="alert alert-warning" role="alert">Записаната парола не може да се използва. Въведете и запазете нова парола преди проверка или включване на SMTP.</div>
+}
+
+<div class="card border-0 shadow-sm" style="max-width:65rem">
+    <form asp-action="Index" method="post" class="card-body p-4" autocomplete="off">
+        <input asp-for="ExpectedVersion" type="hidden" />
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Host" class="form-label">SMTP сървър *</label>
+                <input asp-for="Host" class="form-control" maxlength="253" required autocapitalize="none" spellcheck="false" aria-describedby="smtp-server-help" />
+                <div id="smtp-server-help" class="form-text">За Gmail: smtp.gmail.com.</div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Port" class="form-label">Порт *</label>
+                <input asp-for="Port" class="form-control" type="number" min="1" max="65535" required />
+            </div>
+            <div class="col-12">
+                <label asp-for="SecurityMode" class="form-label">Защита на връзката *</label>
+                <select asp-for="SecurityMode" class="form-select" required aria-describedby="smtp-security-help">
+                    <option value="@((int)SmtpSecurityMode.StartTls)">Задължителен STARTTLS</option>
+                    <option value="@((int)SmtpSecurityMode.ImplicitTls)">TLS от началото на връзката (Implicit TLS)</option>
+                </select>
+                <div id="smtp-security-help" class="form-text">За Gmail използвайте порт 587 със задължителен STARTTLS. Порт 465 е за Implicit TLS.</div>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Username" class="form-label">SMTP потребителско име *</label>
+                <input asp-for="Username" class="form-control" maxlength="256" required autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="smtp-user-help" />
+                <div id="smtp-user-help" class="form-text">Удостоверяването е задължително. За Gmail въведете пълния имейл адрес.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="Password" class="form-label">Нова SMTP парола</label>
+                <input id="Password" name="Password" value="" class="form-control" type="password" maxlength="1024" autocomplete="new-password" spellcheck="false" aria-describedby="smtp-password-help smtp-password-change-help" />
+                <div id="smtp-password-help" class="form-text">За Gmail използвайте 16-символна парола за приложение от Google. Празно поле запазва съществуващата парола. След запис или грешка полето отново е празно.</div>
+            </div>
+            <div class="col-12">
+                <div class="small mb-2">
+                    @if (Model.HasPassword && Model.PasswordReadable)
+                    {
+                        <span class="badge bg-success">Има записана парола</span>
+                    }
+                    else if (Model.HasPassword)
+                    {
+                        <span class="badge bg-warning text-dark">Необходима е нова парола</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Няма записана парола</span>
+                    }
+                </div>
+                <p id="smtp-password-change-help" class="form-text mt-0 mb-2">При промяна на сървъра, порта, защитата или потребителското име въведете паролата отново или я премахнете.</p>
+                <div class="form-check">
+                    <input asp-for="RemovePassword" class="form-check-input" disabled="@(!Model.HasPassword)" />
+                    <label asp-for="RemovePassword" class="form-check-label">Премахни записаната парола при запазване</label>
+                </div>
+                <div class="form-text">За премахване на паролата изключете използването на SMTP по-долу.</div>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="FromEmail" class="form-label">Имейл на подателя *</label>
+                <input asp-for="FromEmail" class="form-control" type="email" maxlength="256" required autocomplete="off" autocapitalize="none" spellcheck="false" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="FromName" class="form-label">Име на подателя</label>
+                <input asp-for="FromName" class="form-control" maxlength="200" />
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input asp-for="Enabled" class="form-check-input" aria-describedby="smtp-enabled-help" />
+                    <label asp-for="Enabled" class="form-check-label fw-semibold">Разреши използването на SMTP</label>
+                </div>
+                <div id="smtp-enabled-help" class="form-text">Необходима е записана парола. Можете да запазите и проверите връзката, докато SMTP е изключен.</div>
+            </div>
+            <div class="col-12">
+                <label asp-for="PublicSiteUrl" class="form-label">Публичен адрес на сайта (необходим за изпращане на писма)</label>
+                <input asp-for="PublicSiteUrl" class="form-control" type="url" maxlength="2048" autocomplete="off" spellcheck="false" aria-describedby="smtp-site-help" />
+                <div id="smtp-site-help" class="form-text">Например https://example.bg. Поканите, потвърждаването на имейл и възстановяването на парола използват този адрес. Необходим е HTTPS без допълнителен път. За локална разработка е допустим http://localhost с порт.</div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">Запази настройките</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Презареди записаното</a>
+        </div>
+    </form>
+</div>
+
+<section class="card border-0 shadow-sm mt-3" style="max-width:65rem" aria-labelledby="smtp-check-title">
+    <div class="card-body p-4">
+        <h2 id="smtp-check-title" class="h6">Проверка на запазената връзка</h2>
+        <p class="small text-muted">Проверката използва последно записаните сървър, защита и парола. Проверява TLS връзката и удостоверяването, без да изпраща имейл. Запазете промените във формата преди проверка.</p>
+        <form asp-action="CheckConnection" method="post">
+            <input type="hidden" name="ExpectedVersion" value="@Model.ExpectedVersion" />
+            <button type="submit" class="btn btn-outline-primary" disabled="@(!Model.CanCheckConnection)">Провери запазената SMTP връзка</button>
+        </form>
+        @if (!Model.CanCheckConnection)
+        {
+            <p class="form-text mb-0">Първо запазете настройки с използваема парола.</p>
+        }
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm mt-3" style="max-width:65rem" aria-labelledby="smtp-history-title">
+    <div class="card-body p-4">
+        <h2 id="smtp-history-title" class="h6">Последни промени</h2>
+        @if (Model.History.Count == 0)
+        {
+            <p class="text-muted mb-0">Няма записани промени.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Дата (UTC)</th><th>Администратор</th><th>Промяна</th></tr></thead>
+                    <tbody>
+                        @foreach (var entry in Model.History.Take(20))
+                        {
+                            <tr><td class="text-nowrap">@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@entry.ActorName</td><td>@entry.Description</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

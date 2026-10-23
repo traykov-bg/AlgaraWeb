@@ -31,7 +31,8 @@ public static class PermissionCatalog
     public static class Users
     {
         public const string View = "Users.View", ViewDossier = "Users.ViewDossier", AddNotes = "Users.AddNotes",
-            ManagePartnerLinks = "Users.ManagePartnerLinks", ViewDossierHistory = "Users.ViewDossierHistory";
+            ManagePartnerLinks = "Users.ManagePartnerLinks", ViewDossierHistory = "Users.ViewDossierHistory",
+            SendAccountEmails = "Users.SendAccountEmails", ManageInvitations = "Users.ManageInvitations";
     }
     public static class Access { public const string AssignRoles = "Access.AssignRoles", ManagePermissions = "Access.ManagePermissions", ViewHistory = "Access.ViewHistory"; }
     public static class Settings { public const string Manage = "Settings.Manage"; }
@@ -51,7 +52,10 @@ public static class PermissionCatalog
         new(PartnerGroups.View,"Групи контрагенти","Преглед"), new(PartnerGroups.Create,"Групи контрагенти","Създаване"), new(PartnerGroups.Edit,"Групи контрагенти","Редакция"), new(PartnerGroups.Move,"Групи контрагенти","Преместване"),
         new(Users.View,"Потребители","Преглед"), new(Users.ViewDossier,"Потребители","Преглед на клиентско досие"),
         new(Users.AddNotes,"Потребители","Добавяне на вътрешни бележки"), new(Users.ManagePartnerLinks,"Потребители","Свързване и откачане на контрагент"),
-        new(Users.ViewDossierHistory,"Потребители","Преглед на историята на досието"), new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
+        new(Users.ViewDossierHistory,"Потребители","Преглед на историята на досието"),
+        new(Users.SendAccountEmails,"Потребители","Изпращане на имейли за достъп"),
+        new(Users.ManageInvitations,"Потребители","Покани за клиентски акаунт"),
+        new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
         new(Access.ManagePermissions,"Достъп","Матрица на правата",true), new(Access.ViewHistory,"Достъп","Преглед на историята"),
         new(Settings.Manage,"Настройки","Критични настройки",true)
     });
@@ -61,7 +65,7 @@ public static class PermissionCatalog
     // Dossier rights require an explicit grant, including for future staff-role defaults.
     public static IReadOnlyList<string> DefaultGrants(string role) => All
         .Where(p => role == StaffRoles.Admin || p.Key is not
-            (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory))
+            (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or Users.ManageInvitations))
         .Where(p => role switch
     {
         StaffRoles.Admin => true,

@@ -54,6 +54,7 @@ public sealed class PartnerForm : CatalogEditForm, IValidatableObject
     [BindNever, ValidateNever] public List<SelectListItem> Companies { get; set; } = [];
     [BindNever, ValidateNever] public List<SelectListItem> Groups { get; set; } = [];
     [BindNever, ValidateNever] public bool CanViewLinkedAccounts { get; set; }
+    [BindNever, ValidateNever] public bool CanManageInvitations { get; set; }
     [BindNever, ValidateNever] public List<PartnerLinkedAccountViewModel> LinkedAccounts { get; set; } = [];
     [BindNever, ValidateNever] public int LinkedAccountsPage { get; set; } = 1;
     [BindNever, ValidateNever] public bool HasMoreLinkedAccounts { get; set; }

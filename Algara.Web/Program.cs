@@ -18,6 +18,9 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using NLog.Web;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Algara.Web.Services.Email;
 
 var logger = LogManager.Setup().LoadConfigurationFromFile().GetCurrentClassLogger();
 logger.Info("Application is starting...");
@@ -77,6 +80,25 @@ try
     builder.Services.AddScoped<StaffAccessService>();
     builder.Services.AddScoped<AccessManagementService>();
     builder.Services.AddScoped<Algara.Web.Services.CustomerDossierService>();
+    builder.Services.AddScoped<Algara.Web.Services.Email.SmtpSettingsService>();
+    builder.Services.AddSingleton<Algara.Web.Services.Email.ISmtpSecretProtector, Algara.Web.Services.Email.SmtpSecretProtector>();
+    builder.Services.AddSingleton<Algara.Web.Services.Email.ISmtpConnectionProbe, Algara.Web.Services.Email.SmtpConnectionProbe>();
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<EmailOutboxFactory>();
+    builder.Services.AddSingleton<IAccountEmailSender, AccountSmtpEmailSender>();
+    builder.Services.AddScoped<EmailDeliveryReadiness>();
+    builder.Services.AddScoped<EmailOutboxDispatcher>();
+    builder.Services.AddScoped<IAccountEmailService, AccountEmailService>();
+    builder.Services.AddHostedService<EmailOutboxWorker>();
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("AccountEmail", context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 30, Window = TimeSpan.FromMinutes(10), QueueLimit = 0, AutoReplenishment = true
+            }));
+    });
     builder.Services.AddSingleton<IAuthorizationPolicyProvider, StaffPolicyProvider>();
     builder.Services.AddScoped<IAuthorizationHandler, StaffAuthorizationHandler>();
 
@@ -140,7 +162,7 @@ try
 
             var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
 
-            if (user == null || !user.IsActive)
+            if (user == null || !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
             {
                 logger.LogWarning("⛔ Потребителят не е намерен. Излизане...");
                 context.RejectPrincipal();
@@ -220,6 +242,7 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapControllerRoute(
         name: "default",

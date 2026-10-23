@@ -22,6 +22,10 @@ public sealed class CustomerDossierViewModel
     public bool CanViewHistory { get; set; }
     public bool CanAddNotes { get; set; }
     public bool CanManageLinks { get; set; }
+    public bool CanSendAccountEmails { get; set; }
+    public bool CanViewEmailHistory { get; set; }
+    public CustomerAccountEmailForm EmailForm { get; set; } = new();
+    public List<AccountEmailHistoryViewModel> EmailHistory { get; set; } = [];
     public string? PartnerSearch { get; set; }
     public int PartnerPage { get; set; } = 1;
     public bool HasMorePartners { get; set; }
@@ -45,6 +49,8 @@ public sealed class CustomerProfileViewModel
     public string Email { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public bool IsActive { get; set; }
+    public bool EmailConfirmed { get; set; }
+    public bool RequireEmailConfirmation { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginDate { get; set; }
     public DateTime? LockoutUntil { get; set; }
@@ -112,6 +118,22 @@ public sealed class CustomerNoteForm
     [BindRequired, Required] public string? ExpectedAccountVersion { get; set; }
     [Required(ErrorMessage = "Въведете бележка."), StringLength(4000)]
     public string? Note { get; set; }
+}
+
+public sealed class CustomerAccountEmailForm
+{
+    [BindRequired, Required] public string? ExpectedAccountVersion { get; set; }
+    [Required(ErrorMessage = "Запишете основание за изпращането."), StringLength(2000)]
+    public string? Reason { get; set; }
+}
+
+public sealed class AccountEmailHistoryViewModel
+{
+    public string ActorName { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public DateTime OccurredAtUtc { get; set; }
+    public string? DeliveryState { get; set; }
 }
 
 public sealed class CustomerLinkForm

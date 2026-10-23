@@ -1,5 +1,6 @@
 ﻿@model Algara.Web.ViewModels.Admin.CustomerDossierViewModel
 @using Algara.Data.Models
+@using Algara.Web.ViewModels.Admin
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Клиентско досие";
@@ -50,6 +51,7 @@
                         <dt class="col-sm-4">Пълно име</dt><dd class="col-sm-8">@customer.FullName</dd>
                     }
                     <dt class="col-sm-4">Имейл</dt><dd class="col-sm-8 text-break">@Text(customer.Email)</dd>
+                    <dt class="col-sm-4">Потвърждение</dt><dd class="col-sm-8">@(customer.EmailConfirmed ? "Потвърден имейл" : customer.RequireEmailConfirmation ? "Изчаква потвърждение преди вход" : "Съществуващ акаунт · достъпът е запазен")</dd>
                     <dt class="col-sm-4">Телефон</dt><dd class="col-sm-8">@Text(customer.PhoneNumber)</dd>
                     <dt class="col-sm-4">Регистрация</dt><dd class="col-sm-8">@customer.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
                     <dt class="col-sm-4">Последен вход</dt><dd class="col-sm-8">@(customer.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Няма записан вход")</dd>
@@ -197,6 +199,47 @@
                         </form>
                     }
                 }
+            }
+        </div>
+    </section>
+}
+
+@if (Model.CanSendAccountEmails)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="account-email-title">
+        <div class="card-header bg-white"><h3 id="account-email-title" class="h6 mb-0">Имейли за достъп</h3></div>
+        <div class="card-body">
+            <p>Връзката се изпраща до записания имейл <strong>@customer.Email</strong>. Клиентът сам потвърждава имейла или избира новата си парола.</p>
+            @if (customer.IsActive)
+            {
+                <form asp-action="SendReset" asp-route-n="@customer.N" method="post">
+                    <input asp-for="EmailForm.ExpectedAccountVersion" type="hidden" />
+                    <label asp-for="EmailForm.Reason" class="form-label">Основание за изпращане *</label>
+                    <textarea asp-for="EmailForm.Reason" class="form-control" maxlength="2000" rows="2" required></textarea>
+                    <span asp-validation-for="EmailForm.Reason" class="text-danger"></span>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary">Изпрати връзка за нова парола</button>
+                        @if (!customer.EmailConfirmed)
+                        {
+                            <button type="submit" asp-action="SendConfirmation" asp-route-n="@customer.N" class="btn btn-outline-primary">Изпрати потвърждение на имейл</button>
+                        }
+                    </div>
+                </form>
+            }
+            else { <p class="text-muted mb-0">Имейли за достъп се изпращат само към активни акаунти.</p> }
+            @if (Model.CanViewEmailHistory)
+            {
+                <h4 class="h6 mt-4">Последни 20 действия по имейла</h4>
+                <p class="small text-muted">„Прието от SMTP“ означава приемане от пощенския сървър, а не потвърдена доставка до получателя.</p>
+                @foreach (var item in Model.EmailHistory)
+                {
+                    <article class="border-top pt-2 mt-2">
+                        <strong>@AccountEmailLabels.Action(item.Action)</strong>
+                        <div class="small text-muted">@item.ActorName · @item.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm") UTC · @AccountEmailLabels.Delivery(item.DeliveryState)</div>
+                        @if (!string.IsNullOrWhiteSpace(item.Reason)) { <p class="small mb-0 text-break" style="white-space:pre-wrap">@item.Reason</p> }
+                    </article>
+                }
+                @if (Model.EmailHistory.Count == 0) { <p class="text-muted mb-0">Няма записани действия.</p> }
             }
         </div>
     </section>

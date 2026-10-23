@@ -409,6 +409,8 @@ public partial class AdminController
         form.Groups = GroupRows(await _shopDb.PartnerGroups.AsNoTracking().ToListAsync())
             .Select(g => new SelectListItem(g.Path, g.N.ToString())).ToList();
         form.CanViewLinkedAccounts = form.N.HasValue && await CanAsync("Users.View") && await CanAsync("Users.ViewDossier");
+        form.CanManageInvitations = form.CanViewLinkedAccounts && await CanAsync("Users.ManagePartnerLinks") &&
+            await CanAsync("Users.ManageInvitations") && await CanAsync("Partners.View");
         if (form.CanViewLinkedAccounts)
         {
             var numbers = await _shopDb.PartnerAccountLinks.AsNoTracking().Where(l => l.PartnerN == form.N)

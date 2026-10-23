@@ -236,6 +236,143 @@ namespace Algara.Web.Migrations
                     b.ToTable("UserSessions");
                 });
 
+            modelBuilder.Entity("Algara.Identity.Models.AccountEmailAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PartnerN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("TokenId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("UserN")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartnerN", "OccurredAtUtc");
+
+                    b.HasIndex("UserN", "OccurredAtUtc");
+
+                    b.ToTable("AccountEmailAuditEvents");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.AccountEmailToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("CreatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ExpectedSecurityStamp")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PartnerN")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("PartnerVersion")
+                        .HasMaxLength(8)
+                        .HasColumnType("varbinary(8)");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int?>("UserN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VerificationMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("PartnerN", "CreatedAtUtc");
+
+                    b.HasIndex("UserN", "CreatedAtUtc");
+
+                    b.HasIndex("Email", "Purpose", "CreatedAtUtc");
+
+                    b.ToTable("AccountEmailTokens", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountEmailTokens_Purpose", "[Purpose] IN (1,2,3)");
+
+                            t.HasCheckConstraint("CK_AccountEmailTokens_Target", "([Purpose] IN (1,2) AND [UserN] IS NOT NULL AND [PartnerN] IS NULL AND [ExpectedSecurityStamp] IS NOT NULL) OR ([Purpose]=3 AND [PartnerN] IS NOT NULL AND [PartnerN]>0 AND [CreatedById] IS NOT NULL AND [PartnerVersion] IS NOT NULL AND DATALENGTH([PartnerVersion])=8)");
+
+                            t.HasCheckConstraint("CK_AccountEmailTokens_Terminal", "[ConsumedAtUtc] IS NULL OR [RevokedAtUtc] IS NULL");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Identity.Models.ApplicationUser", b =>
                 {
                     b.Property<int>("N")
@@ -267,6 +404,12 @@ namespace Algara.Web.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("EmailConfirmedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("FailedLoginAttempts")
                         .HasColumnType("int");
@@ -312,6 +455,9 @@ namespace Algara.Web.Migrations
                     b.Property<string>("PreferredTimeZoneId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("RequireEmailConfirmation")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Salt")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -334,6 +480,182 @@ namespace Algara.Web.Migrations
                         .HasFilter("[Id] IS NOT NULL");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.EmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AcceptedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LeaseUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProtectedPayload")
+                        .HasMaxLength(32768)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("TokenId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenId");
+
+                    b.HasIndex("State", "NextAttemptAtUtc", "LeaseUntilUtc");
+
+                    b.ToTable("EmailOutboxMessages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_EmailOutboxMessages_Attempts", "[Attempts] BETWEEN 0 AND 3");
+
+                            t.HasCheckConstraint("CK_EmailOutboxMessages_Lease", "([State] = 'Processing' AND [LeaseId] IS NOT NULL AND [LeaseUntilUtc] IS NOT NULL) OR ([State] <> 'Processing' AND [LeaseId] IS NULL AND [LeaseUntilUtc] IS NULL)");
+
+                            t.HasCheckConstraint("CK_EmailOutboxMessages_Payload", "([State] IN ('Pending','Processing') AND [ProtectedPayload] IS NOT NULL) OR ([State] IN ('Accepted','Failed','Cancelled') AND [ProtectedPayload] IS NULL)");
+
+                            t.HasCheckConstraint("CK_EmailOutboxMessages_State", "[State] IN ('Pending','Processing','Accepted','Failed','Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.SmtpConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FromEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FromName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("nvarchar(253)");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProtectedPassword")
+                        .HasMaxLength(8192)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PublicSiteUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SecurityMode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SmtpConfigurations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_SmtpConfigurations_EnabledPassword", "[Enabled] = 0 OR ([ProtectedPassword] IS NOT NULL AND LEN([ProtectedPassword]) > 0)");
+
+                            t.HasCheckConstraint("CK_SmtpConfigurations_Port", "[Port] BETWEEN 1 AND 65535");
+
+                            t.HasCheckConstraint("CK_SmtpConfigurations_SecurePort", "([Port] <> 465 OR [SecurityMode] = 2) AND ([Port] <> 587 OR [SecurityMode] = 1)");
+
+                            t.HasCheckConstraint("CK_SmtpConfigurations_SecurityMode", "[SecurityMode] IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SmtpConfigurations_Singleton", "[Id] = 1");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.SmtpSettingsAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("AfterJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.ToTable("SmtpSettingsAuditEvents");
                 });
 
             modelBuilder.Entity("Algara.Identity.Models.UserAddress", b =>
@@ -463,6 +785,14 @@ namespace Algara.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.AccountEmailToken", b =>
+                {
+                    b.HasOne("Algara.Identity.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserN")
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Algara.Identity.Models.UserAddress", b =>

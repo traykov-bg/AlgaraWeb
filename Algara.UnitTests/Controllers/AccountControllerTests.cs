@@ -6,6 +6,7 @@ using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Web.Controllers;
+using Algara.Web.Services.Email;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,13 +23,14 @@ public sealed class AccountControllerTests : IDisposable
 {
     private readonly Mock<IUserService> _users = new(MockBehavior.Strict);
     private readonly Mock<IOrderRepository> _orders = new(MockBehavior.Strict);
+    private readonly Mock<IAccountEmailService> _email = new(MockBehavior.Strict);
     private readonly IdentityDbContext _identityDb = new(new DbContextOptions<IdentityDbContext>());
     private readonly DefaultHttpContext _http = new();
     private readonly AccountController _controller;
 
     public AccountControllerTests()
     {
-        _controller = new AccountController(_users.Object, _identityDb, _orders.Object)
+        _controller = new AccountController(_users.Object, _identityDb, _orders.Object, _email.Object)
         {
             ControllerContext = new ControllerContext { HttpContext = _http, RouteData = new RouteData() }
         };
@@ -52,19 +54,19 @@ public sealed class AccountControllerTests : IDisposable
     public async Task Register_DuplicateEmail_ReturnsErrorWithoutAssigningRoleOrSigningIn()
     {
         var model = NewRegistration();
-        _users.Setup(s => s.RegisterUserAsync(It.Is<RegistrationData>(d => d.Email == model.Email)))
-            .ReturnsAsync((ApplicationUser?)null);
+        _email.Setup(s => s.RegisterAsync(It.Is<RegistrationData>(d => d.Email == model.Email), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AccountEmailResult(false, "Имейлът вече е регистриран."));
 
         var result = await _controller.Register(model);
 
         Assert.Same(model, Assert.IsType<ViewResult>(result).Model);
         Assert.Equal("Имейлът вече е регистриран.", SingleModelError());
-        _users.Verify(s => s.RegisterUserAsync(It.Is<RegistrationData>(d => d.Email == model.Email)), Times.Once);
+        _email.Verify(s => s.RegisterAsync(It.Is<RegistrationData>(d => d.Email == model.Email), It.IsAny<CancellationToken>()), Times.Once);
         _users.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task Register_ValidModel_PassesConsentAndRequestAuditThenSignsInAsCustomer()
+    public async Task Register_ValidModel_PassesConsentAndRequestAuditAndRequiresConfirmationWithoutSignIn()
     {
         var model = NewRegistration();
         model.FirstName = "  Анна  ";
@@ -72,29 +74,30 @@ public sealed class AccountControllerTests : IDisposable
         model.MarketingConsent = true;
         _http.Connection.RemoteIpAddress = IPAddress.Parse("192.0.2.15");
         _http.Request.Headers.UserAgent = "Account unit test";
-        var user = NewUser();
+        var submittedPassword = model.Password;
         RegistrationData? captured = null;
-        _users.Setup(s => s.RegisterUserAsync(It.IsAny<RegistrationData>()))
-            .Callback<RegistrationData>(data => captured = data)
-            .ReturnsAsync(user);
-        _users.Setup(s => s.AddUserToRoleAsync(user.UserName, "User")).ReturnsAsync(true);
-        _users.Setup(s => s.SignInAsync(_http, user, false, null)).Returns(Task.CompletedTask);
+        _email.Setup(s => s.RegisterAsync(It.IsAny<RegistrationData>(), It.IsAny<CancellationToken>()))
+            .Callback<RegistrationData, CancellationToken>((data, _) => captured = data)
+            .ReturnsAsync(new AccountEmailResult(true));
 
         var result = await _controller.Register(model);
 
-        AssertHomeRedirect(result);
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("RegistrationPending", redirect.ActionName);
+        Assert.Equal("AccountEmail", redirect.ControllerName);
         Assert.NotNull(captured);
         Assert.Equal(model.Email, captured.Email);
-        Assert.Equal(model.Password, captured.Password);
+        Assert.Equal(submittedPassword, captured.Password);
+        Assert.Empty(model.Password);
+        Assert.Empty(model.ConfirmPassword);
         Assert.Equal("Анна", captured.FirstName);
         Assert.Equal("Иванова", captured.LastName);
         Assert.Equal(model.PhoneNumber, captured.PhoneNumber);
         Assert.True(captured.MarketingConsent);
+        Assert.True(captured.TermsAccepted);
         Assert.Equal("192.0.2.15", captured.IpAddress);
         Assert.Equal("Account unit test", captured.UserAgent);
-        _users.Verify(s => s.RegisterUserAsync(It.IsAny<RegistrationData>()), Times.Once);
-        _users.Verify(s => s.AddUserToRoleAsync(user.UserName, "User"), Times.Once);
-        _users.Verify(s => s.SignInAsync(_http, user, false, null), Times.Once);
+        _email.Verify(s => s.RegisterAsync(It.IsAny<RegistrationData>(), It.IsAny<CancellationToken>()), Times.Once);
         _users.VerifyNoOtherCalls();
     }
 
@@ -135,6 +138,44 @@ public sealed class AccountControllerTests : IDisposable
         _users.Verify(s => s.GetUserByUsernameAsync(model.Email), Times.Once);
         if (userExists)
             _users.Verify(s => s.ValidateUserAsync(model.Email, model.Password), Times.Once);
+        _users.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Login_PendingConfirmation_WithCorrectPassword_DoesNotSignIn(bool ajax)
+    {
+        var model = NewLogin();
+        var user = NewUser();
+        user.IsActive = true;
+        user.RequireEmailConfirmation = true;
+        user.EmailConfirmed = false;
+        SetAjax(ajax);
+        _users.Setup(s => s.GetUserByUsernameAsync(model.Email)).ReturnsAsync(user);
+        _users.Setup(s => s.VerifyPasswordAsync(model.Email, model.Password)).ReturnsAsync(true);
+        var result = await _controller.Login(model, "/Account/Profile");
+        AssertLoginFailure(result, model, ajax, "Потвърдете имейла си преди първия вход. Можете да поискате ново писмо за потвърждение.", string.Empty);
+        _users.Verify(s => s.GetUserByUsernameAsync(model.Email), Times.Once);
+        _users.Verify(s => s.VerifyPasswordAsync(model.Email, model.Password), Times.Once);
+        _users.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Login_PendingConfirmation_WithWrongPassword_KeepsGenericErrorAndCountsFailure()
+    {
+        var model = NewLogin();
+        var user = NewUser();
+        user.IsActive = true;
+        user.RequireEmailConfirmation = true;
+        _users.Setup(s => s.GetUserByUsernameAsync(model.Email)).ReturnsAsync(user);
+        _users.Setup(s => s.VerifyPasswordAsync(model.Email, model.Password)).ReturnsAsync(false);
+        _users.Setup(s => s.ValidateUserAsync(model.Email, model.Password)).ReturnsAsync(false);
+        var result = await _controller.Login(model, "/Account/Profile");
+        AssertLoginFailure(result, model, false, "Грешен имейл или парола.", string.Empty);
+        _users.Verify(s => s.GetUserByUsernameAsync(model.Email), Times.Once);
+        _users.Verify(s => s.VerifyPasswordAsync(model.Email, model.Password), Times.Once);
+        _users.Verify(s => s.ValidateUserAsync(model.Email, model.Password), Times.Once);
         _users.VerifyNoOtherCalls();
     }
 
@@ -318,7 +359,6 @@ public sealed class AccountControllerTests : IDisposable
         Password = "test-password",
         ConfirmPassword = "test-password",
         PhoneNumber = "+359888123456",
-        AgeConfirmed = true,
         TermsAccepted = true
     };
 

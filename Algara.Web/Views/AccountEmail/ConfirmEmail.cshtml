@@ -1,0 +1,14 @@
+﻿@model Algara.Web.ViewModels.AccountEmailTokenForm
+@{ ViewData["Title"] = "Потвърждаване на имейл"; }
+<div class="container py-5"><div class="row justify-content-center"><div class="col-md-8 col-lg-6">
+<h1 class="h3">Потвърждаване на имейл</h1>
+<p>Натиснете бутона, за да потвърдите имейла на акаунта си. Връзката е валидна 24 часа и може да се използва веднъж.</p>
+<partial name="_TokenHelp" />
+<form asp-action="ConfirmEmail" method="post" data-account-email-token>
+<input asp-for="Token" type="hidden" autocomplete="off" />
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<button type="submit" class="btn algara-btn-primary">Потвърди имейла</button>
+</form>
+<a asp-action="ResendConfirmation" class="d-inline-block mt-3">Поискай ново писмо</a>
+</div></div></div>
+@section Scripts { <script src="~/js/account-email-token.js" asp-append-version="true"></script> }

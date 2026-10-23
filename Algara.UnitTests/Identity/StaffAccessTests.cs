@@ -8,6 +8,18 @@ namespace Algara.UnitTests.Identity;
 
 public sealed class StaffAccessTests
 {
+    [Theory]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public async Task EmailConfirmationGate_PreservesLegacyAccessAndRejectsPendingNewAccounts(bool required, bool confirmed, bool allowed)
+    {
+        using var db = new StaffAccessTestContext();
+        db.PrimaryUser.RequireEmailConfirmation = required;
+        db.PrimaryUser.EmailConfirmed = confirmed;
+        Assert.Equal(allowed, await new StaffAccessService(db).IsStaffAsync(StaffAccessTestContext.Principal()));
+    }
+
     [Fact]
     public async Task Moderator_ReceivesOnlyStoredOrdinaryGrantsEvenWithAdminCookieOrRogueRows()
     {

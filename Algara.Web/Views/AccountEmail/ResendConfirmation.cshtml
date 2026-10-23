@@ -1,0 +1,15 @@
+﻿@model Algara.Web.ViewModels.AccountEmailRequestForm
+@{ ViewData["Title"] = "Потвърждаване на имейл"; }
+<div class="container py-4"><div class="row justify-content-center"><div class="col-md-8 col-lg-6">
+<h1 class="h3">Ново писмо за потвърждение</h1>
+<p class="text-muted">Въведете имейла на акаунта си. Новата връзка е валидна 24 часа и заменя предишната.</p>
+<form asp-action="ResendConfirmation" method="post">
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<label asp-for="Email" class="form-label">Имейл</label>
+<input asp-for="Email" class="form-control" autocomplete="email" />
+<span asp-validation-for="Email" class="text-danger"></span>
+<button type="submit" class="btn algara-btn-primary d-block mt-3">Изпрати ново писмо</button>
+</form>
+<a asp-controller="Account" asp-action="Login" class="d-inline-block mt-3">Към входа</a>
+</div></div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

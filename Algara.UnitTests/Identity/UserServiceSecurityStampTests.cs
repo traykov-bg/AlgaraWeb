@@ -118,6 +118,16 @@ public sealed class UserServiceSecurityStampTests : IDisposable
         _users.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task ValidateSecurityStamp_RequiredUnconfirmedEmail_RejectsBeforeSessionQuery()
+    {
+        var context = CreateContext();
+        _users.Setup(s => s.FindByIdAsync("customer-id", CancellationToken.None))
+            .ReturnsAsync(new ApplicationUser { IsActive = true, RequireEmailConfirmation = true, EmailConfirmed = false });
+        await _service.ValidateSecurityStampAsync(context);
+        AssertRejectedAndSignedOut(context);
+    }
+
     private CookieValidatePrincipalContext CreateContext(string? missingClaim = null)
     {
         Claim[] claims =

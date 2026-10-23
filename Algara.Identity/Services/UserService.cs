@@ -169,6 +169,9 @@ namespace Algara.Identity.Services
                 return false;
             }
 
+            if (user.RequireEmailConfirmation && !user.EmailConfirmed)
+                return false;
+
             // Успешен вход – нулираме брояча и заключването
             user.FailedLoginAttempts = 0;
             user.LockoutUntil = null;
@@ -201,20 +204,48 @@ namespace Algara.Identity.Services
 
         public async Task<bool> ChangePasswordAsync(string username, string newPassword)
         {
+            if (newPassword?.Length is not (>= 6 and <= 1024)) return false;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
-            if (user == null)
+            if (user == null || !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed) || user.SecurityStamp == null)
                 return false;
+            // The caller verified the current password against this tracked version. A reset or
+            // access change between that verification and this write must force a fresh login.
+            var expectedStamp = user.SecurityStamp;
+            try
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await _context.Database.ExecuteSqlRawAsync("""
+                    DECLARE @result int;
+                    EXEC @result = sys.sp_getapplock @Resource=N'Algara.AccessManagement', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+                    IF @result < 0 THROW 51004, 'Access management is busy.', 1;
+                    """);
+                await _context.Entry(user).ReloadAsync();
+                if (_context.Entry(user).State == EntityState.Detached || user.SecurityStamp != expectedStamp ||
+                    !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed)) return false;
 
-            string salt = GenerateSalt();
-            string passwordHash = HashPassword(newPassword, salt);
-
-            user.PasswordHash = passwordHash;
-            user.Salt = salt;
-            user.SecurityStamp = Guid.NewGuid().ToString(); // Генерираме нов SecurityStamp
-
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-            return true;
+                var credential = AccountPasswordCodec.Create(newPassword);
+                user.PasswordHash = credential.Hash;
+                user.Salt = credential.Salt;
+                user.SecurityStamp = Guid.NewGuid().ToString();
+                user.FailedLoginAttempts = 0;
+                user.LockoutUntil = null;
+                foreach (var session in await _context.UserSessions.Where(s => s.UserN == user.N && s.IsActive).ToListAsync())
+                    session.IsActive = false;
+                // Modify only the credential/session fields; do not overwrite unrelated profile data.
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (DbUpdateException)
+            {
+                _context.ChangeTracker.Clear();
+                return false;
+            }
+            catch (SqlException ex) when (ex.Number is 1205 or 1222 or 51004)
+            {
+                _context.ChangeTracker.Clear();
+                return false;
+            }
         }
 
         public async Task<bool> VerifyPasswordAsync(string username, string password)
@@ -242,7 +273,7 @@ namespace Algara.Identity.Services
 
             var userStore = context.HttpContext.RequestServices.GetRequiredService<IUserStore<ApplicationUser>>();
             var user = await userStore.FindByIdAsync(userId, CancellationToken.None);
-            if (user == null || !user.IsActive)
+            if (user == null || !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
             {
                 await context.HttpContext.SignOutAsync();
                 context.RejectPrincipal();
@@ -260,6 +291,16 @@ namespace Algara.Identity.Services
 
         public async Task SignInAsync(HttpContext httpContext, ApplicationUser user, bool rememberMe, int? timeZoneOffset = null)
         {
+            // Preserve the version whose credentials the caller checked. Reload must not upgrade
+            // an old-password login to a new stamp after a concurrent password reset.
+            if (user.SecurityStamp == null || !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
+                throw new InvalidOperationException("The account is not eligible to sign in.");
+            var expectedStamp = user.SecurityStamp;
+            await _context.Entry(user).ReloadAsync();
+            if (_context.Entry(user).State == EntityState.Detached || user.SecurityStamp != expectedStamp ||
+                !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
+                throw new InvalidOperationException("The account is not eligible to sign in.");
+
             var activeSessions = await _context.UserSessions
                 .Where(us => us.UserN == user.N && us.IsActive)
                 .OrderBy(us => us.CreatedAt)

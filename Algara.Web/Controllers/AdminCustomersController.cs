@@ -7,6 +7,7 @@ using Algara.Identity.Data;
 using Algara.Identity.Models;
 using Algara.Web.Authorization;
 using Algara.Web.Services;
+using Algara.Web.Services.Email;
 using Algara.Web.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ namespace Algara.Web.Controllers;
 [Route("admin/users/{n:int}/dossier")]
 public sealed class AdminCustomersController(
     IdentityDbContext identityDb, ShopDbContext shopDb,
-    StaffAccessService staffAccess, CustomerDossierService dossierService) : Controller
+    StaffAccessService staffAccess, CustomerDossierService dossierService, IAccountEmailService accountEmail) : Controller
 {
     [HttpGet("")]
     [RequirePermission("Users.View", "Users.ViewDossier")]
@@ -92,6 +93,36 @@ public sealed class AdminCustomersController(
         return View("~/Views/Admin/CustomerDossier.cshtml", vm);
     }
 
+    [HttpPost("send-reset"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.SendAccountEmails")]
+    public Task<IActionResult> SendReset([FromRoute] int n, [Bind(Prefix = "EmailForm")] CustomerAccountEmailForm form)
+        => SendAccountEmail(n, form, confirmation: false);
+
+    [HttpPost("send-confirmation"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.SendAccountEmails")]
+    public Task<IActionResult> SendConfirmation([FromRoute] int n, [Bind(Prefix = "EmailForm")] CustomerAccountEmailForm form)
+        => SendAccountEmail(n, form, confirmation: true);
+
+    private async Task<IActionResult> SendAccountEmail(int n, CustomerAccountEmailForm form, bool confirmation)
+    {
+        if (ModelState.IsValid)
+        {
+            var result = confirmation
+                ? await accountEmail.SendConfirmationAsync(User, n, form.ExpectedAccountVersion, form.Reason, HttpContext.RequestAborted)
+                : await accountEmail.SendResetAsync(User, n, form.ExpectedAccountVersion, form.Reason, HttpContext.RequestAborted);
+            if (result.Success)
+            {
+                TempData["Success"] = "Писмото е добавено за изпращане. Статусът е видим в историята на имейлите.";
+                return RedirectToAction(nameof(Dossier), new { n });
+            }
+            ModelState.AddModelError(string.Empty, result.Error ?? "Писмото не е добавено за изпращане.");
+        }
+        var vm = await LoadAsync(n);
+        if (vm == null) return NotFound();
+        vm.EmailForm = form;
+        return View("~/Views/Admin/CustomerDossier.cshtml", vm);
+    }
+
     private async Task<CustomerDossierViewModel?> LoadAsync(int n, string? partnerSearch = null,
         int partnerPage = 1, int? selectedPartnerN = null, int historyPage = 1, int orderPage = 1, int addressPage = 1)
     {
@@ -103,7 +134,8 @@ public sealed class AdminCustomersController(
             {
                 N = u.N, UserName = u.UserName, DisplayName = u.DisplayName, FullName = u.FullName,
                 FirstName = u.FirstName, LastName = u.LastName, Email = u.Email, PhoneNumber = u.PhoneNumber,
-                IsActive = u.IsActive, CreatedAt = u.CreatedAt, LastLoginDate = u.LastLoginDate,
+                IsActive = u.IsActive, EmailConfirmed = u.EmailConfirmed, RequireEmailConfirmation = u.RequireEmailConfirmation,
+                CreatedAt = u.CreatedAt, LastLoginDate = u.LastLoginDate,
                 LockoutUntil = u.LockoutUntil, FailedLoginAttempts = u.FailedLoginAttempts,
                 AddressLine1 = u.AddressLine1, AddressLine2 = u.AddressLine2, City = u.City,
                 PostalCode = u.PostalCode, Country = u.Country
@@ -125,6 +157,7 @@ public sealed class AdminCustomersController(
             CanViewHistory = await staffAccess.HasPermissionAsync(User, "Users.ViewDossierHistory"),
             CanAddNotes = await staffAccess.HasPermissionAsync(User, "Users.AddNotes"),
             CanManageLinks = await staffAccess.HasPermissionAsync(User, "Users.ManagePartnerLinks"),
+            CanSendAccountEmails = await staffAccess.HasPermissionAsync(User, "Users.SendAccountEmails"),
             AddressPage = Math.Clamp(addressPage, 1, 100000),
             HistoryPage = Math.Clamp(historyPage, 1, 100000),
             OrderPage = Math.Clamp(orderPage, 1, 100000),
@@ -136,6 +169,23 @@ public sealed class AdminCustomersController(
         vm.NoteForm.ExpectedAccountVersion = accountVersion;
         vm.LinkForm.ExpectedAccountVersion = accountVersion;
         vm.UnlinkForm.ExpectedAccountVersion = accountVersion;
+        vm.EmailForm.ExpectedAccountVersion = accountVersion;
+        vm.CanViewEmailHistory = vm.CanSendAccountEmails && vm.CanViewHistory;
+        if (vm.CanViewEmailHistory)
+        {
+            var events = await identityDb.AccountEmailAuditEvents.AsNoTracking().Where(e => e.UserN == n)
+                .OrderByDescending(e => e.Id).Take(20)
+                .Select(e => new { e.TokenId, e.ActorName, e.Action, e.Reason, e.OccurredAtUtc }).ToListAsync(ct);
+            var ids = events.Where(e => e.TokenId.HasValue).Select(e => e.TokenId!.Value).ToArray();
+            var statuses = await identityDb.EmailOutboxMessages.AsNoTracking()
+                .Where(m => m.TokenId.HasValue && ids.Contains(m.TokenId.Value))
+                .OrderByDescending(m => m.CreatedAtUtc).Select(m => new { m.TokenId, m.State }).ToListAsync(ct);
+            vm.EmailHistory = events.Select(e => new AccountEmailHistoryViewModel
+            {
+                ActorName = e.ActorName, Action = e.Action, Reason = e.Reason, OccurredAtUtc = e.OccurredAtUtc,
+                DeliveryState = statuses.FirstOrDefault(s => s.TokenId == e.TokenId)?.State
+            }).ToList();
+        }
 
         var addresses = await identityDb.UsersAddresses.AsNoTracking().Where(a => a.UserN == n)
             .OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.N)

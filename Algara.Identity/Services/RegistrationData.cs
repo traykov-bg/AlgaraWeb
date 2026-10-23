@@ -12,6 +12,7 @@
         public string? PhoneNumber { get; set; }
 
         public bool MarketingConsent { get; set; }
+        public bool TermsAccepted { get; set; }
 
         /// <summary>
         /// Версия на T&C и Privacy Policy, които потребителят приема.

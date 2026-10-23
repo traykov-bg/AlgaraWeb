@@ -40,7 +40,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE Id = @Id";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive, RequireEmailConfirmation, EmailConfirmed, EmailConfirmedAtUtc FROM Users WHERE Id = @Id";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { Id = userId });
         }
 
@@ -48,7 +48,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE N = @N";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive, RequireEmailConfirmation, EmailConfirmed, EmailConfirmedAtUtc FROM Users WHERE N = @N";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { N = userN });
         }
 
@@ -56,7 +56,7 @@ namespace Algara.Identity.Services
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive FROM Users WHERE LOWER(UserName) = @UserName";
+            string query = "SELECT N, Id, UserName, DisplayName, Email, PasswordHash, SecurityStamp, LastLoginSessionId, IsActive, RequireEmailConfirmation, EmailConfirmed, EmailConfirmedAtUtc FROM Users WHERE LOWER(UserName) = @UserName";
             return await _databaseHelper.QuerySingleAsync<ApplicationUser>(query, new { UserName = normalizedUserName.ToLower() });
         }
 
@@ -245,7 +245,8 @@ namespace Algara.Identity.Services
             cancellationToken.ThrowIfCancellationRequested();
 
             string query = @"
-        SELECT u.Id, u.N, u.UserName, u.DisplayName, u.Email, u.PasswordHash, u.SecurityStamp, u.LastLoginSessionId
+        SELECT u.Id, u.N, u.UserName, u.DisplayName, u.Email, u.PasswordHash, u.SecurityStamp, u.LastLoginSessionId,
+            u.IsActive, u.RequireEmailConfirmation, u.EmailConfirmed, u.EmailConfirmedAtUtc
         FROM Users u
         INNER JOIN UserRoles ur ON u.N = ur.UserN
         INNER JOIN Roles r ON ur.RoleN = r.N

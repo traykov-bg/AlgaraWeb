@@ -54,7 +54,8 @@ public sealed class StaffAccessService(IdentityDbContext db)
         // A present, matching legacy version is valid; a missing claim is not.
         if (principal.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(id) || stamp == null || string.IsNullOrEmpty(session)) return null;
         var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == id && u.IsActive, cancellationToken);
-        if (user == null || !string.Equals(user.SecurityStamp, stamp, StringComparison.Ordinal)) return null;
+        if (user == null || (user.RequireEmailConfirmation && !user.EmailConfirmed) ||
+            !string.Equals(user.SecurityStamp, stamp, StringComparison.Ordinal)) return null;
         return await db.UserSessions.AsNoTracking().AnyAsync(s => s.UserN == user.N && s.SessionId == session && s.IsActive, cancellationToken) ? user : null;
     }
 

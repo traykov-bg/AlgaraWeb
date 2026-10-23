@@ -1,0 +1,31 @@
+﻿@model Algara.Web.ViewModels.AcceptInvitationForm
+@{ ViewData["Title"] = "Приемане на покана"; }
+<div class="container py-4"><div class="row justify-content-center"><div class="col-md-8 col-lg-6">
+<h1 class="h3">Създаване на акаунт по покана</h1>
+<p>С приемането ще създадете акаунт за имейла, получил поканата, свързан с посочения в писмото контрагент. Поканата е валидна 72 часа.</p>
+<partial name="_TokenHelp" />
+<form asp-action="AcceptInvitation" method="post" data-account-email-token>
+<input asp-for="Token" type="hidden" autocomplete="off" />
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<div class="row g-3">
+<div class="col-sm-6"><label asp-for="FirstName" class="form-label">Име</label><input asp-for="FirstName" class="form-control" autocomplete="given-name" /></div>
+<div class="col-sm-6"><label asp-for="LastName" class="form-label">Фамилия</label><input asp-for="LastName" class="form-control" autocomplete="family-name" /></div>
+</div>
+<label asp-for="PhoneNumber" class="form-label mt-3">Телефон (по желание)</label><input asp-for="PhoneNumber" class="form-control" autocomplete="tel" />
+<label asp-for="Password" class="form-label mt-3">Парола</label><input asp-for="Password" class="form-control" autocomplete="new-password" value="" />
+<label asp-for="ConfirmPassword" class="form-label mt-3">Потвърдете паролата</label><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" value="" />
+<div class="form-check mt-4"><input asp-for="TermsAccepted" class="form-check-input" /><label asp-for="TermsAccepted" class="form-check-label">Приемам <a asp-controller="Home" asp-action="Terms" target="_blank" rel="noopener noreferrer">Общите условия</a> и <a asp-controller="Home" asp-action="Privacy" target="_blank" rel="noopener noreferrer">Политиката за поверителност</a>.</label></div>
+<div class="form-check mt-3"><input asp-for="MarketingConsent" class="form-check-input" /><label asp-for="MarketingConsent" class="form-check-label">Искам да получавам промоции и новини по имейл. Мога да оттегля съгласието си по всяко време.</label></div>
+<button type="submit" class="btn algara-btn-primary mt-4">Приеми поканата и създай акаунт</button>
+</form>
+</div></div></div>
+@section Scripts {
+<script src="~/js/account-email-token.js" asp-append-version="true"></script>
+<partial name="_ValidationScriptsPartial" />
+<script>
+if (typeof $ !== 'undefined' && $.validator && $.validator.unobtrusive) {
+    $.validator.addMethod('mustbetrue', function (value, element) { return element.type === 'checkbox' ? element.checked : value === 'true'; });
+    $.validator.unobtrusive.adapters.addBool('mustbetrue');
+}
+</script>
+}

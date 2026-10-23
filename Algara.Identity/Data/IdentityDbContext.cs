@@ -17,9 +17,16 @@ namespace Algara.Identity.Data
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<AccessAuditEvent> AccessAuditEvents { get; set; }
+        public DbSet<SmtpConfiguration> SmtpConfigurations { get; set; }
+        public DbSet<SmtpSettingsAuditEvent> SmtpSettingsAuditEvents { get; set; }
+        public DbSet<AccountEmailToken> AccountEmailTokens { get; set; }
+        public DbSet<AccountEmailAuditEvent> AccountEmailAuditEvents { get; set; }
+        public DbSet<EmailOutboxMessage> EmailOutboxMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            AccountEmailMapping.Configure(modelBuilder);
+            EmailOutboxMapping.Configure(modelBuilder);
             modelBuilder.Entity<ApplicationUser>()
                 .HasKey(u => u.N); // Казваме, че Primary Key е N
 
@@ -64,6 +71,37 @@ namespace Algara.Identity.Data
                 b.Property(e => e.Action).HasMaxLength(100).IsRequired();
                 b.Property(e => e.Target).HasMaxLength(256).IsRequired();
                 b.Property(e => e.TargetName).HasMaxLength(256).IsRequired();
+                b.Property(e => e.BeforeJson).IsRequired();
+                b.Property(e => e.AfterJson).IsRequired();
+                b.HasIndex(e => e.OccurredAtUtc);
+            });
+            modelBuilder.Entity<SmtpConfiguration>(b =>
+            {
+                b.ToTable("SmtpConfigurations", table =>
+                {
+                    table.HasCheckConstraint("CK_SmtpConfigurations_Singleton", "[Id] = 1");
+                    table.HasCheckConstraint("CK_SmtpConfigurations_Port", "[Port] BETWEEN 1 AND 65535");
+                    table.HasCheckConstraint("CK_SmtpConfigurations_SecurityMode", "[SecurityMode] IN (1, 2)");
+                    table.HasCheckConstraint("CK_SmtpConfigurations_SecurePort", "([Port] <> 465 OR [SecurityMode] = 2) AND ([Port] <> 587 OR [SecurityMode] = 1)");
+                    table.HasCheckConstraint("CK_SmtpConfigurations_EnabledPassword", "[Enabled] = 0 OR ([ProtectedPassword] IS NOT NULL AND LEN([ProtectedPassword]) > 0)");
+                });
+                b.HasKey(c => c.Id);
+                b.Property(c => c.Id).ValueGeneratedNever();
+                b.Property(c => c.Host).HasMaxLength(253).IsRequired();
+                b.Property(c => c.Username).HasMaxLength(256).IsRequired();
+                b.Property(c => c.FromEmail).HasMaxLength(256).IsRequired();
+                b.Property(c => c.FromName).HasMaxLength(200).IsRequired();
+                b.Property(c => c.PublicSiteUrl).HasMaxLength(2048).IsRequired();
+                b.Property(c => c.ProtectedPassword).HasMaxLength(8192);
+                b.Property(c => c.RowVersion).IsRowVersion();
+            });
+            modelBuilder.Entity<SmtpSettingsAuditEvent>(b =>
+            {
+                b.HasKey(e => e.Id);
+                b.Property(e => e.Id).UseIdentityColumn();
+                b.Property(e => e.ActorId).HasMaxLength(128).IsRequired();
+                b.Property(e => e.ActorName).HasMaxLength(256).IsRequired();
+                b.Property(e => e.Action).HasMaxLength(50).IsRequired();
                 b.Property(e => e.BeforeJson).IsRequired();
                 b.Property(e => e.AfterJson).IsRequired();
                 b.HasIndex(e => e.OccurredAtUtc);
