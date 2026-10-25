@@ -28,6 +28,9 @@ namespace Algara.Identity.Models
         public bool RequireEmailConfirmation { get; set; }
         public DateTime? EmailConfirmedAtUtc { get; set; }
 
+        // Only service-imposed suspension is reversible; ordinary inactive/deleted users have no marker.
+        public DateTime? AccessSuspendedAtUtc { get; set; }
+
         /// <summary>
         /// Runtime cache на ролите — зарежда се от UserRoles таблицата, не се пази в Users.
         /// </summary>

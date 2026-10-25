@@ -30,6 +30,9 @@ namespace Algara.Identity.Data
             modelBuilder.Entity<ApplicationUser>()
                 .HasKey(u => u.N); // Казваме, че Primary Key е N
 
+            modelBuilder.Entity<ApplicationUser>().ToTable("Users", table =>
+                table.HasCheckConstraint("CK_Users_AccessSuspendedInactive", "[AccessSuspendedAtUtc] IS NULL OR [IsActive] = 0"));
+
             // Non-clustered index за Id
             modelBuilder.Entity<ApplicationUser>()
                 .HasIndex(u => u.Id, "IX_Users_Id") // Дава име на индекса

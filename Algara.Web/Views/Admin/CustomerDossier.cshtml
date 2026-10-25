@@ -16,7 +16,11 @@
     string ActionLabel(string action) => action switch
     {
         "NoteAdded" => "Добавена служебна бележка", "PartnerLinked" => "Свързване с контрагент",
-        "PartnerUnlinked" => "Прекратяване на връзка", _ => "Промяна в досието"
+        "PartnerUnlinked" => "Прекратяване на връзка", "ProfileUpdated" => "Промяна на профилните данни",
+        "AddressCreated" => "Добавен адрес", "AddressUpdated" => "Променен адрес", "AddressDeleted" => "Изтрит адрес",
+        "DefaultAddressChanged" => "Сменен основен адрес", "AccountUnlocked" => "Отключени опити за вход",
+        "AccessSuspended" => "Спрян достъп", "AccessRestored" => "Възстановен достъп",
+        "SessionRevoked" => "Прекратена сесия", "AllSessionsRevoked" => "Прекратени всички сесии", _ => "Промяна в досието"
     };
     string VerificationLabel(string? method) => method switch
     {
@@ -28,13 +32,23 @@
 <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
     <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-secondary">Към потребителите</a>
     <h2 class="h5 mb-0 flex-grow-1">@customerName <span class="text-muted fw-normal">· акаунт #@customer.N</span></h2>
-    <span class="badge @(customer.IsActive ? "bg-success" : "bg-secondary")">@(customer.IsActive ? "Активен" : "Неактивен")</span>
+    <span class="badge @(customer.IsActive ? "bg-success" : "bg-secondary")">@(customer.IsActive ? "Активен" : customer.AccessSuspendedAtUtc.HasValue ? "Достъпът е спрян" : "Неактивен")</span>
     <a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-sm btn-outline-secondary">Презареди досието</a>
 </div>
 <div asp-validation-summary="All" class="alert alert-danger"></div>
 @if (!customer.IsActive)
 {
-    <div class="alert alert-secondary">Акаунтът е неактивен. Ново свързване с контрагент е възможно само за активен акаунт.</div>
+    <div class="alert alert-secondary">
+        @if (customer.AccessSuspendedAtUtc.HasValue)
+        {
+            <span>Достъпът е спрян служебно на @customer.AccessSuspendedAtUtc.Value.ToString("dd.MM.yyyy HH:mm") UTC. Може да бъде възстановен от служител с необходимото право.</span>
+        }
+        else
+        {
+            <span>Акаунтът е неактивен и не подлежи на възстановяване от това досие.</span>
+        }
+        <span> Ново свързване с контрагент е възможно само за активен акаунт.</span>
+    </div>
 }
 
 <div class="row g-3">
@@ -81,6 +95,28 @@
                         <div class="fw-semibold">@address.FirstName @address.LastName @if (address.IsDefault) { <span class="badge bg-light text-dark">Основен</span> }</div>
                         <div>@Address(address.AddressLine1, address.AddressLine2, address.PostalCode, address.City, address.Country)</div>
                         <div class="small text-muted text-break">@Address(address.PhoneNumber, address.Email)</div>
+                        @if (Model.CanManageAddresses)
+                        {
+                            var retained = Model.AddressActionForm.AddressN == address.N;
+                            <a asp-action="Dossier" asp-route-n="@customer.N" asp-route-editAddressN="@address.N" asp-fragment="address-editor" class="btn btn-sm btn-outline-primary mt-2">Редактирай адреса</a>
+                            <details class="mt-2">
+                                <summary class="small">Основен адрес / изтриване</summary>
+                                <form asp-action="DeleteAddress" asp-route-n="@customer.N" method="post" class="mt-2">
+                                    <input type="hidden" name="AddressActionForm.AddressN" value="@address.N" />
+                                    <input type="hidden" name="AddressActionForm.ExpectedAccountVersion" value="@(retained ? Model.AddressActionForm.ExpectedAccountVersion : Model.AddressForm.ExpectedAccountVersion)" />
+                                    <input type="hidden" name="AddressActionForm.ExpectedAddressesVersion" value="@(retained ? Model.AddressActionForm.ExpectedAddressesVersion : Model.AddressForm.ExpectedAddressesVersion)" />
+                                    <label for="address-reason-@address.N" class="form-label small">Основание *</label>
+                                    <textarea id="address-reason-@address.N" name="AddressActionForm.Reason" class="form-control form-control-sm mb-2" rows="2" maxlength="2000" required>@(retained ? Model.AddressActionForm.Reason : null)</textarea>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @if (!address.IsDefault)
+                                        {
+                                            <button type="submit" asp-action="SetDefaultAddress" asp-route-n="@customer.N" class="btn btn-sm btn-outline-primary">Направи основен</button>
+                                        }
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Изтрий адреса</button>
+                                    </div>
+                                </form>
+                            </details>
+                        }
                     </div>
                 }
                 @if (Model.Addresses.Count == 0 && string.IsNullOrEmpty(profileAddress))
@@ -99,6 +135,8 @@
         </section>
     </div>
 </div>
+
+<partial name="~/Views/Admin/_CustomerManagement.cshtml" model="Model" />
 
 @if (Model.CanViewPartners)
 {
@@ -299,11 +337,29 @@
                     {
                         <p class="mb-0 mt-2 text-break" style="white-space:pre-wrap">@item.Note</p>
                     }
-                    else
+                    else if (item.Action is "PartnerLinked" or "PartnerUnlinked")
                     {
                         <div class="small mt-2">Преди: @(item.BeforePartner ?? "Без връзка")</div>
                         <div class="small">След: @(item.AfterPartner ?? "Без връзка")</div>
                         @if (!string.IsNullOrWhiteSpace(item.VerificationMethod)) { <div class="small">Проверка: @VerificationLabel(item.VerificationMethod)</div> }
+                        <p class="mb-0 mt-2 text-break" style="white-space:pre-wrap">@item.Reason</p>
+                    }
+                    else
+                    {
+                        @if (item.Changes.Count > 0)
+                        {
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm small mb-2">
+                                    <thead><tr><th>Поле</th><th>Преди</th><th>След</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var change in item.Changes)
+                                        {
+                                            <tr><th scope="row">@change.Label</th><td class="text-break">@change.Before</td><td class="text-break">@change.After</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
                         <p class="mb-0 mt-2 text-break" style="white-space:pre-wrap">@item.Reason</p>
                     }
                 </article>

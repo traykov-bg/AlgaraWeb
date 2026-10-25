@@ -32,7 +32,9 @@ public static class PermissionCatalog
     {
         public const string View = "Users.View", ViewDossier = "Users.ViewDossier", AddNotes = "Users.AddNotes",
             ManagePartnerLinks = "Users.ManagePartnerLinks", ViewDossierHistory = "Users.ViewDossierHistory",
-            SendAccountEmails = "Users.SendAccountEmails", ManageInvitations = "Users.ManageInvitations";
+            SendAccountEmails = "Users.SendAccountEmails", ManageInvitations = "Users.ManageInvitations",
+            EditProfile = "Users.EditProfile", ManageAddresses = "Users.ManageAddresses", Unlock = "Users.Unlock",
+            SuspendAccess = "Users.SuspendAccess", ViewSessions = "Users.ViewSessions", RevokeSessions = "Users.RevokeSessions";
     }
     public static class Access { public const string AssignRoles = "Access.AssignRoles", ManagePermissions = "Access.ManagePermissions", ViewHistory = "Access.ViewHistory"; }
     public static class Settings { public const string Manage = "Settings.Manage"; }
@@ -55,6 +57,12 @@ public static class PermissionCatalog
         new(Users.ViewDossierHistory,"Потребители","Преглед на историята на досието"),
         new(Users.SendAccountEmails,"Потребители","Изпращане на имейли за достъп"),
         new(Users.ManageInvitations,"Потребители","Покани за клиентски акаунт"),
+        new(Users.EditProfile,"Потребители","Редакция на имена и телефон"),
+        new(Users.ManageAddresses,"Потребители","Управление на адреси"),
+        new(Users.Unlock,"Потребители","Отключване след неуспешни входове"),
+        new(Users.SuspendAccess,"Потребители","Временно спиране и възстановяване на достъпа"),
+        new(Users.ViewSessions,"Потребители","Преглед на сесии"),
+        new(Users.RevokeSessions,"Потребители","Прекратяване на сесии"),
         new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
         new(Access.ManagePermissions,"Достъп","Матрица на правата",true), new(Access.ViewHistory,"Достъп","Преглед на историята"),
         new(Settings.Manage,"Настройки","Критични настройки",true)
@@ -62,10 +70,16 @@ public static class PermissionCatalog
 
     public static PermissionDefinition? Find(string key) => All.FirstOrDefault(p => p.Key == key);
 
+    public static bool RequiresCustomerDossier(string key) => key is
+        Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or
+        Users.ManageInvitations or Users.EditProfile or Users.ManageAddresses or Users.Unlock or
+        Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions;
+
     // Dossier rights require an explicit grant, including for future staff-role defaults.
     public static IReadOnlyList<string> DefaultGrants(string role) => All
         .Where(p => role == StaffRoles.Admin || p.Key is not
-            (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or Users.ManageInvitations))
+            (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or Users.ManageInvitations or
+             Users.EditProfile or Users.ManageAddresses or Users.Unlock or Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions))
         .Where(p => role switch
     {
         StaffRoles.Admin => true,

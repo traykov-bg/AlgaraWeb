@@ -16,7 +16,13 @@ public sealed class CustomerDossierPermissionTests
         PermissionCatalog.Users.ViewDossier,
         PermissionCatalog.Users.AddNotes,
         PermissionCatalog.Users.ManagePartnerLinks,
-        PermissionCatalog.Users.ViewDossierHistory
+        PermissionCatalog.Users.ViewDossierHistory,
+        PermissionCatalog.Users.EditProfile,
+        PermissionCatalog.Users.ManageAddresses,
+        PermissionCatalog.Users.Unlock,
+        PermissionCatalog.Users.SuspendAccess,
+        PermissionCatalog.Users.ViewSessions,
+        PermissionCatalog.Users.RevokeSessions
     };
 
     [Theory]
@@ -74,11 +80,28 @@ public sealed class CustomerDossierPermissionTests
     [InlineData(PermissionCatalog.Users.AddNotes)]
     [InlineData(PermissionCatalog.Users.ManagePartnerLinks)]
     [InlineData(PermissionCatalog.Users.ViewDossierHistory)]
+    [InlineData(PermissionCatalog.Users.EditProfile)]
+    [InlineData(PermissionCatalog.Users.ManageAddresses)]
+    [InlineData(PermissionCatalog.Users.Unlock)]
+    [InlineData(PermissionCatalog.Users.SuspendAccess)]
+    [InlineData(PermissionCatalog.Users.ViewSessions)]
+    [InlineData(PermissionCatalog.Users.RevokeSessions)]
     public async Task DossierActionsWithoutDossierView_AreRejectedBeforeDatabaseAccess(string key)
     {
         using var db = new IdentityDbContext(new DbContextOptions<IdentityDbContext>());
         var result = await new AccessManagementService(db).SaveRolePermissionsAsync(
             new ClaimsPrincipal(), StaffRoles.Moderator, [PermissionCatalog.Users.View, PermissionCatalog.Partners.View, key], 0);
+        Assert.False(result.Succeeded);
+        Assert.False(result.Changed);
+        Assert.NotEmpty(result.Error!);
+    }
+
+    [Fact]
+    public async Task SessionRevocationWithoutSessionView_IsRejectedBeforeDatabaseAccess()
+    {
+        using var db = new IdentityDbContext(new DbContextOptions<IdentityDbContext>());
+        var result = await new AccessManagementService(db).SaveRolePermissionsAsync(new ClaimsPrincipal(), StaffRoles.Moderator,
+            [PermissionCatalog.Users.View, PermissionCatalog.Users.ViewDossier, PermissionCatalog.Users.RevokeSessions], 0);
         Assert.False(result.Succeeded);
         Assert.False(result.Changed);
         Assert.NotEmpty(result.Error!);

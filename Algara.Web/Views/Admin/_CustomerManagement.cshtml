@@ -1,0 +1,137 @@
+﻿@model Algara.Web.ViewModels.Admin.CustomerDossierViewModel
+@{
+    var customer = Model.Customer;
+}
+@if (Model.IsProtectedStaffTarget)
+{
+    <div class="alert alert-secondary mt-3">Промените по служебни акаунти и прегледът на техните сесии са достъпни само за Администратор.</div>
+}
+<div class="row g-3 mt-0">
+    @if (Model.CanEditProfile)
+    {
+        <div class="col-lg-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white"><h3 class="h6 mb-0">Редакция на профилните данни</h3></div>
+                <form asp-action="EditProfile" asp-route-n="@customer.N" method="post" class="card-body">
+                    <input asp-for="ProfileForm.ExpectedAccountVersion" type="hidden" />
+                    <div class="row g-3">
+                        <div class="col-sm-6"><label asp-for="ProfileForm.FirstName" class="form-label">Име *</label><input asp-for="ProfileForm.FirstName" class="form-control" maxlength="100" required /></div>
+                        <div class="col-sm-6"><label asp-for="ProfileForm.LastName" class="form-label">Фамилия *</label><input asp-for="ProfileForm.LastName" class="form-control" maxlength="100" required /></div>
+                        <div class="col-12"><label asp-for="ProfileForm.PhoneNumber" class="form-label">Телефон</label><input asp-for="ProfileForm.PhoneNumber" class="form-control" maxlength="40" /></div>
+                        <div class="col-12"><label asp-for="ProfileForm.Reason" class="form-label">Основание *</label><textarea asp-for="ProfileForm.Reason" class="form-control" maxlength="2000" rows="2" required></textarea></div>
+                    </div>
+                    <p class="form-text">Това са данните на акаунта. Контактите на свързания контрагент се редактират в неговото досие.</p>
+                    <button type="submit" class="btn btn-primary">Запази профилните данни</button>
+                </form>
+            </section>
+        </div>
+    }
+    @if (Model.CanUnlock || Model.CanSuspendAccess || Model.CanRestoreAccess)
+    {
+        <div class="col-lg-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white"><h3 class="h6 mb-0">Управление на достъпа</h3></div>
+                <div class="card-body">
+                    @if (Model.CanUnlock && (customer.LockoutUntil.HasValue || customer.FailedLoginAttempts > 0))
+                    {
+                        <form asp-action="Unlock" asp-route-n="@customer.N" method="post" class="mb-4">
+                            <input asp-for="UnlockForm.ExpectedAccountVersion" type="hidden" />
+                            <p class="small">Премахва блокирането и брояча за неуспешни опити за вход. При спрян достъп е нужно отделно възстановяване.</p>
+                            <label asp-for="UnlockForm.Reason" class="form-label">Основание за отключване *</label>
+                            <textarea asp-for="UnlockForm.Reason" class="form-control mb-2" rows="2" maxlength="2000" required></textarea>
+                            <button type="submit" class="btn btn-outline-primary">Отключи опитите за вход</button>
+                        </form>
+                    }
+                    else if (Model.CanUnlock)
+                    {
+                        <p class="small text-muted">Няма записано блокиране или неуспешни опити за премахване.</p>
+                    }
+                    @if (Model.CanSuspendAccess || Model.CanRestoreAccess)
+                    {
+                        <form asp-action="@(Model.CanRestoreAccess ? "RestoreAccess" : "SuspendAccess")" asp-route-n="@customer.N" method="post">
+                            <input asp-for="AccessForm.ExpectedAccountVersion" type="hidden" />
+                            @if (Model.CanRestoreAccess)
+                            {
+                                <p class="small">Възстановява спрения служебно достъп. Клиентът ще трябва да влезе отново.</p>
+                            }
+                            else
+                            {
+                                <p class="small">Спира новите влизания и прекратява сесиите. Профилът, адресите и историята се запазват.</p>
+                            }
+                            <label asp-for="AccessForm.Reason" class="form-label">Основание *</label>
+                            <textarea asp-for="AccessForm.Reason" class="form-control mb-2" rows="2" maxlength="2000" required></textarea>
+                            <button type="submit" class="btn @(Model.CanRestoreAccess ? "btn-outline-success" : "btn-outline-danger")">@(Model.CanRestoreAccess ? "Възстанови достъпа" : "Спри достъпа")</button>
+                        </form>
+                    }
+                </div>
+            </section>
+        </div>
+    }
+</div>
+
+@if (Model.CanManageAddresses)
+{
+    <section class="card border-0 shadow-sm mt-3" id="address-editor">
+        <div class="card-header bg-white"><h3 class="h6 mb-0">@(Model.AddressForm.N.HasValue ? "Редакция на адрес" : "Добавяне на адрес")</h3></div>
+        <form asp-action="SaveAddress" asp-route-n="@customer.N" method="post" class="card-body">
+            <input asp-for="AddressForm.N" type="hidden" />
+            <input asp-for="AddressForm.ExpectedAccountVersion" type="hidden" />
+            <input asp-for="AddressForm.ExpectedAddressesVersion" type="hidden" />
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="AddressForm.FirstName" class="form-label">Име *</label><input asp-for="AddressForm.FirstName" class="form-control" maxlength="100" required /></div>
+                <div class="col-md-4"><label asp-for="AddressForm.LastName" class="form-label">Фамилия *</label><input asp-for="AddressForm.LastName" class="form-control" maxlength="100" required /></div>
+                <div class="col-md-4"><label asp-for="AddressForm.PhoneNumber" class="form-label">Телефон</label><input asp-for="AddressForm.PhoneNumber" class="form-control" maxlength="40" /></div>
+                <div class="col-md-6"><label asp-for="AddressForm.Email" class="form-label">Имейл за адреса *</label><input asp-for="AddressForm.Email" class="form-control" maxlength="256" required /></div>
+                <div class="col-md-6"><label asp-for="AddressForm.Country" class="form-label">Държава *</label><input asp-for="AddressForm.Country" class="form-control" maxlength="100" required /></div>
+                <div class="col-md-8"><label asp-for="AddressForm.AddressLine1" class="form-label">Адрес *</label><input asp-for="AddressForm.AddressLine1" class="form-control" maxlength="250" required /></div>
+                <div class="col-md-4"><label asp-for="AddressForm.AddressLine2" class="form-label">Допълнение към адреса</label><input asp-for="AddressForm.AddressLine2" class="form-control" maxlength="250" /></div>
+                <div class="col-md-8"><label asp-for="AddressForm.City" class="form-label">Град *</label><input asp-for="AddressForm.City" class="form-control" maxlength="100" required /></div>
+                <div class="col-md-4"><label asp-for="AddressForm.PostalCode" class="form-label">Пощенски код</label><input asp-for="AddressForm.PostalCode" class="form-control" maxlength="20" /></div>
+                <div class="col-12"><div class="form-check"><input asp-for="AddressForm.IsDefault" class="form-check-input" /><label asp-for="AddressForm.IsDefault" class="form-check-label">Основен адрес</label></div><p class="form-text mb-0">За смяна на основния адрес изберете друг адрес за основен.</p></div>
+                <div class="col-12"><label asp-for="AddressForm.Reason" class="form-label">Основание *</label><textarea asp-for="AddressForm.Reason" class="form-control" maxlength="2000" rows="2" required></textarea></div>
+            </div>
+            <div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-primary">@(Model.AddressForm.N.HasValue ? "Запази адреса" : "Добави адреса")</button><a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-outline-secondary">Презареди и изчисти формата</a></div>
+        </form>
+    </section>
+}
+
+@if (Model.CanViewSessions)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="sessions-title">
+        <div class="card-header bg-white"><h3 id="sessions-title" class="h6 mb-0">Сесии на акаунта</h3></div>
+        <div class="card-body">
+            <p class="small text-muted">„Непрекратена“ означава, че сесията не е отнета. Това не показва дали клиентът е онлайн или дали браузърът още пази достъпа.</p>
+            <p class="small text-muted">Показват се до 200 сесии, първо непрекратените и най-новите. „Прекрати всички“ обхваща и сесиите извън този списък.</p>
+            @foreach (var session in Model.Sessions)
+            {
+                var retained = Model.SessionForm.SessionN == session.Id;
+                <article class="border rounded p-3 mb-2">
+                    <div class="d-flex flex-wrap gap-2 align-items-center"><strong>Сесия #@session.Id</strong><span class="badge @(session.IsActive ? "bg-light text-dark" : "bg-secondary")">@(session.IsActive ? "Непрекратена" : "Прекратена")</span>@if (session.IsCurrent) { <span class="badge bg-info text-dark">Текущата сесия</span> }</div>
+                    <div class="small text-muted mt-1">Създадена: @session.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                    @if (!string.IsNullOrWhiteSpace(session.DeviceInfo)) { <div class="small text-break">@session.DeviceInfo</div> }
+                    @if (Model.CanRevokeSessions && session.IsActive)
+                    {
+                        <form asp-action="RevokeSession" asp-route-n="@customer.N" method="post" class="mt-2">
+                            <input type="hidden" name="SessionForm.SessionN" value="@session.Id" />
+                            <input type="hidden" name="SessionForm.ExpectedAccountVersion" value="@Model.SessionForm.ExpectedAccountVersion" />
+                            <input type="hidden" name="SessionForm.ExpectedSessionVersion" value="@(retained ? Model.SessionForm.ExpectedSessionVersion : session.Version)" />
+                            <label for="session-reason-@session.Id" class="form-label small">Основание *</label>
+                            <input id="session-reason-@session.Id" name="SessionForm.Reason" class="form-control form-control-sm mb-2" value="@(retained ? Model.SessionForm.Reason : null)" maxlength="2000" required />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Прекрати тази сесия</button>
+                        </form>
+                    }
+                </article>
+            }
+            @if (Model.Sessions.Count == 0) { <p class="text-muted">Няма записани сесии.</p> }
+            @if (Model.CanRevokeSessions && Model.Sessions.Any(s => s.IsActive))
+            {
+                <form asp-action="RevokeAllSessions" asp-route-n="@customer.N" method="post" class="border-top pt-3 mt-3">
+                    <input asp-for="RevokeAllForm.ExpectedAccountVersion" type="hidden" />
+                    <label asp-for="RevokeAllForm.Reason" class="form-label">Основание за прекратяване на всички сесии *</label>
+                    <textarea asp-for="RevokeAllForm.Reason" class="form-control mb-2" maxlength="2000" rows="2" required></textarea>
+                    <button type="submit" class="btn btn-outline-danger">Прекрати всички сесии</button>
+                </form>
+            }
+        </div>
+    </section>
+}

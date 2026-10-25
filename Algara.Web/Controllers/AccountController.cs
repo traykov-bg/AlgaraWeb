@@ -6,6 +6,7 @@ using Algara.Identity.Services;
 using Algara.Identity.Authorization;
 using Algara.Web.ViewModels;
 using Algara.Web.Services.Email;
+using Algara.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -22,17 +23,20 @@ namespace Algara.Web.Controllers
         private readonly IdentityDbContext _identityDb;
         private readonly IOrderRepository _orderRepository;
         private readonly IAccountEmailService _accountEmail;
+        private readonly ICustomerManagementService _customerManagement;
 
         public AccountController(
             IUserService userService,
             IdentityDbContext identityDb,
             IOrderRepository orderRepository,
-            IAccountEmailService accountEmail)
+            IAccountEmailService accountEmail,
+            ICustomerManagementService customerManagement)
         {
             _userService = userService;
             _identityDb = identityDb;
             _orderRepository = orderRepository;
             _accountEmail = accountEmail;
+            _customerManagement = customerManagement;
         }
 
         [HttpGet]
@@ -203,13 +207,18 @@ namespace Algara.Web.Controllers
             if (!ModelState.IsValid)
                 return View("Profile", await BuildProfileViewModelAsync(user, details: details));
 
-            user.FirstName = details.FirstName.Trim();
-            user.LastName = details.LastName.Trim();
-            user.FullName = $"{user.FirstName} {user.LastName}".Trim();
-            user.DisplayName = user.FullName;
-            user.PhoneNumber = NormalizeOptional(details.PhoneNumber);
-
-            await _identityDb.SaveChangesAsync();
+            var result = await _customerManagement.EditOwnProfileAsync(User, new CustomerProfileUpdate
+            {
+                ExpectedAccountVersion = details.ExpectedVersion,
+                FirstName = details.FirstName,
+                LastName = details.LastName,
+                PhoneNumber = details.PhoneNumber
+            }, HttpContext.RequestAborted);
+            if (!result.Success)
+            {
+                ModelState.AddModelError(string.Empty, result.Error ?? "Профилът не е обновен. Презаредете страницата и опитайте отново.");
+                return View("Profile", await BuildProfileViewModelAsync(user, details: details, activeTab: "details"));
+            }
             TempData["ProfileStatus"] = "Профилът е обновен.";
             return RedirectToAction(nameof(Profile), new { tab = "details" });
         }
@@ -226,48 +235,27 @@ namespace Algara.Web.Controllers
             if (!ModelState.IsValid)
                 return View("Profile", await BuildProfileViewModelAsync(user, address: address, activeTab: "addresses", showAddressModal: true));
 
-            UserAddress entity;
-            if (address.N.HasValue)
+            var result = await _customerManagement.SaveOwnAddressAsync(User, new CustomerAddressUpdate
             {
-                var existing = await _identityDb.UsersAddresses.FirstOrDefaultAsync(a => a.N == address.N.Value && a.UserN == user.N);
-                if (existing == null)
-                    return NotFound();
-                entity = existing;
-                entity.UpdatedAt = DateTime.Now;
-            }
-            else
+                N = address.N,
+                ExpectedAccountVersion = address.ExpectedAccountVersion,
+                ExpectedAddressesVersion = address.ExpectedVersion,
+                FirstName = address.FirstName,
+                LastName = address.LastName,
+                PhoneNumber = address.PhoneNumber,
+                Email = address.Email,
+                AddressLine1 = address.AddressLine1,
+                AddressLine2 = address.AddressLine2,
+                City = address.City,
+                PostalCode = address.PostalCode,
+                Country = address.Country,
+                IsDefault = address.IsDefault
+            }, HttpContext.RequestAborted);
+            if (!result.Success)
             {
-                entity = new UserAddress
-                {
-                    UserN = user.N,
-                    CreatedAt = DateTime.Now
-                };
-                _identityDb.UsersAddresses.Add(entity);
+                ModelState.AddModelError(string.Empty, result.Error ?? "Адресът не е записан. Презаредете страницата и опитайте отново.");
+                return View("Profile", await BuildProfileViewModelAsync(user, address: address, activeTab: "addresses", showAddressModal: true));
             }
-
-            entity.FirstName = address.FirstName.Trim();
-            entity.LastName = address.LastName.Trim();
-            entity.PhoneNumber = NormalizeOptional(address.PhoneNumber);
-            entity.Email = address.Email.Trim();
-            entity.AddressLine1 = address.AddressLine1.Trim();
-            entity.AddressLine2 = NormalizeOptional(address.AddressLine2);
-            entity.City = address.City.Trim();
-            entity.PostalCode = NormalizeOptional(address.PostalCode);
-            entity.Country = address.Country.Trim();
-
-            var hasOtherAddresses = await _identityDb.UsersAddresses
-                .AnyAsync(a => a.UserN == user.N && (!address.N.HasValue || a.N != address.N.Value));
-            entity.IsDefault = address.IsDefault || !hasOtherAddresses;
-            if (entity.IsDefault)
-            {
-                var otherDefaults = await _identityDb.UsersAddresses
-                    .Where(a => a.UserN == user.N && (!address.N.HasValue || a.N != address.N.Value))
-                    .ToListAsync();
-                foreach (var other in otherDefaults)
-                    other.IsDefault = false;
-            }
-
-            await _identityDb.SaveChangesAsync();
             TempData["ProfileStatus"] = address.N.HasValue ? "Адресът е обновен." : "Адресът е добавен.";
             return RedirectToAction(nameof(Profile), new { tab = "addresses" });
         }
@@ -275,31 +263,22 @@ namespace Algara.Web.Controllers
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteAddress(int n)
+        public async Task<IActionResult> DeleteAddress(int n, string? expectedVersion, string? expectedAccountVersion)
         {
             var user = await GetCurrentUserAsync();
             if (user == null)
                 return RedirectToAction(nameof(Login));
 
-            var address = await _identityDb.UsersAddresses.FirstOrDefaultAsync(a => a.N == n && a.UserN == user.N);
-            if (address == null)
-                return NotFound();
-
-            var wasDefault = address.IsDefault;
-            _identityDb.UsersAddresses.Remove(address);
-            await _identityDb.SaveChangesAsync();
-
-            if (wasDefault)
+            var result = await _customerManagement.DeleteOwnAddressAsync(User, new CustomerAddressAction
             {
-                var next = await _identityDb.UsersAddresses
-                    .Where(a => a.UserN == user.N)
-                    .OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt)
-                    .FirstOrDefaultAsync();
-                if (next != null)
-                {
-                    next.IsDefault = true;
-                    await _identityDb.SaveChangesAsync();
-                }
+                AddressN = n,
+                ExpectedAccountVersion = expectedAccountVersion,
+                ExpectedAddressesVersion = expectedVersion
+            }, HttpContext.RequestAborted);
+            if (!result.Success)
+            {
+                TempData["ProfileError"] = result.Error ?? "Адресът не е изтрит. Презаредете страницата и опитайте отново.";
+                return RedirectToAction(nameof(Profile), new { tab = "addresses" });
             }
 
             TempData["ProfileStatus"] = "Адресът е изтрит.";
@@ -324,7 +303,7 @@ namespace Algara.Web.Controllers
                 return View("Profile", await BuildProfileViewModelAsync(user, password: password, activeTab: "password"));
             }
 
-            if (!await _userService.ChangePasswordAsync(user.UserName, password.NewPassword))
+            if (!await _userService.ChangePasswordAsync(user.UserName, password.NewPassword, User))
             {
                 ModelState.AddModelError("Password.CurrentPassword", "Акаунтът е променен. Презаредете страницата и влезте отново.");
                 return View("Profile", await BuildProfileViewModelAsync(user, activeTab: "password"));
@@ -468,11 +447,14 @@ namespace Algara.Web.Controllers
                 .Select(ToProfileOrderRow)
                 .ToList();
             var (firstName, lastName) = ResolveProfileNames(user);
-            var addresses = await _identityDb.UsersAddresses
+            var addressEntities = await _identityDb.UsersAddresses.AsNoTracking()
                 .Where(a => a.UserN == user.N)
                 .OrderByDescending(a => a.IsDefault)
                 .ThenByDescending(a => a.UpdatedAt ?? a.CreatedAt)
-                .Select(a => new ProfileAddressViewModel
+                .ToListAsync();
+            var accountVersion = CustomerManagementVersions.Account(user);
+            var addressesVersion = CustomerManagementVersions.AddressBook(addressEntities);
+            var addresses = addressEntities.Select(a => new ProfileAddressViewModel
                 {
                     N = a.N,
                     FirstName = a.FirstName,
@@ -486,19 +468,29 @@ namespace Algara.Web.Controllers
                     Country = a.Country,
                     IsDefault = a.IsDefault
                 })
-                .ToListAsync();
+                .ToList();
+
+            if (address == null)
+            {
+                address = BuildDefaultAddressForm(user, firstName, lastName);
+                address.ExpectedVersion = addressesVersion;
+                address.ExpectedAccountVersion = accountVersion;
+            }
 
             return new ProfileViewModel
             {
+                AccountVersion = accountVersion,
+                AddressBookVersion = addressesVersion,
                 Details = details ?? new ProfileDetailsViewModel
                 {
+                    ExpectedVersion = accountVersion,
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = user.PhoneNumber,
                     Email = user.Email
                 },
                 Password = password ?? new ChangePasswordViewModel(),
-                Address = address ?? BuildDefaultAddressForm(user, firstName, lastName),
+                Address = address,
                 DeleteAccount = deleteAccount ?? new DeleteAccountViewModel(),
                 MarketingConsent = user.MarketingConsent,
                 ActiveTab = NormalizeProfileTab(activeTab),
@@ -582,9 +574,6 @@ namespace Algara.Web.Controllers
             OrderStatus.Cancelled => "bg-secondary",
             _ => "bg-light text-dark"
         };
-
-        private static string? NormalizeOptional(string? value)
-            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static AddressFormViewModel BuildDefaultAddressForm(ApplicationUser user, string firstName, string lastName) => new()
         {

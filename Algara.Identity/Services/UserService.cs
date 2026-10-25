@@ -131,12 +131,18 @@ namespace Algara.Identity.Services
 
         public async Task<bool> ValidateUserAsync(string username, string password)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await AcquireAccessLockAsync();
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
             if (user == null)
             {
                 _logger.LogWarning($"Неуспешен опит за вход с несъществуващо потребителско име: {username}");
                 return false;
             }
+            // A controller lookup may already track the user. Re-read inside the shared lock
+            // before checking credentials or changing counters, including after a staff unlock.
+            await _context.Entry(user).ReloadAsync();
+            if (_context.Entry(user).State == EntityState.Detached) return false;
             if (!user.IsActive)
             {
                 _logger.LogWarning($"Опит за вход в деактивиран акаунт: {username}");
@@ -166,6 +172,7 @@ namespace Algara.Identity.Services
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return false;
             }
 
@@ -176,6 +183,7 @@ namespace Algara.Identity.Services
             user.FailedLoginAttempts = 0;
             user.LockoutUntil = null;
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             _logger.LogInformation($"Успешен вход за {username}");
             return true;
@@ -202,7 +210,7 @@ namespace Algara.Identity.Services
             ));
         }
 
-        public async Task<bool> ChangePasswordAsync(string username, string newPassword)
+        public async Task<bool> ChangePasswordAsync(string username, string newPassword, ClaimsPrincipal actor)
         {
             if (newPassword?.Length is not (>= 6 and <= 1024)) return false;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
@@ -211,6 +219,9 @@ namespace Algara.Identity.Services
             // The caller verified the current password against this tracked version. A reset or
             // access change between that verification and this write must force a fresh login.
             var expectedStamp = user.SecurityStamp;
+            var sessionKey = actor.FindFirstValue("SessionId");
+            if (actor.Identity?.IsAuthenticated != true || actor.FindFirstValue(ClaimTypes.NameIdentifier) != user.Id ||
+                actor.FindFirstValue("SecurityStamp") != expectedStamp || string.IsNullOrEmpty(sessionKey)) return false;
             try
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -222,6 +233,8 @@ namespace Algara.Identity.Services
                 await _context.Entry(user).ReloadAsync();
                 if (_context.Entry(user).State == EntityState.Detached || user.SecurityStamp != expectedStamp ||
                     !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed)) return false;
+                if (!await _context.UserSessions.AsNoTracking().AnyAsync(s =>
+                    s.UserN == user.N && s.SessionId == sessionKey && s.IsActive)) return false;
 
                 var credential = AccountPasswordCodec.Create(newPassword);
                 user.PasswordHash = credential.Hash;
@@ -296,6 +309,12 @@ namespace Algara.Identity.Services
             if (user.SecurityStamp == null || !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
                 throw new InvalidOperationException("The account is not eligible to sign in.");
             var expectedStamp = user.SecurityStamp;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await _context.Database.ExecuteSqlRawAsync("""
+                DECLARE @result int;
+                EXEC @result = sys.sp_getapplock @Resource=N'Algara.AccessManagement', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+                IF @result < 0 THROW 51004, 'Access management is busy.', 1;
+                """);
             await _context.Entry(user).ReloadAsync();
             if (_context.Entry(user).State == EntityState.Detached || user.SecurityStamp != expectedStamp ||
                 !user.IsActive || (user.RequireEmailConfirmation && !user.EmailConfirmed))
@@ -350,6 +369,7 @@ namespace Algara.Identity.Services
                 ExpiresUtc = rememberMe ? DateTime.UtcNow.AddDays(14) : DateTime.UtcNow.AddMinutes(30)
             };
 
+            await transaction.CommitAsync();
             await httpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
@@ -479,12 +499,16 @@ namespace Algara.Identity.Services
 
         public async Task ForceSignOutAllSessionsAsync(string userId)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await AcquireAccessLockAsync();
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
             {
                 _logger.LogWarning($"Опит за принудително излизане на несъществуващ потребител с ID: {userId}");
                 return;
             }
+            await _context.Entry(user).ReloadAsync();
+            if (_context.Entry(user).State == EntityState.Detached) return;
 
             // Деактивираме всички сесии
             var sessions = await _context.UserSessions.Where(us => us.UserN == user.N).ToListAsync();
@@ -497,6 +521,13 @@ namespace Algara.Identity.Services
             user.SecurityStamp = Guid.NewGuid().ToString();
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
+
+        private Task<int> AcquireAccessLockAsync() => _context.Database.ExecuteSqlRawAsync("""
+            DECLARE @result int;
+            EXEC @result = sys.sp_getapplock @Resource=N'Algara.AccessManagement', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+            IF @result < 0 THROW 51004, 'Access management is busy.', 1;
+            """);
     }
 }

@@ -7,6 +7,7 @@ using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Algara.Web.Controllers;
 using Algara.Web.Services.Email;
+using Algara.Web.Services;
 using Algara.Web.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,13 +25,14 @@ public sealed class AccountControllerTests : IDisposable
     private readonly Mock<IUserService> _users = new(MockBehavior.Strict);
     private readonly Mock<IOrderRepository> _orders = new(MockBehavior.Strict);
     private readonly Mock<IAccountEmailService> _email = new(MockBehavior.Strict);
+    private readonly Mock<ICustomerManagementService> _customerManagement = new(MockBehavior.Strict);
     private readonly IdentityDbContext _identityDb = new(new DbContextOptions<IdentityDbContext>());
     private readonly DefaultHttpContext _http = new();
     private readonly AccountController _controller;
 
     public AccountControllerTests()
     {
-        _controller = new AccountController(_users.Object, _identityDb, _orders.Object, _email.Object)
+        _controller = new AccountController(_users.Object, _identityDb, _orders.Object, _email.Object, _customerManagement.Object)
         {
             ControllerContext = new ControllerContext { HttpContext = _http, RouteData = new RouteData() }
         };

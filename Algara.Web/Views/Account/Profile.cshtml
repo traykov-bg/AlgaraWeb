@@ -105,6 +105,8 @@
                             <form asp-action="DeleteAddress" method="post" class="d-inline js-delete-address">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="n" value="@address.N" />
+                                <input type="hidden" name="expectedVersion" value="@Model.AddressBookVersion" />
+                                <input type="hidden" name="expectedAccountVersion" value="@Model.AccountVersion" />
                                 <button type="submit" class="btn btn-sm btn-link algara-icon-action text-danger" title="Изтрий">
                                     <i class="bi bi-trash3"></i>
                                 </button>
@@ -145,6 +147,7 @@
                 </div>
                 <form asp-action="UpdateProfile" method="post" class="row g-3 algara-profile-form algara-profile-form--details">
                     @Html.AntiForgeryToken()
+                    <input asp-for="Details.ExpectedVersion" type="hidden" />
                     <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
 
                     <div class="col-md-6">
@@ -269,6 +272,8 @@
                 </div>
 
                 <input asp-for="Address.N" type="hidden" />
+                <input asp-for="Address.ExpectedVersion" type="hidden" />
+                <input asp-for="Address.ExpectedAccountVersion" type="hidden" />
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label asp-for="Address.FirstName" class="form-label"></label>

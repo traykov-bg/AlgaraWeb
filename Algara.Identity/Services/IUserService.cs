@@ -20,7 +20,7 @@ public interface IUserService
 
     // Пароли
     Task<bool> VerifyPasswordAsync(string username, string password);
-    Task<bool> ChangePasswordAsync(string username, string newPassword);
+    Task<bool> ChangePasswordAsync(string username, string newPassword, ClaimsPrincipal actor);
 
     // Роли
     Task<IList<string>> GetRolesAsync(ApplicationUser user);

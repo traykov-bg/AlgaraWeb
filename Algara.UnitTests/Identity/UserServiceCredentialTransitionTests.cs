@@ -1,4 +1,5 @@
-﻿using Algara.Identity.Models;
+﻿using System.Security.Claims;
+using Algara.Identity.Models;
 using Algara.Identity.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -47,7 +48,7 @@ public sealed class UserServiceCredentialTransitionTests
         using var context = new IdentityServiceTestContext([user]);
 
         var changed = await new UserService(context, NullLogger<UserService>.Instance)
-            .ChangePasswordAsync(user.UserName, "new-password");
+            .ChangePasswordAsync(user.UserName, "new-password", new ClaimsPrincipal());
 
         Assert.False(changed);
         Assert.Equal(originalHash, user.PasswordHash);
@@ -63,7 +64,7 @@ public sealed class UserServiceCredentialTransitionTests
     {
         using var context = new IdentityServiceTestContext([User()]);
         Assert.False(await new UserService(context, NullLogger<UserService>.Instance)
-            .ChangePasswordAsync("customer@example.test", password!));
+            .ChangePasswordAsync("customer@example.test", password!, new ClaimsPrincipal()));
         Assert.Equal(0, context.SaveCount);
     }
 
@@ -72,7 +73,7 @@ public sealed class UserServiceCredentialTransitionTests
     {
         using var context = new IdentityServiceTestContext([User()]);
         Assert.False(await new UserService(context, NullLogger<UserService>.Instance)
-            .ChangePasswordAsync("customer@example.test", new string('x', 1025)));
+            .ChangePasswordAsync("customer@example.test", new string('x', 1025), new ClaimsPrincipal()));
         Assert.Equal(0, context.SaveCount);
     }
 
@@ -81,7 +82,7 @@ public sealed class UserServiceCredentialTransitionTests
     {
         using var context = new IdentityServiceTestContext();
         Assert.False(await new UserService(context, NullLogger<UserService>.Instance)
-            .ChangePasswordAsync("customer@example.test", "new-password"));
+            .ChangePasswordAsync("customer@example.test", "new-password", new ClaimsPrincipal()));
         Assert.Equal(0, context.SaveCount);
     }
 

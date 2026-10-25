@@ -24,6 +24,22 @@ public sealed class CustomerDossierViewModel
     public bool CanManageLinks { get; set; }
     public bool CanSendAccountEmails { get; set; }
     public bool CanViewEmailHistory { get; set; }
+    public bool CanEditProfile { get; set; }
+    public bool CanManageAddresses { get; set; }
+    public bool CanUnlock { get; set; }
+    public bool CanSuspendAccess { get; set; }
+    public bool CanRestoreAccess { get; set; }
+    public bool CanViewSessions { get; set; }
+    public bool CanRevokeSessions { get; set; }
+    public bool IsProtectedStaffTarget { get; set; }
+    public CustomerProfileEditForm ProfileForm { get; set; } = new();
+    public CustomerAddressEditForm AddressForm { get; set; } = new();
+    public CustomerAddressActionForm AddressActionForm { get; set; } = new();
+    public CustomerManagementActionForm UnlockForm { get; set; } = new();
+    public CustomerManagementActionForm AccessForm { get; set; } = new();
+    public CustomerManagementActionForm RevokeAllForm { get; set; } = new();
+    public CustomerSessionActionForm SessionForm { get; set; } = new();
+    public List<CustomerSessionViewModel> Sessions { get; set; } = [];
     public CustomerAccountEmailForm EmailForm { get; set; } = new();
     public List<AccountEmailHistoryViewModel> EmailHistory { get; set; } = [];
     public string? PartnerSearch { get; set; }
@@ -51,6 +67,7 @@ public sealed class CustomerProfileViewModel
     public bool IsActive { get; set; }
     public bool EmailConfirmed { get; set; }
     public bool RequireEmailConfirmation { get; set; }
+    public DateTime? AccessSuspendedAtUtc { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginDate { get; set; }
     public DateTime? LockoutUntil { get; set; }
@@ -64,6 +81,7 @@ public sealed class CustomerProfileViewModel
 
 public sealed class CustomerAddressViewModel
 {
+    public int N { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
@@ -111,6 +129,14 @@ public sealed class CustomerHistoryViewModel
     public string? Note { get; set; }
     public string? BeforePartner { get; set; }
     public string? AfterPartner { get; set; }
+    public List<CustomerHistoryFieldChange> Changes { get; set; } = [];
+}
+
+public sealed class CustomerHistoryFieldChange
+{
+    public string Label { get; set; } = string.Empty;
+    public string Before { get; set; } = string.Empty;
+    public string After { get; set; } = string.Empty;
 }
 
 public sealed class CustomerNoteForm

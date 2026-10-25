@@ -1,5 +1,6 @@
 ﻿using Algara.Data.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Algara.Web.ViewModels
 {
@@ -12,6 +13,8 @@ namespace Algara.Web.ViewModels
         public bool MarketingConsent { get; set; }
         public string ActiveTab { get; set; } = "current";
         public bool ShowAddressModal { get; set; }
+        public string AccountVersion { get; set; } = string.Empty;
+        public string AddressBookVersion { get; set; } = string.Empty;
         public IReadOnlyList<ProfileAddressViewModel> Addresses { get; set; } = Array.Empty<ProfileAddressViewModel>();
         public IReadOnlyList<ProfileOrderRowViewModel> CurrentOrders { get; set; } = Array.Empty<ProfileOrderRowViewModel>();
         public IReadOnlyList<ProfileOrderRowViewModel> OrderHistory { get; set; } = Array.Empty<ProfileOrderRowViewModel>();
@@ -21,6 +24,9 @@ namespace Algara.Web.ViewModels
 
     public class ProfileDetailsViewModel
     {
+        [BindRequired, Required(ErrorMessage = "Презаредете профила преди запис.")]
+        public string? ExpectedVersion { get; set; }
+
         [Required(ErrorMessage = "Името е задължително.")]
         [StringLength(100, ErrorMessage = "Името може да бъде до 100 символа.")]
         [Display(Name = "Име")]
@@ -62,6 +68,10 @@ namespace Algara.Web.ViewModels
     public class AddressFormViewModel
     {
         public int? N { get; set; }
+        [BindRequired, Required(ErrorMessage = "Презаредете адресите преди запис.")]
+        public string? ExpectedVersion { get; set; }
+        [BindRequired, Required(ErrorMessage = "Презаредете профила преди запис.")]
+        public string? ExpectedAccountVersion { get; set; }
 
         [Required(ErrorMessage = "Името е задължително.")]
         [StringLength(100, ErrorMessage = "Името може да бъде до 100 символа.")]

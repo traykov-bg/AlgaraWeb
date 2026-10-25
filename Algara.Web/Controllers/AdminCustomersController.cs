@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Text.Json;
+using System.Security.Claims;
 using Algara.Data.Data;
 using Algara.Data.Models;
 using Algara.Identity.Authorization;
@@ -19,14 +20,16 @@ namespace Algara.Web.Controllers;
 [Route("admin/users/{n:int}/dossier")]
 public sealed class AdminCustomersController(
     IdentityDbContext identityDb, ShopDbContext shopDb,
-    StaffAccessService staffAccess, CustomerDossierService dossierService, IAccountEmailService accountEmail) : Controller
+    StaffAccessService staffAccess, CustomerDossierService dossierService, IAccountEmailService accountEmail,
+    ICustomerManagementService customerManagement) : Controller
 {
     [HttpGet("")]
     [RequirePermission("Users.View", "Users.ViewDossier")]
     public async Task<IActionResult> Dossier([FromRoute] int n, string? partnerSearch = null,
-        int partnerPage = 1, int? selectedPartnerN = null, int historyPage = 1, int orderPage = 1, int addressPage = 1)
+        int partnerPage = 1, int? selectedPartnerN = null, int historyPage = 1, int orderPage = 1, int addressPage = 1,
+        int? editAddressN = null)
     {
-        var vm = await LoadAsync(n, partnerSearch, partnerPage, selectedPartnerN, historyPage, orderPage, addressPage);
+        var vm = await LoadAsync(n, partnerSearch, partnerPage, selectedPartnerN, historyPage, orderPage, addressPage, editAddressN);
         return vm == null ? NotFound() : View("~/Views/Admin/CustomerDossier.cshtml", vm);
     }
 
@@ -123,8 +126,99 @@ public sealed class AdminCustomersController(
         return View("~/Views/Admin/CustomerDossier.cshtml", vm);
     }
 
+    [HttpPost("profile"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.EditProfile")]
+    public Task<IActionResult> EditProfile([FromRoute] int n, [Bind(Prefix = "ProfileForm")] CustomerProfileEditForm form)
+        => ManageAsync(n, () => customerManagement.EditProfileAsync(User, n, new CustomerProfileUpdate
+        {
+            ExpectedAccountVersion = form.ExpectedAccountVersion, Reason = form.Reason,
+            FirstName = form.FirstName, LastName = form.LastName, PhoneNumber = form.PhoneNumber
+        }, HttpContext.RequestAborted), "Профилните данни са обновени.", vm => vm.ProfileForm = form);
+
+    [HttpPost("addresses"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ManageAddresses")]
+    public Task<IActionResult> SaveAddress([FromRoute] int n, [Bind(Prefix = "AddressForm")] CustomerAddressEditForm form)
+        => ManageAsync(n, () => customerManagement.SaveAddressAsync(User, n, new CustomerAddressUpdate
+        {
+            N = form.N, ExpectedAccountVersion = form.ExpectedAccountVersion, ExpectedAddressesVersion = form.ExpectedAddressesVersion,
+            Reason = form.Reason, FirstName = form.FirstName, LastName = form.LastName, PhoneNumber = form.PhoneNumber,
+            Email = form.Email, AddressLine1 = form.AddressLine1, AddressLine2 = form.AddressLine2,
+            City = form.City, PostalCode = form.PostalCode, Country = form.Country, IsDefault = form.IsDefault
+        }, HttpContext.RequestAborted), form.N.HasValue ? "Адресът е обновен." : "Адресът е добавен.", vm => vm.AddressForm = form);
+
+    [HttpPost("addresses/delete"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ManageAddresses")]
+    public Task<IActionResult> DeleteAddress([FromRoute] int n, [Bind(Prefix = "AddressActionForm")] CustomerAddressActionForm form)
+        => ManageAsync(n, () => customerManagement.DeleteAddressAsync(User, n, AddressAction(form), HttpContext.RequestAborted),
+            "Адресът е изтрит. Историята е запазена.", vm => vm.AddressActionForm = form, form.AddressN);
+
+    [HttpPost("addresses/default"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ManageAddresses")]
+    public Task<IActionResult> SetDefaultAddress([FromRoute] int n, [Bind(Prefix = "AddressActionForm")] CustomerAddressActionForm form)
+        => ManageAsync(n, () => customerManagement.SetDefaultAddressAsync(User, n, AddressAction(form), HttpContext.RequestAborted),
+            "Основният адрес е сменен.", vm => vm.AddressActionForm = form, form.AddressN);
+
+    [HttpPost("unlock"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.Unlock")]
+    public Task<IActionResult> Unlock([FromRoute] int n, [Bind(Prefix = "UnlockForm")] CustomerManagementActionForm form)
+        => ManageAsync(n, () => customerManagement.UnlockAsync(User, n, AccountAction(form), HttpContext.RequestAborted),
+            "Блокирането за неуспешни опити е премахнато.", vm => vm.UnlockForm = form);
+
+    [HttpPost("suspend"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.SuspendAccess")]
+    public Task<IActionResult> SuspendAccess([FromRoute] int n, [Bind(Prefix = "AccessForm")] CustomerManagementActionForm form)
+        => ManageAsync(n, () => customerManagement.SuspendAccessAsync(User, n, AccountAction(form), HttpContext.RequestAborted),
+            "Достъпът е спрян и сесиите са прекратени.", vm => vm.AccessForm = form);
+
+    [HttpPost("restore"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.SuspendAccess")]
+    public Task<IActionResult> RestoreAccess([FromRoute] int n, [Bind(Prefix = "AccessForm")] CustomerManagementActionForm form)
+        => ManageAsync(n, () => customerManagement.RestoreAccessAsync(User, n, AccountAction(form), HttpContext.RequestAborted),
+            "Достъпът е възстановен. Клиентът трябва да влезе отново.", vm => vm.AccessForm = form);
+
+    [HttpPost("sessions/revoke"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ViewSessions", "Users.RevokeSessions")]
+    public Task<IActionResult> RevokeSession([FromRoute] int n, [Bind(Prefix = "SessionForm")] CustomerSessionActionForm form)
+        => ManageAsync(n, () => customerManagement.RevokeSessionAsync(User, n, new CustomerSessionAction
+        {
+            ExpectedAccountVersion = form.ExpectedAccountVersion, Reason = form.Reason,
+            SessionN = form.SessionN, ExpectedSessionVersion = form.ExpectedSessionVersion
+        }, HttpContext.RequestAborted), "Сесията е прекратена.", vm => vm.SessionForm = form);
+
+    [HttpPost("sessions/revoke-all"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ViewSessions", "Users.RevokeSessions")]
+    public Task<IActionResult> RevokeAllSessions([FromRoute] int n, [Bind(Prefix = "RevokeAllForm")] CustomerManagementActionForm form)
+        => ManageAsync(n, () => customerManagement.RevokeAllSessionsAsync(User, n, AccountAction(form), HttpContext.RequestAborted),
+            "Всички сесии са прекратени.", vm => vm.RevokeAllForm = form);
+
+    private async Task<IActionResult> ManageAsync(int n, Func<Task<CustomerDossierResult>> command, string message,
+        Action<CustomerDossierViewModel> retainForm, int? focusAddressN = null)
+    {
+        if (ModelState.IsValid)
+        {
+            var result = await command();
+            if (result.Success)
+            {
+                TempData["Success"] = message;
+                return RedirectToAction(nameof(Dossier), new { n });
+            }
+            ModelState.AddModelError(string.Empty, result.Error ?? "Промяната не е записана. Презаредете досието.");
+        }
+        var vm = await LoadAsync(n, focusAddressN: focusAddressN);
+        if (vm == null) return NotFound();
+        retainForm(vm);
+        return View("~/Views/Admin/CustomerDossier.cshtml", vm);
+    }
+
+    private static CustomerAccountAction AccountAction(CustomerManagementActionForm form) => new()
+    { ExpectedAccountVersion = form.ExpectedAccountVersion, Reason = form.Reason };
+
+    private static CustomerAddressAction AddressAction(CustomerAddressActionForm form) => new()
+    { AddressN = form.AddressN, ExpectedAccountVersion = form.ExpectedAccountVersion, ExpectedAddressesVersion = form.ExpectedAddressesVersion, Reason = form.Reason };
+
     private async Task<CustomerDossierViewModel?> LoadAsync(int n, string? partnerSearch = null,
-        int partnerPage = 1, int? selectedPartnerN = null, int historyPage = 1, int orderPage = 1, int addressPage = 1)
+        int partnerPage = 1, int? selectedPartnerN = null, int historyPage = 1, int orderPage = 1, int addressPage = 1,
+        int? editAddressN = null, int? focusAddressN = null)
     {
         var ct = HttpContext.RequestAborted;
         // The version source is server-only; credentials and session tokens are never selected.
@@ -135,6 +229,7 @@ public sealed class AdminCustomersController(
                 N = u.N, UserName = u.UserName, DisplayName = u.DisplayName, FullName = u.FullName,
                 FirstName = u.FirstName, LastName = u.LastName, Email = u.Email, PhoneNumber = u.PhoneNumber,
                 IsActive = u.IsActive, EmailConfirmed = u.EmailConfirmed, RequireEmailConfirmation = u.RequireEmailConfirmation,
+                AccessSuspendedAtUtc = u.AccessSuspendedAtUtc,
                 CreatedAt = u.CreatedAt, LastLoginDate = u.LastLoginDate,
                 LockoutUntil = u.LockoutUntil, FailedLoginAttempts = u.FailedLoginAttempts,
                 AddressLine1 = u.AddressLine1, AddressLine2 = u.AddressLine2, City = u.City,
@@ -142,9 +237,11 @@ public sealed class AdminCustomersController(
             },
             VersionSource = new ApplicationUser
             {
-                N = u.N, Id = u.Id, UserName = u.UserName, Email = u.Email, DisplayName = u.DisplayName,
+                N = u.N, Id = u.Id, UserName = u.UserName, Email = u.Email, FullName = u.FullName, DisplayName = u.DisplayName,
                 FirstName = u.FirstName, LastName = u.LastName, PhoneNumber = u.PhoneNumber,
-                IsActive = u.IsActive, SecurityStamp = u.SecurityStamp
+                IsActive = u.IsActive, SecurityStamp = u.SecurityStamp, AccessSuspendedAtUtc = u.AccessSuspendedAtUtc,
+                FailedLoginAttempts = u.FailedLoginAttempts, LockoutUntil = u.LockoutUntil,
+                RequireEmailConfirmation = u.RequireEmailConfirmation, EmailConfirmed = u.EmailConfirmed
             }
         }).SingleOrDefaultAsync(ct);
         if (source == null) return null;
@@ -170,6 +267,44 @@ public sealed class AdminCustomersController(
         vm.LinkForm.ExpectedAccountVersion = accountVersion;
         vm.UnlinkForm.ExpectedAccountVersion = accountVersion;
         vm.EmailForm.ExpectedAccountVersion = accountVersion;
+        var managementVersion = CustomerManagementVersions.Account(source.VersionSource);
+        var actorIsAdmin = await staffAccess.HasPermissionAsync(User, "Access.AssignRoles", ct);
+        var staffRoles = StaffRoles.All.ToArray();
+        vm.IsProtectedStaffTarget = !actorIsAdmin && await identityDb.UserRoles.AsNoTracking()
+            .AnyAsync(r => r.UserN == n && staffRoles.Contains(r.Role.Name), ct);
+        var canManageTarget = !vm.IsProtectedStaffTarget && (source.Profile.IsActive || source.Profile.AccessSuspendedAtUtc.HasValue);
+        vm.CanEditProfile = canManageTarget && await staffAccess.HasPermissionAsync(User, "Users.EditProfile", ct);
+        vm.CanManageAddresses = canManageTarget && await staffAccess.HasPermissionAsync(User, "Users.ManageAddresses", ct);
+        vm.CanUnlock = canManageTarget && await staffAccess.HasPermissionAsync(User, "Users.Unlock", ct);
+        var canManageAccess = !vm.IsProtectedStaffTarget && await staffAccess.HasPermissionAsync(User, "Users.SuspendAccess", ct);
+        vm.CanSuspendAccess = canManageAccess && source.Profile.IsActive && source.VersionSource.Id != User.FindFirstValue(ClaimTypes.NameIdentifier);
+        vm.CanRestoreAccess = canManageAccess && !source.Profile.IsActive && source.Profile.AccessSuspendedAtUtc.HasValue;
+        vm.CanViewSessions = canManageTarget && await staffAccess.HasPermissionAsync(User, "Users.ViewSessions", ct);
+        vm.CanRevokeSessions = vm.CanViewSessions && await staffAccess.HasPermissionAsync(User, "Users.RevokeSessions", ct);
+        vm.ProfileForm = new CustomerProfileEditForm
+        {
+            ExpectedAccountVersion = managementVersion, FirstName = source.Profile.FirstName ?? string.Empty,
+            LastName = source.Profile.LastName ?? string.Empty, PhoneNumber = source.Profile.PhoneNumber
+        };
+        vm.UnlockForm.ExpectedAccountVersion = managementVersion;
+        vm.AccessForm.ExpectedAccountVersion = managementVersion;
+        vm.RevokeAllForm.ExpectedAccountVersion = managementVersion;
+        vm.SessionForm.ExpectedAccountVersion = managementVersion;
+        if (vm.CanViewSessions)
+        {
+            var sessions = await customerManagement.GetSessionsAsync(User, n, ct);
+            if (sessions == null) vm.CanViewSessions = vm.CanRevokeSessions = false;
+            else
+            {
+                vm.SessionForm.ExpectedAccountVersion = sessions.AccountVersion;
+                vm.RevokeAllForm.ExpectedAccountVersion = sessions.AccountVersion;
+                vm.Sessions = sessions.Sessions.Select(s => new CustomerSessionViewModel
+                {
+                    Id = s.Id, CreatedAt = s.CreatedAt, DeviceInfo = s.DeviceInfo,
+                    IsActive = s.IsActive, IsCurrent = s.IsCurrent, Version = s.Version
+                }).ToList();
+            }
+        }
         vm.CanViewEmailHistory = vm.CanSendAccountEmails && vm.CanViewHistory;
         if (vm.CanViewEmailHistory)
         {
@@ -187,15 +322,47 @@ public sealed class AdminCustomersController(
             }).ToList();
         }
 
-        var addresses = await identityDb.UsersAddresses.AsNoTracking().Where(a => a.UserN == n)
-            .OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.N)
-            .Skip((vm.AddressPage - 1) * 10).Take(11).Select(a => new CustomerAddressViewModel
+        List<UserAddress> addresses;
+        if (vm.CanManageAddresses)
+        {
+            var book = await identityDb.UsersAddresses.AsNoTracking().Where(a => a.UserN == n).OrderBy(a => a.N).ToListAsync(ct);
+            var bookVersion = CustomerManagementVersions.AddressBook(book);
+            vm.AddressForm = new CustomerAddressEditForm
             {
-                FirstName = a.FirstName, LastName = a.LastName, PhoneNumber = a.PhoneNumber, Email = a.Email,
-                AddressLine1 = a.AddressLine1, AddressLine2 = a.AddressLine2, City = a.City,
-                PostalCode = a.PostalCode, Country = a.Country, IsDefault = a.IsDefault
-            }).ToListAsync(ct);
-        vm.Addresses = addresses.Take(10).ToList();
+                ExpectedAccountVersion = managementVersion, ExpectedAddressesVersion = bookVersion,
+                FirstName = source.Profile.FirstName ?? string.Empty, LastName = source.Profile.LastName ?? string.Empty,
+                PhoneNumber = source.Profile.PhoneNumber, Email = source.Profile.Email, IsDefault = book.Count == 0
+            };
+            vm.AddressActionForm.ExpectedAccountVersion = managementVersion;
+            vm.AddressActionForm.ExpectedAddressesVersion = bookVersion;
+            if (editAddressN.HasValue)
+            {
+                var selected = book.SingleOrDefault(a => a.N == editAddressN);
+                if (selected == null) ModelState.AddModelError(string.Empty, "Избраният адрес вече не е наличен в този акаунт. Изберете отново.");
+                else vm.AddressForm = new CustomerAddressEditForm
+                {
+                    N = selected.N, ExpectedAccountVersion = managementVersion, ExpectedAddressesVersion = bookVersion,
+                    FirstName = selected.FirstName, LastName = selected.LastName, PhoneNumber = selected.PhoneNumber,
+                    Email = selected.Email, AddressLine1 = selected.AddressLine1, AddressLine2 = selected.AddressLine2,
+                    City = selected.City, PostalCode = selected.PostalCode, Country = selected.Country, IsDefault = selected.IsDefault
+                };
+            }
+            var orderedBook = book.OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.N).ToList();
+            if (focusAddressN.HasValue)
+            {
+                var index = orderedBook.FindIndex(a => a.N == focusAddressN.Value);
+                if (index >= 0) vm.AddressPage = index / 10 + 1;
+            }
+            addresses = orderedBook.Skip((vm.AddressPage - 1) * 10).Take(11).ToList();
+        }
+        else addresses = await identityDb.UsersAddresses.AsNoTracking().Where(a => a.UserN == n)
+            .OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.N).Skip((vm.AddressPage - 1) * 10).Take(11).ToListAsync(ct);
+        vm.Addresses = addresses.Take(10).Select(a => new CustomerAddressViewModel
+        {
+            N = a.N, FirstName = a.FirstName, LastName = a.LastName, PhoneNumber = a.PhoneNumber, Email = a.Email,
+            AddressLine1 = a.AddressLine1, AddressLine2 = a.AddressLine2, City = a.City,
+            PostalCode = a.PostalCode, Country = a.Country, IsDefault = a.IsDefault
+        }).ToList();
         vm.HasMoreAddresses = addresses.Count > 10;
 
         if (vm.CanViewOrders)
@@ -250,9 +417,10 @@ public sealed class AdminCustomersController(
 
         if (vm.CanViewHistory)
         {
-            // Partner history is visible only with Partners.View; notes remain independently accessible.
+            // History families keep their own visibility gates; never expose raw audit snapshots.
             var query = shopDb.CustomerDossierEvents.AsNoTracking().Where(e => e.UserN == n);
-            if (!vm.CanViewPartners) query = query.Where(e => e.Action == "NoteAdded");
+            if (!vm.CanViewPartners) query = query.Where(e => e.Action != "PartnerLinked" && e.Action != "PartnerUnlinked");
+            if (!vm.CanViewSessions) query = query.Where(e => e.Action != "SessionRevoked" && e.Action != "AllSessionsRevoked");
             var events = await query.OrderByDescending(e => e.N).Skip((vm.HistoryPage - 1) * 20).Take(21)
                 .Select(e => new { e.N, e.Action, e.ActorName, e.OccurredAtUtc, e.Reason, e.VerificationMethod, e.Note, e.BeforeJson, e.AfterJson })
                 .ToListAsync(ct);
@@ -261,7 +429,9 @@ public sealed class AdminCustomersController(
             {
                 N = e.N, Action = e.Action, ActorName = e.ActorName, OccurredAtUtc = e.OccurredAtUtc,
                 Reason = e.Reason, VerificationMethod = e.VerificationMethod, Note = e.Note,
-                BeforePartner = PartnerSnapshotLabel(e.BeforeJson), AfterPartner = PartnerSnapshotLabel(e.AfterJson)
+                BeforePartner = e.Action is "PartnerLinked" or "PartnerUnlinked" ? PartnerSnapshotLabel(e.BeforeJson) : null,
+                AfterPartner = e.Action is "PartnerLinked" or "PartnerUnlinked" ? PartnerSnapshotLabel(e.AfterJson) : null,
+                Changes = CustomerManagementHistory.Format(e.Action, e.BeforeJson, e.AfterJson)
             }).ToList();
         }
         return vm;

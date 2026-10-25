@@ -63,9 +63,12 @@ public sealed class AccessManagementService(IdentityDbContext db)
             return AccessChangeResult.Reject("Създаването на продукт изисква право за задаване на цена.");
         if (keys.Any(k => k.StartsWith("PartnerGroups.", StringComparison.Ordinal)) && !keys.Contains(PermissionCatalog.Partners.View, StringComparer.Ordinal))
             return AccessChangeResult.Reject("Работата с групи изисква преглед на контрагентите, където се намира дървото на групите.");
-        if (keys.Any(k => k is PermissionCatalog.Users.AddNotes or PermissionCatalog.Users.ManagePartnerLinks or PermissionCatalog.Users.ViewDossierHistory) &&
+        if (keys.Any(PermissionCatalog.RequiresCustomerDossier) &&
             !keys.Contains(PermissionCatalog.Users.ViewDossier, StringComparer.Ordinal))
-            return AccessChangeResult.Reject("Бележките, свързванията и историята изискват право за преглед на клиентското досие.");
+            return AccessChangeResult.Reject("Действията и историята на клиентския акаунт изискват право за преглед на досието.");
+        if (keys.Contains(PermissionCatalog.Users.RevokeSessions, StringComparer.Ordinal) &&
+            !keys.Contains(PermissionCatalog.Users.ViewSessions, StringComparer.Ordinal))
+            return AccessChangeResult.Reject("Прекратяването на сесии изисква право за преглед на сесиите.");
         if (keys.Contains(PermissionCatalog.Users.ManagePartnerLinks, StringComparer.Ordinal) && !keys.Contains(PermissionCatalog.Partners.View, StringComparer.Ordinal))
             return AccessChangeResult.Reject("Свързването на акаунт изисква право за преглед на контрагентите.");
         await using var transaction = await AcquireAsync(cancellationToken);

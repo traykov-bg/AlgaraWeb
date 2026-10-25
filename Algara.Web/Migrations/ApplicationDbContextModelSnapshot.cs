@@ -381,6 +381,9 @@ namespace Algara.Web.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<DateTime?>("AccessSuspendedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("AddressLine1")
                         .HasColumnType("nvarchar(max)");
 
@@ -479,7 +482,10 @@ namespace Algara.Web.Migrations
                         .IsUnique()
                         .HasFilter("[Id] IS NOT NULL");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_AccessSuspendedInactive", "[AccessSuspendedAtUtc] IS NULL OR [IsActive] = 0");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Identity.Models.EmailOutboxMessage", b =>
