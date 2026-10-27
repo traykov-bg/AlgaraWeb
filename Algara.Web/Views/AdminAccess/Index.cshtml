@@ -1,5 +1,6 @@
 ﻿@model Algara.Web.ViewModels.Admin.AdminAccessFormViewModel
 @using Algara.Web.ViewModels.Admin
+@using Algara.Identity.Authorization
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Роли и права";
@@ -30,6 +31,7 @@
     Добавянето на бележки, прегледът на историята и управлението на връзки с контрагенти имат отделни права.
     За връзките е нужен и „Преглед“ на Контрагенти; за поръчките в досието — „Преглед“ на Поръчки.
     Новите права за досието първоначално са изключени за останалите служебни роли и се включват тук от Администратор.
+    Задаване на парола без имейл може да се разреши само на Модератор. За Администратор или Модератор като получател е нужен друг Администратор.
 </div>
 <form asp-action="Index" method="post">
     <input type="hidden" asp-for="RoleName" />
@@ -46,11 +48,13 @@
                         @foreach (var permission in module)
                         {
                             var selected = Model.PermissionKeys.Contains(permission.Key);
-                            var disabled = Model.IsReadOnly || permission.AdminOnly;
+                            var resetPassword = permission.Key == PermissionCatalog.Users.ResetPassword;
+                            var disabled = Model.IsReadOnly || permission.AdminOnly || (resetPassword && Model.RoleName != StaffRoles.Moderator);
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" name="PermissionKeys" value="@permission.Key" id="permission-@permission.Key.Replace('.', '-')" checked="@selected" disabled="@disabled" />
                                 <label class="form-check-label" for="permission-@permission.Key.Replace('.', '-')">@permission.Name
                                     @if (permission.AdminOnly) { <span class="text-muted small">(само Администратор)</span> }
+                                    @if (resetPassword) { <span class="text-muted small">(Администратор и Модератор)</span> }
                                 </label>
                             </div>
                         }

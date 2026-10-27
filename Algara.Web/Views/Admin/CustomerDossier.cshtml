@@ -19,8 +19,13 @@
         "PartnerUnlinked" => "Прекратяване на връзка", "ProfileUpdated" => "Промяна на профилните данни",
         "AddressCreated" => "Добавен адрес", "AddressUpdated" => "Променен адрес", "AddressDeleted" => "Изтрит адрес",
         "DefaultAddressChanged" => "Сменен основен адрес", "AccountUnlocked" => "Отключени опити за вход",
+        "PasswordResetByStaff" => "Зададена нова парола от служител",
+        "PasswordResetReauthenticationFailed" => "Отказана смяна на парола: неуспешно потвърждение от служителя",
         "AccessSuspended" => "Спрян достъп", "AccessRestored" => "Възстановен достъп",
-        "SessionRevoked" => "Прекратена сесия", "AllSessionsRevoked" => "Прекратени всички сесии", _ => "Промяна в досието"
+        "SessionRevoked" => "Прекратена сесия", "AllSessionsRevoked" => "Прекратени всички сесии",
+        "AssistanceStarted" => "Начало на клиентски изглед / съдействие", "AssistanceEnded" => "Край на клиентски изглед / съдействие",
+        "AssistanceViewed" => "Преглед на клиентския профил", "AssistanceOrderViewed" => "Преглед на клиентска поръчка",
+        "AssistanceAction" => "Действие при съдействие", _ => "Промяна в досието"
     };
     string VerificationLabel(string? method) => method switch
     {
@@ -36,6 +41,28 @@
     <a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-sm btn-outline-secondary">Презареди досието</a>
 </div>
 <div asp-validation-summary="All" class="alert alert-danger"></div>
+@if (Model.CanPreviewCustomer || Model.CanAssistCustomer)
+{
+    <section class="card border-0 shadow-sm mb-3" aria-labelledby="assistance-title">
+        <div class="card-header bg-white"><h3 id="assistance-title" class="h6 mb-0">Клиентски изглед и съдействие</h3></div>
+        <form asp-controller="CustomerAssistance" asp-action="Start" asp-route-n="@customer.N" method="post" class="card-body">
+            <input type="hidden" name="ExpectedAccountVersion" value="@Model.AssistanceAccountVersion" />
+            <label for="assistance-reason" class="form-label">Основание или номер на клиентско запитване *</label>
+            <textarea id="assistance-reason" name="Reason" class="form-control" maxlength="2000" rows="2" required></textarea>
+            <p class="form-text">Срок: 30 минути. Прегледът е само за четене. Съдействието позволява имена, телефон и адреси според Вашите права и променя реалните клиентски данни. Началото и действията се записват в историята.</p>
+            <div class="d-flex flex-wrap gap-2">
+                @if (Model.CanPreviewCustomer)
+                {
+                    <button type="submit" name="Mode" value="1" class="btn btn-outline-primary"><i class="bi bi-eye me-1"></i>Преглед като клиента</button>
+                }
+                @if (Model.CanAssistCustomer)
+                {
+                    <button type="submit" name="Mode" value="2" class="btn btn-primary"><i class="bi bi-person-check me-1"></i>Съдействие на клиента</button>
+                }
+            </div>
+        </form>
+    </section>
+}
 @if (!customer.IsActive)
 {
     <div class="alert alert-secondary">
@@ -346,6 +373,10 @@
                     }
                     else
                     {
+                        @if (item.Note?.StartsWith("Сесия за съдействие: ", StringComparison.Ordinal) == true && Guid.TryParse(item.Note[21..], out var assistanceSessionId))
+                        {
+                            <div class="small text-muted mt-2">Сесия за съдействие: @assistanceSessionId</div>
+                        }
                         @if (item.Changes.Count > 0)
                         {
                             <div class="table-responsive mt-2">

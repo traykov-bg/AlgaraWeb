@@ -4,7 +4,25 @@
 }
 @if (Model.IsProtectedStaffTarget)
 {
-    <div class="alert alert-secondary mt-3">Промените по служебни акаунти и прегледът на техните сесии са достъпни само за Администратор.</div>
+    <div class="alert alert-secondary mt-3">Директната редакция на профилни данни, управлението на достъпа и прегледът на сесиите на служебни акаунти са достъпни само за Администратор. Смяната на парола и клиентският изглед имат отделни права според ролите.</div>
+}
+@if (Model.CanResetPassword)
+{
+    <section class="card border-0 shadow-sm mt-3" aria-labelledby="password-reset-title">
+        <div class="card-header bg-white"><h3 id="password-reset-title" class="h6 mb-0">Задаване на нова парола без имейл</h3></div>
+        <form asp-action="ResetPassword" asp-route-n="@customer.N" method="post" class="card-body" autocomplete="off">
+            <input asp-for="PasswordForm.ExpectedAccountVersion" type="hidden" />
+            <p>Задавате нова парола за <strong>@customer.UserName</strong>. Старите сесии и връзки за достъп ще бъдат прекратени. Не се изпраща имейл.</p>
+            <p class="small text-muted">Спирането на достъпа, блокирането след грешни опити и изискването за потвърден имейл се запазват. За собствения си акаунт използвайте „Смяна на парола“ в профила.</p>
+            <div class="row g-3">
+                <div class="col-12"><label for="PasswordForm_ActorPassword" class="form-label">Вашата текуща парола *</label><input id="PasswordForm_ActorPassword" name="PasswordForm.ActorPassword" type="password" class="form-control" maxlength="1024" autocomplete="current-password" required /></div>
+                <div class="col-md-6"><label for="PasswordForm_NewPassword" class="form-label">Нова парола за този акаунт *</label><input id="PasswordForm_NewPassword" name="PasswordForm.NewPassword" type="password" class="form-control" minlength="6" maxlength="1024" autocomplete="new-password" required /></div>
+                <div class="col-md-6"><label for="PasswordForm_ConfirmPassword" class="form-label">Повторете новата парола *</label><input id="PasswordForm_ConfirmPassword" name="PasswordForm.ConfirmPassword" type="password" class="form-control" minlength="6" maxlength="1024" autocomplete="new-password" required /></div>
+                <div class="col-12"><label asp-for="PasswordForm.Reason" class="form-label">Основание *</label><textarea asp-for="PasswordForm.Reason" class="form-control" maxlength="2000" rows="2" required></textarea><div class="form-text">Опишете основанието, без да записвате пароли.</div></div>
+            </div>
+            <div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-outline-danger">Задай новата парола</button><a asp-action="Dossier" asp-route-n="@customer.N" class="btn btn-outline-secondary">Презареди и изчисти формата</a></div>
+        </form>
+    </section>
 }
 <div class="row g-3 mt-0">
     @if (Model.CanEditProfile)

@@ -1,0 +1,51 @@
+﻿@using Algara.Web.ViewModels
+@using Algara.Web.Services
+@{
+    var assistance = ViewData["Assistance"] as CustomerAssistanceViewModel;
+}
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>@ViewData["Title"] · Клиентски изглед — Алгара</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @if (assistance != null)
+    {
+        <header class="sticky-top border-bottom border-warning bg-warning-subtle shadow-sm" id="customer-assistance-banner"
+                data-remaining-seconds="@Math.Max(0, (int)(assistance.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds)">
+            <div class="container py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <div class="fw-semibold">@(assistance.Mode == CustomerAssistanceMode.Preview ? "Преглед като клиента · само четене" : "Съдействие на клиента · реални промени")</div>
+                    <div class="text-break">@assistance.CustomerName · акаунт #@assistance.UserN</div>
+                    <div class="small">Остават <strong id="assistance-countdown">@Math.Max(0, (int)Math.Ceiling((assistance.ExpiresAtUtc - DateTime.UtcNow).TotalMinutes)) мин.</strong> · краен срок @assistance.ExpiresAtUtc.ToString("HH:mm") UTC</div>
+                </div>
+                <form asp-controller="CustomerAssistance" asp-action="End" asp-route-sessionId="@assistance.SessionId" method="post">
+                    <button type="submit" class="btn btn-dark">Край / Назад към администрацията</button>
+                </form>
+            </div>
+        </header>
+        <div class="container mt-3">
+            <p class="small text-muted mb-1">Основание: <span class="text-break" style="white-space:pre-wrap">@assistance.Reason</span></p>
+            <p class="small text-muted mb-0">Работите като служител. Действията се записват с Вашето име. Сесията не е вход на клиента.</p>
+            <div id="assistance-expired" class="alert alert-warning mt-3" role="alert" hidden>Времето изтече. Завършете сесията и започнете отново от досието с ново основание.</div>
+        </div>
+    }
+    <div class="container">
+        <main id="assistance-content" class="pb-4">
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/admin-form-keyboard.js" asp-append-version="true"></script>
+    <script src="~/js/customer-assistance.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

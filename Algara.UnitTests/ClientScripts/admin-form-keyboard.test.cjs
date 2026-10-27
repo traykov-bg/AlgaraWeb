@@ -6,21 +6,21 @@ const test = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../Algara.Web/wwwroot/js/admin-form-keyboard.js'), 'utf8');
 
-function openAdmin() {
+function openAdmin(surface = '.admin-main') {
     let keydown;
     vm.runInNewContext(source, {
         document: {
-            querySelector: () => ({
+            querySelector: selector => selector === surface ? ({
                 addEventListener: (name, handler) => {
                     assert.equal(name, 'keydown');
                     keydown = handler;
                 }
-            })
+            }) : null
         }
     });
     return function press(target, extra = {}) {
         let prevented = false;
-        keydown({ key: 'Enter', target, preventDefault: () => { prevented = true; }, ...extra });
+        if (keydown) keydown({ key: 'Enter', target, preventDefault: () => { prevented = true; }, ...extra });
         return prevented;
     };
 }
@@ -71,4 +71,22 @@ test('typing, navigation and composition are not consumed', () => {
 test('inputs outside a form and pages without admin content remain unaffected', () => {
     assert.equal(openAdmin()({ tagName: 'INPUT', type: 'text', form: null }), false);
     assert.doesNotThrow(() => vm.runInNewContext(source, { document: { querySelector: () => null } }));
+});
+
+test('customer assistance profile and address inputs require an explicit save', () => {
+    const press = openAdmin('#assistance-content');
+    for (const type of ['text', 'email', 'tel']) {
+        assert.equal(press(input(type)), true, type);
+    }
+});
+
+test('customer assistance preserves textarea newlines and focused save activation', () => {
+    const press = openAdmin('#assistance-content');
+    assert.equal(press({ tagName: 'TEXTAREA', form: { method: 'post' } }), false);
+    assert.equal(press({ tagName: 'BUTTON', type: 'submit', form: { method: 'post' } }), false);
+    assert.equal(press(input('text'), { isComposing: true }), false);
+});
+
+test('ordinary customer profile pages do not receive the staff keyboard guard', () => {
+    assert.equal(openAdmin('.algara-profile')(input('text')), false);
 });

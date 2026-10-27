@@ -1,0 +1,10 @@
+﻿@model Algara.Web.ViewModels.CustomerAssistanceStartErrorViewModel
+@{
+    Layout = "_CustomerAssistanceLayout";
+    ViewData["Title"] = "Сесията не е започната";
+}
+<section class="algara-profile-panel my-5">
+    <h1 class="h4">Сесията не е започната</h1>
+    <p role="alert">@Model.Error</p>
+    <a asp-controller="AdminCustomers" asp-action="Dossier" asp-route-n="@Model.UserN" class="btn algara-btn-outline">Назад към актуалното досие</a>
+</section>

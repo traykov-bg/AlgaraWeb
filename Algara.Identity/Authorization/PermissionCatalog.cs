@@ -34,7 +34,8 @@ public static class PermissionCatalog
             ManagePartnerLinks = "Users.ManagePartnerLinks", ViewDossierHistory = "Users.ViewDossierHistory",
             SendAccountEmails = "Users.SendAccountEmails", ManageInvitations = "Users.ManageInvitations",
             EditProfile = "Users.EditProfile", ManageAddresses = "Users.ManageAddresses", Unlock = "Users.Unlock",
-            SuspendAccess = "Users.SuspendAccess", ViewSessions = "Users.ViewSessions", RevokeSessions = "Users.RevokeSessions";
+            SuspendAccess = "Users.SuspendAccess", ViewSessions = "Users.ViewSessions", RevokeSessions = "Users.RevokeSessions",
+            PreviewCustomer = "Users.PreviewCustomer", AssistCustomer = "Users.AssistCustomer", ResetPassword = "Users.ResetPassword";
     }
     public static class Access { public const string AssignRoles = "Access.AssignRoles", ManagePermissions = "Access.ManagePermissions", ViewHistory = "Access.ViewHistory"; }
     public static class Settings { public const string Manage = "Settings.Manage"; }
@@ -63,6 +64,9 @@ public static class PermissionCatalog
         new(Users.SuspendAccess,"Потребители","Временно спиране и възстановяване на достъпа"),
         new(Users.ViewSessions,"Потребители","Преглед на сесии"),
         new(Users.RevokeSessions,"Потребители","Прекратяване на сесии"),
+        new(Users.PreviewCustomer,"Потребители","Преглед като клиента"),
+        new(Users.AssistCustomer,"Потребители","Ограничено съдействие на клиента"),
+        new(Users.ResetPassword,"Потребители","Задаване на нова парола без имейл"),
         new(Access.AssignRoles,"Достъп","Даване и отнемане на роли",true),
         new(Access.ManagePermissions,"Достъп","Матрица на правата",true), new(Access.ViewHistory,"Достъп","Преглед на историята"),
         new(Settings.Manage,"Настройки","Критични настройки",true)
@@ -73,13 +77,14 @@ public static class PermissionCatalog
     public static bool RequiresCustomerDossier(string key) => key is
         Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or
         Users.ManageInvitations or Users.EditProfile or Users.ManageAddresses or Users.Unlock or
-        Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions;
+        Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions or Users.PreviewCustomer or Users.AssistCustomer or Users.ResetPassword;
 
     // Dossier rights require an explicit grant, including for future staff-role defaults.
     public static IReadOnlyList<string> DefaultGrants(string role) => All
         .Where(p => role == StaffRoles.Admin || p.Key is not
             (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or Users.ManageInvitations or
-             Users.EditProfile or Users.ManageAddresses or Users.Unlock or Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions))
+             Users.EditProfile or Users.ManageAddresses or Users.Unlock or Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions or
+             Users.PreviewCustomer or Users.AssistCustomer or Users.ResetPassword))
         .Where(p => role switch
     {
         StaffRoles.Admin => true,

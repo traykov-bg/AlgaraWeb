@@ -205,6 +205,72 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.CustomerAssistanceSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("ActorSessionN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime?>("EndedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TargetSecurityVersion")
+                        .IsRequired()
+                        .HasMaxLength(44)
+                        .HasColumnType("nvarchar(44)");
+
+                    b.Property<int>("UserN")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserN", "StartedAtUtc");
+
+                    b.HasIndex("ActorId", "ActorSessionN", "ExpiresAtUtc");
+
+                    b.ToTable("CustomerAssistanceSessions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CustomerAssistanceSessions_Duration", "[ExpiresAtUtc] = DATEADD(minute, 30, [StartedAtUtc])");
+
+                            t.HasCheckConstraint("CK_CustomerAssistanceSessions_End", "([EndedAtUtc] IS NULL AND [EndReason] IS NULL) OR ([EndedAtUtc] IS NOT NULL AND [EndedAtUtc] >= [StartedAtUtc] AND [EndedAtUtc] <= [ExpiresAtUtc] AND [EndReason] IS NOT NULL AND [EndReason] IN (N'Expired', N'StaffEnded', N'InvalidContext', N'AccessChanged', N'TargetChanged'))");
+
+                            t.HasCheckConstraint("CK_CustomerAssistanceSessions_Mode", "[Mode] IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_CustomerAssistanceSessions_Reason", "LEN(LTRIM(RTRIM([Reason]))) > 0");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.CustomerDossierEvent", b =>
                 {
                     b.Property<long>("N")

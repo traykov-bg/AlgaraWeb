@@ -11,6 +11,18 @@ public class CustomerManagementActionForm
     public string? Reason { get; set; }
 }
 
+public sealed class CustomerPasswordResetForm : CustomerManagementActionForm
+{
+    [Required(ErrorMessage = "Въведете Вашата текуща парола."), StringLength(1024), DataType(DataType.Password)]
+    public string? ActorPassword { get; set; }
+    [Required(ErrorMessage = "Въведете новата парола."), StringLength(1024, MinimumLength = 6,
+        ErrorMessage = "Новата парола трябва да е между 6 и 1024 символа."), DataType(DataType.Password)]
+    public string? NewPassword { get; set; }
+    [Required(ErrorMessage = "Повторете новата парола."), StringLength(1024), DataType(DataType.Password),
+        Compare(nameof(NewPassword), ErrorMessage = "Новата парола и потвърждението не съвпадат.")]
+    public string? ConfirmPassword { get; set; }
+}
+
 public sealed class CustomerProfileEditForm : CustomerManagementActionForm
 {
     [Required(ErrorMessage = "Въведете име."), StringLength(100)]

@@ -2,6 +2,12 @@
 @using System.Text.Encodings.Web
 @{
     ViewData["Title"] = "Моят профил";
+    var assistance = Model.Assistance;
+    if (assistance != null) { Layout = "_CustomerAssistanceLayout"; ViewData["Assistance"] = assistance; }
+    var profileController = assistance == null ? "Account" : "CustomerAssistance";
+    var canEditProfile = assistance?.CanEditProfile ?? true;
+    var canManageAddresses = assistance?.CanManageAddresses ?? true;
+    var canViewOrders = assistance?.CanViewOrders ?? true;
     var activeTab = Model.ActiveTab;
     string Active(string tab) => activeTab == tab ? "active" : "";
     string Selected(string tab) => activeTab == tab ? "true" : "false";
@@ -12,11 +18,14 @@
     <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-end mb-4">
         <div>
             <h1 class="h3 mb-1">Моят профил</h1>
-            <p class="text-muted mb-0">Поръчки, адреси, лични данни и настройки за поверителност.</p>
+            <p class="text-muted mb-0">@(assistance == null ? "Поръчки, адреси, лични данни и настройки за поверителност." : "Клиентски екран с данните на избрания акаунт.")</p>
         </div>
+        @if (assistance == null)
+        {
         <a asp-controller="Product" asp-action="Index" class="btn algara-btn-outline">
             <i class="bi bi-bag me-1"></i>Към каталога
         </a>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
@@ -28,7 +37,11 @@
         <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
+    @if (assistance != null) { <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div> }
+
     <ul class="nav algara-profile-tabs" id="profileTabs" role="tablist">
+        @if (canViewOrders)
+        {
         <li class="nav-item" role="presentation">
             <button class="nav-link @Active("current")" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-pane" type="button" role="tab" aria-controls="current-pane" aria-selected="@Selected("current")">
                 Текущи поръчки
@@ -39,6 +52,7 @@
                 История на поръчките
             </button>
         </li>
+        }
         <li class="nav-item" role="presentation">
             <button class="nav-link @Active("addresses")" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses-pane" type="button" role="tab" aria-controls="addresses-pane" aria-selected="@Selected("addresses")">
                 Моите адреси
@@ -49,6 +63,8 @@
                 Лични данни
             </button>
         </li>
+        @if (assistance == null)
+        {
         <li class="nav-item" role="presentation">
             <button class="nav-link @Active("password")" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab" aria-controls="password-pane" aria-selected="@Selected("password")">
                 Смяна на паролата
@@ -59,15 +75,18 @@
                 Поверителност
             </button>
         </li>
+        }
     </ul>
 
     <div class="tab-content algara-profile-tab-content">
+        @if (canViewOrders)
+        {
         <section class="tab-pane fade @Show("current")" id="current-pane" role="tabpanel" aria-labelledby="current-tab" tabindex="0">
             <div class="algara-profile-panel">
                 <div class="algara-profile-panel__header">
                     <h2 class="h5 mb-0">Текущи поръчки</h2>
                 </div>
-                @await Html.PartialAsync("_ProfileOrdersTable", Model.CurrentOrders)
+                @await Html.PartialAsync("~/Views/Account/_ProfileOrdersTable.cshtml", Model.CurrentOrders)
             </div>
         </section>
 
@@ -76,15 +95,18 @@
                 <div class="algara-profile-panel__header">
                     <h2 class="h5 mb-0">История на поръчките</h2>
                 </div>
-                @await Html.PartialAsync("_ProfileOrdersTable", Model.OrderHistory)
+                @await Html.PartialAsync("~/Views/Account/_ProfileOrdersTable.cshtml", Model.OrderHistory)
             </div>
         </section>
 
+        }
         <section class="tab-pane fade @Show("addresses")" id="addresses-pane" role="tabpanel" aria-labelledby="addresses-tab" tabindex="0">
             <div class="algara-address-grid">
                 @foreach (var address in Model.Addresses)
                 {
                     <article class="algara-address-card @(address.IsDefault ? "is-default" : "")">
+                        @if (canManageAddresses)
+                        {
                         <div class="algara-address-card__actions">
                             <button type="button"
                                     class="btn btn-sm btn-link algara-icon-action js-address-edit"
@@ -102,7 +124,7 @@
                                     data-address-default="@address.IsDefault.ToString().ToLowerInvariant()">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <form asp-action="DeleteAddress" method="post" class="d-inline js-delete-address">
+                            <form asp-controller="@profileController" asp-action="DeleteAddress" asp-route-sessionId="@assistance?.SessionId" method="post" class="d-inline js-delete-address">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="n" value="@address.N" />
                                 <input type="hidden" name="expectedVersion" value="@Model.AddressBookVersion" />
@@ -113,9 +135,19 @@
                             </form>
                         </div>
 
+                        }
                         @if (address.IsDefault)
                         {
                             <span class="algara-address-card__badge">Основен</span>
+                        }
+                        else if (assistance != null && canManageAddresses)
+                        {
+                            <form asp-controller="CustomerAssistance" asp-action="SetDefaultAddress" asp-route-sessionId="@assistance.SessionId" method="post" class="mb-3">
+                                <input type="hidden" name="n" value="@address.N" />
+                                <input type="hidden" name="expectedVersion" value="@Model.AddressBookVersion" />
+                                <input type="hidden" name="expectedAccountVersion" value="@Model.AccountVersion" />
+                                <button type="submit" class="btn btn-sm algara-btn-outline">Направи основен</button>
+                            </form>
                         }
                         <dl class="mb-0">
                             <dt>Имейл:</dt>
@@ -132,10 +164,13 @@
                     </article>
                 }
 
+                @if (canManageAddresses)
+                {
                 <button type="button" class="algara-address-card algara-address-card--add js-address-add">
                     <span class="algara-address-add-icon"><i class="bi bi-plus-lg"></i></span>
                     <span>Добави нов</span>
                 </button>
+                }
             </div>
         </section>
 
@@ -145,7 +180,9 @@
                     <h2 class="h5 mb-0">Лични данни</h2>
                     <span class="text-muted small">Имейлът не може да се променя от профила.</span>
                 </div>
-                <form asp-action="UpdateProfile" method="post" class="row g-3 algara-profile-form algara-profile-form--details">
+                @if (canEditProfile)
+                {
+                <form asp-controller="@profileController" asp-action="UpdateProfile" asp-route-sessionId="@assistance?.SessionId" method="post" class="row g-3 algara-profile-form algara-profile-form--details">
                     @Html.AntiForgeryToken()
                     <input asp-for="Details.ExpectedVersion" type="hidden" />
                     <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
@@ -175,9 +212,21 @@
                         </button>
                     </div>
                 </form>
+                }
+                else
+                {
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Име</dt><dd class="col-sm-9">@Model.Details.FirstName</dd>
+                        <dt class="col-sm-3">Фамилия</dt><dd class="col-sm-9">@Model.Details.LastName</dd>
+                        <dt class="col-sm-3">Телефон</dt><dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Details.PhoneNumber) ? "—" : Model.Details.PhoneNumber)</dd>
+                        <dt class="col-sm-3">Имейл</dt><dd class="col-sm-9 text-break">@Model.Details.Email</dd>
+                    </dl>
+                }
             </div>
         </section>
 
+        @if (assistance == null)
+        {
         <section class="tab-pane fade @Show("password")" id="password-pane" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
             <div class="algara-profile-panel">
                 <div class="algara-profile-panel__header">
@@ -258,13 +307,16 @@
                 </form>
             </div>
         </section>
+        }
     </div>
 </div>
 
+@if (canManageAddresses)
+{
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content algara-login-modal">
-            <form asp-action="SaveAddress" method="post" class="modal-body">
+            <form asp-controller="@profileController" asp-action="SaveAddress" asp-route-sessionId="@assistance?.SessionId" method="post" class="modal-body">
                 @Html.AntiForgeryToken()
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                     <h2 class="h5 mb-0" id="addressModalTitle">Нов адрес</h2>
@@ -339,10 +391,14 @@
     </div>
 </div>
 
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
+            var assistanceContent = document.getElementById('assistance-content');
+            if (assistanceContent && assistanceContent.hidden) return;
             var modalEl = document.getElementById('addressModal');
             if (!modalEl || !window.bootstrap) return;
 

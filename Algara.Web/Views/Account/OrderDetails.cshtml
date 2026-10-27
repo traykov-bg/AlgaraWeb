@@ -1,11 +1,12 @@
 ﻿@model Algara.Web.ViewModels.ProfileOrderDetailViewModel
 @{
+    if (Model.Assistance != null) { Layout = "_CustomerAssistanceLayout"; ViewData["Assistance"] = Model.Assistance; }
     ViewData["Title"] = $"Поръчка #{Model.Order.N}";
 }
 
 <div class="algara-profile py-4 py-lg-5">
     <div class="mb-3">
-        <a asp-action="Profile" class="btn btn-sm btn-outline-secondary">
+        <a asp-controller="@(Model.Assistance == null ? "Account" : "CustomerAssistance")" asp-action="Profile" asp-route-sessionId="@Model.Assistance?.SessionId" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Обратно към профила
         </a>
     </div>

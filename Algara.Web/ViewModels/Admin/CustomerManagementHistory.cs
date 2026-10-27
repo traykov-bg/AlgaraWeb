@@ -18,6 +18,13 @@ public static class CustomerManagementHistory
          ("FailedLoginAttempts", "Неуспешни опити"), ("LockoutUntil", "Блокиране до")];
     private static readonly (string Key, string Label)[] SessionFields =
         [("SessionN", "Номер на сесията"), ("ActiveSessionCount", "Непрекратени сесии"), ("IsActive", "Непрекратена")];
+    private static readonly (string Key, string Label)[] PasswordResetFields =
+        [("PasswordChanged", "Зададена нова парола"), ("RevokedSessionCount", "Прекратени сесии"),
+         ("RevokedTokenCount", "Прекратени връзки за достъп"), ("CancelledEmailCount", "Отменени чакащи имейли")];
+    private static readonly (string Key, string Label)[] AssistanceFields =
+        [("SessionId", "Сесия за съдействие"), ("Mode", "Режим"), ("Operation", "Действие"), ("Result", "Резултат"),
+         ("StartedAtUtc", "Начало"), ("ExpiresAtUtc", "Краен срок"), ("EndedAtUtc", "Край"),
+         ("EndReason", "Причина за край"), ("OrderN", "Поръчка")];
 
     public static List<CustomerHistoryFieldChange> Format(string action, string? before, string? after)
     {
@@ -37,6 +44,8 @@ public static class CustomerManagementHistory
                 "ProfileUpdated" => ProfileFields,
                 "AccountUnlocked" or "AccessSuspended" or "AccessRestored" => AccessFields,
                 "SessionRevoked" or "AllSessionsRevoked" => SessionFields,
+                "PasswordResetByStaff" => PasswordResetFields,
+                "AssistanceStarted" or "AssistanceViewed" or "AssistanceOrderViewed" or "AssistanceEnded" or "AssistanceAction" => AssistanceFields,
                 _ => []
             };
             return Fields(beforeDoc.RootElement, afterDoc.RootElement, fields, string.Empty);
@@ -76,6 +85,18 @@ public static class CustomerManagementHistory
         if (value.ValueKind != JsonValueKind.String) return "—";
         var text = value.GetString();
         if (string.IsNullOrWhiteSpace(text)) return "—";
+        if (key == "SessionId") return Guid.TryParse(text, out var id) ? id.ToString() : "—";
+        if (key is "Mode" or "Operation" or "Result" or "EndReason") return text switch
+        {
+            "Preview" => "Само четене", "Assist" => "Ограничено съдействие",
+            "Start" => "Начало", "End" => "Край", "ViewProfile" => "Преглед на профила", "ViewOrder" => "Преглед на поръчка",
+            "ProfileUpdated" => "Промяна на профил", "AddressCreated" => "Нов адрес", "AddressUpdated" => "Промяна на адрес",
+            "AddressDeleted" => "Изтриване на адрес", "DefaultAddressChanged" => "Основен адрес",
+            "Succeeded" => "Успешно", "Rejected" => "Отказано", "Denied" => "Неразрешено", "NoChange" => "Без промяна",
+            "ValidationRejected" => "Невалидни данни", "Expired" => "Изтекъл срок", "StaffEnded" => "Приключено от служителя",
+            "InvalidContext" => "Невалидна сесия", "AccessChanged" => "Променен достъп", "TargetChanged" => "Променен клиентски акаунт",
+            _ => "—"
+        };
         if ((key == "LockoutUntil" || key.EndsWith("AtUtc", StringComparison.Ordinal)) && value.TryGetDateTime(out var date))
             return date.ToString("dd.MM.yyyy HH:mm", CultureInfo.InvariantCulture) + (key.EndsWith("Utc", StringComparison.Ordinal) ? " UTC" : string.Empty);
         return text.Length <= 1000 ? text : text[..1000];

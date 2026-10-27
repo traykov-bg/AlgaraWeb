@@ -4,6 +4,8 @@ namespace Algara.Web.Services;
 
 public class CustomerAccountAction
 {
+    // Set only by the assistance facade. It is not public or MVC-bindable.
+    internal Guid? AssistanceSessionId { get; set; }
     public string? ExpectedAccountVersion { get; set; }
     public string? Reason { get; set; }
 }
@@ -44,6 +46,13 @@ public sealed class CustomerSessionAction : CustomerAccountAction
     public string? ExpectedSessionVersion { get; set; }
 }
 
+public sealed class CustomerPasswordReset : CustomerAccountAction
+{
+    public string? ActorPassword { get; set; }
+    public string? NewPassword { get; set; }
+    public string? ConfirmPassword { get; set; }
+}
+
 public sealed record CustomerSessionSummary(int Id, DateTime CreatedAt, string DeviceInfo,
     bool IsActive, bool IsCurrent, string Version);
 
@@ -64,5 +73,6 @@ public interface ICustomerManagementService
     Task<CustomerDossierResult> RestoreAccessAsync(ClaimsPrincipal actor, int userN, CustomerAccountAction request, CancellationToken cancellationToken = default);
     Task<CustomerDossierResult> RevokeSessionAsync(ClaimsPrincipal actor, int userN, CustomerSessionAction request, CancellationToken cancellationToken = default);
     Task<CustomerDossierResult> RevokeAllSessionsAsync(ClaimsPrincipal actor, int userN, CustomerAccountAction request, CancellationToken cancellationToken = default);
+    Task<CustomerDossierResult> ResetPasswordAsync(ClaimsPrincipal actor, int userN, CustomerPasswordReset request, CancellationToken cancellationToken = default);
     Task<CustomerSessionsSnapshot?> GetSessionsAsync(ClaimsPrincipal actor, int userN, CancellationToken cancellationToken = default);
 }

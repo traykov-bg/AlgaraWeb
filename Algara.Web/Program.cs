@@ -81,6 +81,7 @@ try
     builder.Services.AddScoped<AccessManagementService>();
     builder.Services.AddScoped<Algara.Web.Services.CustomerDossierService>();
     builder.Services.AddScoped<Algara.Web.Services.ICustomerManagementService, Algara.Web.Services.CustomerManagementService>();
+    builder.Services.AddScoped<Algara.Web.Services.ICustomerAssistanceService, Algara.Web.Services.CustomerAssistanceService>();
     builder.Services.AddScoped<Algara.Web.Services.Email.SmtpSettingsService>();
     builder.Services.AddSingleton<Algara.Web.Services.Email.ISmtpSecretProtector, Algara.Web.Services.Email.SmtpSecretProtector>();
     builder.Services.AddSingleton<Algara.Web.Services.Email.ISmtpConnectionProbe, Algara.Web.Services.Email.SmtpConnectionProbe>();

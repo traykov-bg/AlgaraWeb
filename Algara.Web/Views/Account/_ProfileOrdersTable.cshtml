@@ -1,4 +1,5 @@
 ﻿@model IReadOnlyList<Algara.Web.ViewModels.ProfileOrderRowViewModel>
+@{ var assistance = ViewData["Assistance"] as Algara.Web.ViewModels.CustomerAssistanceViewModel; }
 
 @if (Model.Any())
 {
@@ -30,7 +31,7 @@
                             }
                         </td>
                         <td class="text-end">
-                            <a asp-action="OrderDetails" asp-route-n="@order.N" class="btn btn-sm btn-outline-secondary">
+                            <a asp-controller="@(assistance == null ? "Account" : "CustomerAssistance")" asp-action="OrderDetails" asp-route-sessionId="@assistance?.SessionId" asp-route-n="@order.N" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-eye me-1"></i>Виж
                             </a>
                         </td>

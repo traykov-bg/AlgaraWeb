@@ -41,8 +41,10 @@ public sealed class StaffAccessService(IdentityDbContext db)
         var roleNumbers = staff.Select(r => r.RoleN).ToArray();
         if (roleNumbers.Length == 0) return new(false, false, new(StringComparer.Ordinal));
         var grants = await db.RolePermissions.AsNoTracking().Where(p => roleNumbers.Contains(p.RoleN))
-            .Select(p => p.PermissionKey).ToListAsync(cancellationToken);
-        return new(true, false, grants.Where(key => PermissionCatalog.Find(key) is { AdminOnly: false }).ToHashSet(StringComparer.Ordinal));
+            .Select(p => new { p.PermissionKey, RoleName = p.Role.Name }).ToListAsync(cancellationToken);
+        return new(true, false, grants.Where(p => PermissionCatalog.Find(p.PermissionKey) is { AdminOnly: false } &&
+            (p.PermissionKey != PermissionCatalog.Users.ResetPassword || p.RoleName == StaffRoles.Moderator))
+            .Select(p => p.PermissionKey).ToHashSet(StringComparer.Ordinal));
     }
 
     internal static async Task<ApplicationUser?> FindAuthenticatedUserAsync(IdentityDbContext db, ClaimsPrincipal principal, CancellationToken cancellationToken)

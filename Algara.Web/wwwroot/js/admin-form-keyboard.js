@@ -1,8 +1,8 @@
 ﻿(function () {
     'use strict';
 
-    const adminContent = document.querySelector('.admin-main');
-    if (!adminContent) return;
+    const editorContent = document.querySelector('.admin-main') || document.querySelector('#assistance-content');
+    if (!editorContent) return;
 
     const entryTypes = new Set([
         'text', 'search', 'email', 'url', 'tel', 'password', 'number',
@@ -11,7 +11,7 @@
 
     // Edit forms save explicitly. Keep Enter available for multiline text,
     // native controls, focused buttons and the catalog's GET search forms.
-    adminContent.addEventListener('keydown', function (event) {
+    editorContent.addEventListener('keydown', function (event) {
         if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
 
         const input = event.target;

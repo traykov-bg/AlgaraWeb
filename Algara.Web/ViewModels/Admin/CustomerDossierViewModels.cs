@@ -24,6 +24,9 @@ public sealed class CustomerDossierViewModel
     public bool CanManageLinks { get; set; }
     public bool CanSendAccountEmails { get; set; }
     public bool CanViewEmailHistory { get; set; }
+    public bool CanPreviewCustomer { get; set; }
+    public bool CanAssistCustomer { get; set; }
+    public string AssistanceAccountVersion { get; set; } = string.Empty;
     public bool CanEditProfile { get; set; }
     public bool CanManageAddresses { get; set; }
     public bool CanUnlock { get; set; }
@@ -31,8 +34,10 @@ public sealed class CustomerDossierViewModel
     public bool CanRestoreAccess { get; set; }
     public bool CanViewSessions { get; set; }
     public bool CanRevokeSessions { get; set; }
+    public bool CanResetPassword { get; set; }
     public bool IsProtectedStaffTarget { get; set; }
     public CustomerProfileEditForm ProfileForm { get; set; } = new();
+    public CustomerPasswordResetForm PasswordForm { get; set; } = new();
     public CustomerAddressEditForm AddressForm { get; set; } = new();
     public CustomerAddressActionForm AddressActionForm { get; set; } = new();
     public CustomerManagementActionForm UnlockForm { get; set; } = new();

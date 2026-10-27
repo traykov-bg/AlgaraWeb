@@ -135,6 +135,51 @@ public sealed class AdminCustomersController(
             FirstName = form.FirstName, LastName = form.LastName, PhoneNumber = form.PhoneNumber
         }, HttpContext.RequestAborted), "Профилните данни са обновени.", vm => vm.ProfileForm = form);
 
+    [HttpPost("password"), ValidateAntiForgeryToken]
+    [RequirePermission("Users.View", "Users.ViewDossier", "Users.ResetPassword")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> ResetPassword([FromRoute] int n, [Bind(Prefix = "PasswordForm")] CustomerPasswordResetForm form)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await customerManagement.ResetPasswordAsync(User, n, new CustomerPasswordReset
+                {
+                    ExpectedAccountVersion = form.ExpectedAccountVersion, Reason = form.Reason,
+                    ActorPassword = form.ActorPassword, NewPassword = form.NewPassword, ConfirmPassword = form.ConfirmPassword
+                }, HttpContext.RequestAborted);
+                if (result.Success)
+                {
+                    TempData["Success"] = "Новата парола е зададена. Сесиите и старите връзки за достъп на акаунта са прекратени.";
+                    return RedirectToAction(nameof(Dossier), new { n });
+                }
+                ModelState.AddModelError(string.Empty, result.Error ?? "Паролата не е променена. Презаредете досието.");
+            }
+        }
+        finally
+        {
+            if (form.Reason != null && new[] { form.ActorPassword, form.NewPassword, form.ConfirmPassword }
+                .Any(secret => !string.IsNullOrEmpty(secret) && form.Reason.Contains(secret, StringComparison.Ordinal)))
+            {
+                form.Reason = null;
+                ModelState.Remove("PasswordForm.Reason");
+            }
+            form.ActorPassword = form.NewPassword = form.ConfirmPassword = null;
+            foreach (var name in new[] { nameof(form.ActorPassword), nameof(form.NewPassword), nameof(form.ConfirmPassword) })
+            {
+                var key = "PasswordForm." + name;
+                var hadErrors = ModelState.TryGetValue(key, out var entry) && entry.Errors.Count > 0;
+                ModelState.Remove(key);
+                if (hadErrors) ModelState.AddModelError(key, "Проверете паролите и ги въведете отново. Новата парола трябва да е между 6 и 1024 символа, а потвърждението да съвпада.");
+            }
+        }
+        var vm = await LoadAsync(n);
+        if (vm == null) return NotFound();
+        vm.PasswordForm = form;
+        return View("~/Views/Admin/CustomerDossier.cshtml", vm);
+    }
+
     [HttpPost("addresses"), ValidateAntiForgeryToken]
     [RequirePermission("Users.View", "Users.ViewDossier", "Users.ManageAddresses")]
     public Task<IActionResult> SaveAddress([FromRoute] int n, [Bind(Prefix = "AddressForm")] CustomerAddressEditForm form)
@@ -268,6 +313,21 @@ public sealed class AdminCustomersController(
         vm.UnlinkForm.ExpectedAccountVersion = accountVersion;
         vm.EmailForm.ExpectedAccountVersion = accountVersion;
         var managementVersion = CustomerManagementVersions.Account(source.VersionSource);
+        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var actorRoles = await identityDb.UserRoles.AsNoTracking().Where(r => r.User.Id == actorId)
+            .Select(r => r.Role.Name).ToArrayAsync(ct);
+        var targetRoles = await identityDb.UserRoles.AsNoTracking().Where(r => r.UserN == n)
+            .Select(r => r.Role.Name).ToArrayAsync(ct);
+        var otherAccount = source.VersionSource.Id != actorId;
+        var canUseCustomerContext = source.Profile.IsActive && !source.Profile.AccessSuspendedAtUtc.HasValue &&
+            otherAccount && StaffAccountManagementRules.CanManage(actorRoles, targetRoles);
+        vm.CanPreviewCustomer = canUseCustomerContext && await staffAccess.HasPermissionAsync(User, "Users.PreviewCustomer", ct);
+        vm.CanAssistCustomer = canUseCustomerContext && await staffAccess.HasPermissionAsync(User, "Users.AssistCustomer", ct);
+        vm.AssistanceAccountVersion = managementVersion;
+        vm.CanResetPassword = otherAccount && (source.Profile.IsActive || source.Profile.AccessSuspendedAtUtc.HasValue) &&
+            StaffAccountManagementRules.CanResetPassword(actorRoles, targetRoles) &&
+            await staffAccess.HasPermissionAsync(User, PermissionCatalog.Users.ResetPassword, ct);
+        vm.PasswordForm.ExpectedAccountVersion = managementVersion;
         var actorIsAdmin = await staffAccess.HasPermissionAsync(User, "Access.AssignRoles", ct);
         var staffRoles = StaffRoles.All.ToArray();
         vm.IsProtectedStaffTarget = !actorIsAdmin && await identityDb.UserRoles.AsNoTracking()

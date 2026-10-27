@@ -53,6 +53,8 @@ public sealed class AccessManagementService(IdentityDbContext db)
         if (submitted.Length > PermissionCatalog.All.Count || submitted.Any(k => PermissionCatalog.Find(k) is not { AdminOnly: false }))
             return AccessChangeResult.Reject("Списъкът съдържа неизвестни или запазени за Администратора права.");
         var keys = submitted.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        if (keys.Contains(PermissionCatalog.Users.ResetPassword, StringComparer.Ordinal) && roleName != StaffRoles.Moderator)
+            return AccessChangeResult.Reject("Задаването на нова парола е достъпно само за Администратор и Модератор.");
         foreach (var key in keys)
         {
             var view = key.Split('.')[0] + ".View";

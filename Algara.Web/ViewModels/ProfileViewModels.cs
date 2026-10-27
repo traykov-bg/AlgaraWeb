@@ -6,6 +6,7 @@ namespace Algara.Web.ViewModels
 {
     public class ProfileViewModel
     {
+        public CustomerAssistanceViewModel? Assistance { get; set; }
         public ProfileDetailsViewModel Details { get; set; } = new();
         public ChangePasswordViewModel Password { get; set; } = new();
         public AddressFormViewModel Address { get; set; } = new();
@@ -186,6 +187,7 @@ namespace Algara.Web.ViewModels
 
     public class ProfileOrderDetailViewModel
     {
+        public CustomerAssistanceViewModel? Assistance { get; set; }
         public Order Order { get; set; } = null!;
         public string StatusLabel { get; set; } = string.Empty;
         public string StatusCssClass { get; set; } = string.Empty;

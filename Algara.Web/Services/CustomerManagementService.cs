@@ -5,6 +5,8 @@ using Algara.Data.Models;
 using Algara.Identity.Authorization;
 using Algara.Identity.Data;
 using Algara.Identity.Models;
+using Algara.Identity.Services;
+using Algara.Web.Services.Email;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -27,9 +29,10 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
     private Task<CustomerDossierResult> EditProfileAsync(ClaimsPrincipal actor, int? userN, CustomerProfileUpdate request, CancellationToken cancellationToken)
     {
         var error = CustomerManagementRules.Validate(request);
-        if (error != null) return RejectAsync(error);
+        if (error != null && request.AssistanceSessionId == null) return RejectAsync(error);
         return ExecuteAsync(actor, userN, request, PermissionCatalog.Users.EditProfile, (identity, target, authenticated) =>
         {
+            if (error != null) return Task.FromResult(Change.Reject(error));
             var before = Profile(target);
             var fullName = $"{request.FirstName} {request.LastName}";
             if (target.FirstName == request.FirstName && target.LastName == request.LastName && target.PhoneNumber == request.PhoneNumber &&
@@ -39,7 +42,7 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
             target.PhoneNumber = request.PhoneNumber;
             target.FullName = target.DisplayName = fullName;
             return Task.FromResult(Change.Apply("ProfileUpdated", before, () => Profile(target)));
-        }, cancellationToken);
+        }, cancellationToken, "ProfileUpdated");
     }
 
     public Task<CustomerDossierResult> SaveAddressAsync(ClaimsPrincipal actor, int userN, CustomerAddressUpdate request, CancellationToken cancellationToken = default) =>
@@ -51,10 +54,11 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
     private Task<CustomerDossierResult> SaveAddressAsync(ClaimsPrincipal actor, int? userN, CustomerAddressUpdate request, CancellationToken cancellationToken)
     {
         var error = CustomerManagementRules.Validate(request);
-        if (error != null) return RejectAsync(error);
-        if (!CustomerManagementVersions.IsVersion(request.ExpectedAddressesVersion)) return RejectAsync(Stale);
+        if (!CustomerManagementVersions.IsVersion(request.ExpectedAddressesVersion)) error ??= Stale;
+        if (error != null && request.AssistanceSessionId == null) return RejectAsync(error);
         return ExecuteAsync(actor, userN, request, PermissionCatalog.Users.ManageAddresses, async (identity, target, authenticated) =>
         {
+            if (error != null) return Change.Reject(error);
             var addresses = await LoadAddressesAsync(identity, target.N, cancellationToken);
             if (CustomerManagementVersions.AddressBook(addresses) != request.ExpectedAddressesVersion) return Change.Reject(Stale);
             var address = request.N.HasValue ? addresses.SingleOrDefault(a => a.N == request.N.Value) : null;
@@ -76,7 +80,7 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
             if (JsonSerializer.Serialize(before) == JsonSerializer.Serialize(Addresses(addresses))) return Change.None;
             address.UpdatedAt = request.N.HasValue ? now : null;
             return Change.Apply(request.N.HasValue ? "AddressUpdated" : "AddressCreated", before, () => Addresses(addresses));
-        }, cancellationToken);
+        }, cancellationToken, request.N.HasValue ? "AddressUpdated" : "AddressCreated");
     }
 
     public Task<CustomerDossierResult> DeleteAddressAsync(ClaimsPrincipal actor, int userN, CustomerAddressAction request, CancellationToken cancellationToken = default) =>
@@ -94,9 +98,11 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
     private Task<CustomerDossierResult> AddressActionAsync(ClaimsPrincipal actor, int? userN, CustomerAddressAction request,
         bool setDefault, CancellationToken cancellationToken)
     {
-        if (request.AddressN <= 0 || !CustomerManagementVersions.IsVersion(request.ExpectedAddressesVersion)) return RejectAsync(Stale);
+        var invalid = request.AddressN <= 0 || !CustomerManagementVersions.IsVersion(request.ExpectedAddressesVersion);
+        if (invalid && request.AssistanceSessionId == null) return RejectAsync(Stale);
         return ExecuteAsync(actor, userN, request, PermissionCatalog.Users.ManageAddresses, async (identity, target, authenticated) =>
         {
+            if (invalid) return Change.Reject(Stale);
             var addresses = await LoadAddressesAsync(identity, target.N, cancellationToken);
             if (CustomerManagementVersions.AddressBook(addresses) != request.ExpectedAddressesVersion) return Change.Reject(Stale);
             var address = addresses.SingleOrDefault(a => a.N == request.AddressN);
@@ -114,7 +120,7 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
                 EnsureDefault(addresses, null, DateTime.UtcNow);
             }
             return Change.Apply(setDefault ? "DefaultAddressChanged" : "AddressDeleted", before, () => Addresses(addresses));
-        }, cancellationToken);
+        }, cancellationToken, setDefault ? "DefaultAddressChanged" : "AddressDeleted");
     }
 
     public Task<CustomerDossierResult> UnlockAsync(ClaimsPrincipal actor, int userN, CustomerAccountAction request, CancellationToken cancellationToken = default) =>
@@ -175,6 +181,68 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
             return Change.Apply("AllSessionsRevoked", new { ActiveSessionCount = count }, () => new { ActiveSessionCount = 0 });
         }, cancellationToken);
 
+    public async Task<CustomerDossierResult> ResetPasswordAsync(ClaimsPrincipal actor, int userN, CustomerPasswordReset request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Credential replacement is an administrative action, never an assistance-context operation.
+            if (request.AssistanceSessionId.HasValue) return new(false, Denied);
+            if (!AccountEmailRules.ValidPassword(request.NewPassword) ||
+                !string.Equals(request.NewPassword, request.ConfirmPassword, StringComparison.Ordinal))
+                return new(false, "Въведете еднаква нова парола и потвърждение между 6 и 1024 знака.");
+            if (request.ActorPassword?.Length is not (> 0 and <= 1024))
+                return new(false, "Въведете текущата парола на Вашия служебен акаунт.");
+            // Known secrets must not accidentally become part of the otherwise free-text audit reason.
+            if (request.Reason != null && (request.Reason.Contains(request.ActorPassword, StringComparison.Ordinal) ||
+                request.Reason.Contains(request.NewPassword!, StringComparison.Ordinal)))
+                return new(false, "Основанието не трябва да съдържа пароли.");
+
+            return await ExecuteAsync(actor, userN, request, PermissionCatalog.Users.ResetPassword, async (identity, target, authenticated) =>
+            {
+                var now = DateTime.UtcNow;
+                var since = now.AddMinutes(-15);
+                var failedAttempts = await shop.CustomerDossierEvents.AsNoTracking().Where(e =>
+                    e.ActorId == authenticated.Id && e.Action == "PasswordResetReauthenticationFailed" && e.OccurredAtUtc >= since)
+                    .Take(5).CountAsync(cancellationToken);
+                if (failedAttempts >= 5)
+                    return Change.Reject("Твърде много неуспешни потвърждения. Изчакайте 15 минути преди нов опит.");
+                if (!AccountPasswordCodec.Verify(request.ActorPassword, authenticated.PasswordHash, authenticated.Salt))
+                    return Change.AuditReject("PasswordResetReauthenticationFailed",
+                        "Текущата парола на Вашия служебен акаунт не е потвърдена.",
+                        new { ReauthenticationSucceeded = false });
+
+                var tokens = await identity.AccountEmailTokens.Where(t => t.UserN == target.N &&
+                    t.ConsumedAtUtc == null && t.RevokedAtUtc == null).ToListAsync(cancellationToken);
+                foreach (var token in tokens) token.RevokedAtUtc = now;
+                var tokenIds = tokens.Select(t => t.Id).ToArray();
+                var messages = await identity.EmailOutboxMessages.Where(m => m.TokenId != null && tokenIds.Contains(m.TokenId.Value) &&
+                    (m.State == EmailOutboxStates.Pending || m.State == EmailOutboxStates.Processing)).ToListAsync(cancellationToken);
+                foreach (var message in messages)
+                {
+                    message.State = EmailOutboxStates.Cancelled;
+                    message.ProtectedPayload = null;
+                    message.LeaseId = null;
+                    message.LeaseUntilUtc = null;
+                }
+                var credential = AccountPasswordCodec.Create(request.NewPassword!);
+                target.PasswordHash = credential.Hash;
+                target.Salt = credential.Salt;
+                var sessionCount = await InvalidateSessionsAsync(identity, target, cancellationToken);
+                // Password replacement neither unlocks nor restores/activates/confirms the account.
+                return Change.Apply("PasswordResetByStaff", new { PasswordChanged = false }, () => new
+                {
+                    PasswordChanged = true, RevokedSessionCount = sessionCount,
+                    RevokedTokenCount = tokens.Count, CancelledEmailCount = messages.Count
+                });
+            }, cancellationToken);
+        }
+        finally
+        {
+            request.ActorPassword = request.NewPassword = request.ConfirmPassword = null;
+        }
+    }
+
     public async Task<CustomerSessionsSnapshot?> GetSessionsAsync(ClaimsPrincipal actor, int userN, CancellationToken cancellationToken = default)
     {
         if (userN <= 0) return null;
@@ -196,10 +264,11 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
     }
 
     private async Task<CustomerDossierResult> ExecuteAsync(ClaimsPrincipal actor, int? userN, CustomerAccountAction request, string permission,
-        Func<IdentityDbContext, ApplicationUser, ApplicationUser, Task<Change>> action, CancellationToken cancellationToken)
+        Func<IdentityDbContext, ApplicationUser, ApplicationUser, Task<Change>> action, CancellationToken cancellationToken, string? operation = null)
     {
-        if (userN is <= 0 || !CustomerManagementVersions.IsVersion(request.ExpectedAccountVersion)) return new(false, Stale);
-        if (userN.HasValue && !CustomerManagementRules.ValidReason(request.Reason))
+        var assistanceId = request.AssistanceSessionId;
+        if (!assistanceId.HasValue && (userN is <= 0 || !CustomerManagementVersions.IsVersion(request.ExpectedAccountVersion))) return new(false, Stale);
+        if (!assistanceId.HasValue && userN.HasValue && !CustomerManagementRules.ValidReason(request.Reason))
             return new(false, "Въведете основание за промяната до 2000 знака.");
         try
         {
@@ -208,30 +277,87 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
             await identity.Database.UseTransactionAsync(transaction.GetDbTransaction(), cancellationToken);
             var authenticated = await FindAuthenticatedAsync(identity, actor, cancellationToken);
             if (authenticated == null) return new(false, Denied);
-            if (userN.HasValue && !await HasPermissionAsync(identity, actor, permission, cancellationToken)) return new(false, Denied);
-            var targetN = userN ?? authenticated.N;
-            var target = await identity.Users.FromSqlInterpolated(
-                $"SELECT * FROM [Users] WITH (UPDLOCK,HOLDLOCK) WHERE [N]={targetN}")
-                .SingleOrDefaultAsync(cancellationToken);
-            if (target == null || CustomerManagementVersions.Account(target) != request.ExpectedAccountVersion) return new(false, Stale);
-            if (!CustomerManagementRules.CanManage(target) || (userN.HasValue &&
-                !await MayManageTargetAsync(identity, authenticated.N, targetN, cancellationToken))) return new(false, Denied);
-            // Own methods choose the authenticated owner; no posted target or staff flag can bypass this path.
-            if (!userN.HasValue && (!target.IsActive || target.Id != authenticated.Id)) return new(false, Denied);
+            CustomerAssistanceContext? assistance = null;
+            ApplicationUser? target;
+            if (assistanceId.HasValue)
+            {
+                // Only the four supported profile/address entry points supply a known operation.
+                if (operation is not ("ProfileUpdated" or "AddressCreated" or "AddressUpdated" or "AddressDeleted" or "DefaultAddressChanged"))
+                    return new(false, Denied);
+                assistance = await CustomerAssistanceService.LoadContextAsync(shop, identity, actor, assistanceId.Value, cancellationToken);
+                if (assistance == null)
+                {
+                    await shop.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return new(false, CustomerAssistanceService.Unavailable);
+                }
+                var permitted = permission switch
+                {
+                    PermissionCatalog.Users.EditProfile => assistance.CanEditProfile,
+                    PermissionCatalog.Users.ManageAddresses => assistance.CanManageAddresses,
+                    _ => false
+                };
+                if (!permitted)
+                {
+                    CustomerAssistanceService.AddEvent(shop, assistance.Session, authenticated, "AssistanceAction", operation, "Denied");
+                    await shop.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return new(false, Denied);
+                }
+                target = assistance.Target;
+            }
+            else
+            {
+                if (userN.HasValue && !await HasPermissionAsync(identity, actor, permission, cancellationToken)) return new(false, Denied);
+                var targetN = userN ?? authenticated.N;
+                target = await identity.Users.FromSqlInterpolated(
+                    $"SELECT * FROM [Users] WITH (UPDLOCK,HOLDLOCK) WHERE [N]={targetN}")
+                    .SingleOrDefaultAsync(cancellationToken);
+                if (target != null && (!CustomerManagementRules.CanManage(target) || (userN.HasValue &&
+                    !(permission == PermissionCatalog.Users.ResetPassword
+                        ? await MayResetPasswordAsync(identity, authenticated.N, targetN, cancellationToken)
+                        : await MayManageTargetAsync(identity, authenticated.N, targetN, cancellationToken))))) return new(false, Denied);
+                // Own methods choose the authenticated owner; no posted target or staff flag can bypass this path.
+                if (target != null && !userN.HasValue && (!target.IsActive || target.Id != authenticated.Id)) return new(false, Denied);
+            }
+            if (target == null || !CustomerManagementVersions.IsVersion(request.ExpectedAccountVersion) ||
+                CustomerManagementVersions.Account(target) != request.ExpectedAccountVersion)
+            {
+                if (assistance != null)
+                {
+                    CustomerAssistanceService.AddEvent(shop, assistance.Session, authenticated, "AssistanceAction", operation!, "Rejected");
+                    await shop.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                return new(false, Stale);
+            }
             var change = await action(identity, target, authenticated);
-            if (change.Error != null) return new(false, change.Error);
-            if (change.Action == null) return new(true);
+            if (change.Action == null)
+            {
+                if (assistance != null)
+                {
+                    CustomerAssistanceService.AddEvent(shop, assistance.Session, authenticated, "AssistanceAction", operation!,
+                        change.Error != null ? "Rejected" : "NoChange");
+                    await shop.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                return new(change.Error == null, change.Error);
+            }
             await identity.SaveChangesAsync(cancellationToken);
             var actorName = string.IsNullOrWhiteSpace(authenticated.DisplayName) ? authenticated.UserName : authenticated.DisplayName;
             shop.CustomerDossierEvents.Add(new CustomerDossierEvent
             {
                 UserN = target.N, ActorId = authenticated.Id, ActorName = actorName.Length <= 256 ? actorName : actorName[..256],
-                OccurredAtUtc = DateTime.UtcNow, Action = change.Action, Reason = userN.HasValue ? request.Reason!.Trim() : OwnReason,
-                BeforeJson = JsonSerializer.Serialize(change.Before), AfterJson = JsonSerializer.Serialize(change.After!())
+                OccurredAtUtc = DateTime.UtcNow, Action = change.Action,
+                Reason = assistance?.Session.Reason ?? (userN.HasValue ? request.Reason!.Trim() : OwnReason),
+                BeforeJson = JsonSerializer.Serialize(change.Before), AfterJson = JsonSerializer.Serialize(change.After!()),
+                Note = assistance == null ? null : $"Сесия за съдействие: {assistance.Session.Id:D}"
             });
+            if (assistance != null)
+                CustomerAssistanceService.AddEvent(shop, assistance.Session, authenticated, "AssistanceAction", operation!, "Succeeded");
             await shop.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return new(true);
+            return new(change.Error == null, change.Error);
         }
         catch (DbUpdateException)
         {
@@ -291,6 +417,14 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
         return !roles.Any(StaffRoles.IsStaff);
     }
 
+    private static async Task<bool> MayResetPasswordAsync(IdentityDbContext identity, int actorN, int targetN, CancellationToken cancellationToken)
+    {
+        if (actorN == targetN) return false;
+        var actorRoles = await identity.UserRoles.AsNoTracking().Where(r => r.UserN == actorN).Select(r => r.Role.Name).ToListAsync(cancellationToken);
+        var targetRoles = await identity.UserRoles.AsNoTracking().Where(r => r.UserN == targetN).Select(r => r.Role.Name).ToListAsync(cancellationToken);
+        return StaffAccountManagementRules.CanResetPassword(actorRoles, targetRoles);
+    }
+
     private static async Task<bool> IsLastAdministratorAsync(IdentityDbContext identity, int userN, CancellationToken cancellationToken) =>
         await identity.UserRoles.AnyAsync(r => r.UserN == userN && r.Role.Name == StaffRoles.Admin && r.User.IsActive, cancellationToken) &&
         !await identity.UserRoles.AnyAsync(r => r.UserN != userN && r.Role.Name == StaffRoles.Admin && r.User.IsActive, cancellationToken);
@@ -332,6 +466,7 @@ public sealed class CustomerManagementService(ShopDbContext shop) : ICustomerMan
     {
         public static Change None => new(null, null, null);
         public static Change Reject(string error) => new(null, null, null, error);
+        public static Change AuditReject(string action, string error, object after) => new(action, null, () => after, error);
         public static Change Apply(string action, object before, Func<object> after) => new(action, before, after);
     }
 }
