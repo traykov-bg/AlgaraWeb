@@ -36,6 +36,7 @@ function fixture(options = {}) {
     const fabric = options.noFabric ? null : node();
     const filters = node(); filters.hidden = true;
     const output = Object.fromEntries(['price', 'original', 'name', 'status', 'photo-note'].map(name => ['[data-variant-' + name + ']', node()]));
+    output['[data-cart-variant]'] = node();
     const main = node();
     const thumbnails = ['/base.jpg', '/exact.jpg', '/side.jpg'].map(src => node({ 'data-gallery-src': src }));
     const pickerNodes = {
@@ -64,6 +65,16 @@ test('a variant without its own image resets a previous exact photo to the base 
     assert.equal(ui.output['[data-variant-photo-note]'].textContent, 'Base photo');
     assert.deepEqual(ui.choices.map(choice => choice.attrs['aria-pressed']), ['false', 'true', 'false']);
     assert.equal(ui.output['[data-variant-status]'].textContent, 'Made to order');
+});
+
+test('the add-to-cart identity follows the visible selected variant', () => {
+    const ui = fixture();
+    assert.equal(ui.output['[data-cart-variant]'].value, '1');
+    ui.choices[1].fire('click');
+    assert.equal(ui.output['[data-cart-variant]'].value, '2');
+    ui.fabric.value = '11';
+    ui.fabric.fire('change');
+    assert.equal(ui.output['[data-cart-variant]'].value, '3');
 });
 
 test('selection preserves the full server price and language URL without separate surcharge or code fields', () => {

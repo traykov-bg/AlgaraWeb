@@ -7,18 +7,48 @@
     <div class="col-lg-9">
         <h1 class="algara-section-title">@T["Delivery"]</h1>
         <p class="lead text-muted">@T["DeliveryIntro"]</p>
+        <h2 class="h4 mt-4">@T["DeliveryMethodsTitle"]</h2>
+        <div class="row g-4 my-3">
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <h3 class="h5">@T["DeliveryOwnTransportTitle"]</h3>
+                    <p>@T["DeliveryOwnTransportEligibility"]</p>
+                    <p class="mb-0">@T["DeliveryOwnTransportPrice"]</p>
+                </div>
+            </section>
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <h3 class="h5">@T["DeliveryCourierTitle"]</h3>
+                    <p>@T["DeliveryCourierEligibility"]</p>
+                    <p class="mb-0">@T["DeliveryCourierPrice"]</p>
+                </div>
+            </section>
+            <section class="col-md-4">
+                <div class="border rounded p-4 h-100">
+                    <h3 class="h5">@T["DeliveryPickupTitle"]</h3>
+                    <p class="mb-0">@T["DeliveryPickupDescription"]</p>
+                </div>
+            </section>
+        </div>
+        <section class="border rounded p-4 my-4">
+            <h2 class="h5">@T["DeliveryAdditionalServicesTitle"]</h2>
+            <p class="mb-0">@T["DeliveryAdditionalServicesDescription"]</p>
+        </section>
+        <p>@T["DeliveryPaymentOnReceipt"]</p>
+        <h2 class="h4 mt-4">@T["DeliveryTimeframesTitle"]</h2>
+        <p class="fw-semibold">@T["DeliveryConfirmationStart"]</p>
         <div class="row g-4 my-3">
             <section class="col-md-4">
                 <div class="border rounded p-4 h-100">
                     <i class="bi bi-truck fs-2 text-success" aria-hidden="true"></i>
-                    <h2 class="h5 mt-3">@T["AvailabilityInStock"]</h2>
+                    <h3 class="h5 mt-3">@T["AvailabilityInStock"]</h3>
                     <p class="mb-0">@T["DeliveryInStock", DeliveryPolicy.DeliveryWorkingDays]</p>
                 </div>
             </section>
             <section class="col-md-4">
                 <div class="border rounded p-4 h-100">
                     <i class="bi bi-tools fs-2 text-warning" aria-hidden="true"></i>
-                    <h2 class="h5 mt-3">@T["DeliveryManufacturingTitle"]</h2>
+                    <h3 class="h5 mt-3">@T["DeliveryManufacturingTitle"]</h3>
                     <p>@T["DeliveryManufacturing", DeliveryPolicy.ManufacturingWorkingDays]</p>
                     <p class="mb-0">@T["DeliveryManufacturingExtra", DeliveryPolicy.DeliveryWorkingDays]</p>
                 </div>
@@ -26,12 +56,14 @@
             <section class="col-md-4">
                 <div class="border rounded p-4 h-100">
                     <i class="bi bi-chat-dots fs-2 text-secondary" aria-hidden="true"></i>
-                    <h2 class="h5 mt-3">@T["AvailabilityInquiry"]</h2>
+                    <h3 class="h5 mt-3">@T["AvailabilityInquiry"]</h3>
                     <p class="mb-0">@T["DeliveryInquiry"]</p>
                 </div>
             </section>
         </div>
         <p class="text-muted">@T["DeliveryVariantStock"]</p>
+        <p>@T["DeliveryMixedOrder"]</p>
+        <p>@T["DeliverySplitCharges"]</p>
         <a asp-controller="Home" asp-action="Contact" class="btn btn-outline-primary">@T["Contact"]</a>
         <a asp-controller="Product" asp-action="Index" class="btn btn-link">@T["BackToCatalog"]</a>
     </div>

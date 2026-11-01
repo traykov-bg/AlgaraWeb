@@ -10,6 +10,9 @@
         public decimal? WidthCm { get; set; }
         public decimal? HeightCm { get; set; }
         public decimal? DepthCm { get; set; }
+        public bool AllowsCourier { get; set; }
+        public bool UseCatalogDimensionsForShipping { get; set; }
+        public ICollection<ProductShippingParcel> ShippingParcels { get; set; } = new List<ProductShippingParcel>();
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsCustomizable { get; set; }

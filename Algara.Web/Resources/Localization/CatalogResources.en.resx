@@ -58,11 +58,27 @@
   <data name="DeliveryIntro" xml:space="preserve"><value>The following timeframes depend on the availability of the selected product or variant.</value></data>
   <data name="DeliveryInStock" xml:space="preserve"><value>Delivery within {0} working days for any product in stock.</value></data>
   <data name="DeliveryManufacturingTitle" xml:space="preserve"><value>Upholstered furniture production</value></data>
-  <data name="DeliveryManufacturing" xml:space="preserve"><value>When upholstered furniture is not in stock, manufacturing takes {0} working days.</value></data>
+  <data name="DeliveryManufacturing" xml:space="preserve"><value>When upholstered furniture is not in stock, manufacturing takes up to {0} working days.</value></data>
   <data name="DeliveryManufacturingExtra" xml:space="preserve"><value>Delivery is not included in the manufacturing timeframe. Allow up to {0} additional working days for delivery.</value></data>
   <data name="DeliveryInquiry" xml:space="preserve"><value>Out-of-stock accessories and other products that are not upholstered furniture are available by inquiry.</value></data>
   <data name="DeliveryVariantStock" xml:space="preserve"><value>Availability refers to the exact color or fabric and color combination. If availability is unspecified, please contact us.</value></data>
   <data name="DeliveryTerms" xml:space="preserve"><value>Delivery terms and timeframes</value></data>
+  <data name="DeliveryMethodsTitle" xml:space="preserve"><value>Delivery methods and prices</value></data>
+  <data name="DeliveryOwnTransportTitle" xml:space="preserve"><value>Our own transport</value></data>
+  <data name="DeliveryOwnTransportEligibility" xml:space="preserve"><value>We deliver large furniture using our own transport. If an order contains both large furniture and smaller items, the entire delivery uses our own transport.</value></data>
+  <data name="DeliveryOwnTransportPrice" xml:space="preserve"><value>Delivery is free within a 50 km radius of Plovdiv, including the boundary. Outside this radius, a €100 delivery charge applies.</value></data>
+  <data name="DeliveryCourierTitle" xml:space="preserve"><value>Econt or Speedy</value></data>
+  <data name="DeliveryCourierEligibility" xml:space="preserve"><value>For orders containing only accessories and other small items suitable for courier delivery, you can choose delivery to an address or a specific Econt or Speedy office.</value></data>
+  <data name="DeliveryCourierPrice" xml:space="preserve"><value>The customer pays for courier delivery when the value of the goods after discounts is €100 or less. Courier delivery is free above €100. Delivery and additional services do not count towards this threshold.</value></data>
+  <data name="DeliveryPickupTitle" xml:space="preserve"><value>Store pickup</value></data>
+  <data name="DeliveryPickupDescription" xml:space="preserve"><value>You can collect your order from the store, including large furniture. Arrange collection with a member of our team.</value></data>
+  <data name="DeliveryAdditionalServicesTitle" xml:space="preserve"><value>Carrying upstairs and assembly</value></data>
+  <data name="DeliveryAdditionalServicesDescription" xml:space="preserve"><value>When using our own transport, you can request carrying upstairs and assembly in your order comment. Include the floor, lift availability and any access details. These services are not included in the transport price; their price is agreed separately and paid on delivery.</value></data>
+  <data name="DeliveryPaymentOnReceipt" xml:space="preserve"><value>Payment is due on receipt: cash on delivery with a courier, payment to our team for our own transport, or payment in store on collection.</value></data>
+  <data name="DeliveryTimeframesTitle" xml:space="preserve"><value>Order timeframes</value></data>
+  <data name="DeliveryConfirmationStart" xml:space="preserve"><value>Timeframes start when a member of our team confirms the order.</value></data>
+  <data name="DeliveryMixedOrder" xml:space="preserve"><value>If an order contains both in-stock and made-to-order items, they are delivered together once the entire order is ready. To receive available items earlier, arrange this by phone with a member of our team, who will move them to a separate order.</value></data>
+  <data name="DeliverySplitCharges" xml:space="preserve"><value>If an order is split, delivery terms and charges are recalculated for each separate order and agreed with you.</value></data>
   <data name="AvailabilityUnknown" xml:space="preserve"><value>Availability not specified</value></data>
   <data name="AvailabilityInStock" xml:space="preserve"><value>In stock</value></data>
   <data name="AvailabilityMadeToOrder" xml:space="preserve"><value>Made to order</value></data>

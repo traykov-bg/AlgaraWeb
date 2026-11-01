@@ -1,0 +1,128 @@
+﻿@model Algara.Web.ViewModels.DeliveryQuoteForm
+@using Algara.Web.Services.Shipping
+@using Algara.Web.Localization
+@inject Microsoft.Extensions.Localization.IStringLocalizer<ShippingResources> T
+@{
+    ViewData["Title"] = T["Title"];
+    var courierAllowed = DeliveryQuoteService.AllowsCourier(Model.Cart);
+    var officeErrors = new[] { "InvalidCart", "InvalidMethod", "CourierNotAllowed", "InvalidOfficeCity", "NoOffices", "OfficeLookupUnavailable", "OfficeLookupRejected", "OfficeLookupInvalidResponse", "OfficeLookupFailed" }
+        .ToDictionary(key => key, key => T[key].Value);
+}
+<div style="max-width:60rem" class="mx-auto py-3">
+    <a asp-controller="Order" asp-action="Index" class="text-decoration-none">← @T["BackToCart"]</a>
+    <h1 class="h3 mt-3">@T["Title"]</h1>
+    <p class="text-muted">@T["PreviewOnly"]</p>
+    @if (!Model.Cart.CanQuote)
+    {
+        <div class="alert alert-warning">@T["InvalidCart"]</div>
+    }
+    else
+    {
+        <p><strong>@T["Goods"]:</strong> @Model.Cart.GoodsSubtotal.ToString("N2") €</p>
+        @if (!courierAllowed)
+        {
+            <div class="alert alert-info">@T["CourierNotAllowed"]</div>
+        }
+        @if (Model.ErrorKey != null)
+        {
+            <div class="alert alert-warning" role="alert">@T[Model.ErrorKey]</div>
+        }
+        <form asp-action="Calculate" method="post" id="delivery-quote-form" data-cities-url="@Url.Action("Cities")" data-offices-url="@Url.Action("Offices")" class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <label for="delivery-method" class="form-label">@T["Method"]</label>
+                <select asp-for="Method" id="delivery-method" class="form-select mb-3">
+                    <option value="0">@T["Pickup"]</option>
+                    <option value="1">@T["OwnTransport"]</option>
+                    @if (courierAllowed)
+                    {
+                        <option value="2">@T["EcontOffice"]</option><option value="3">@T["EcontAddress"]</option>
+                        <option value="4">@T["SpeedyOffice"]</option><option value="5">@T["SpeedyAddress"]</option>
+                    }
+                </select>
+                <div data-delivery-destination>
+                    <label for="delivery-city" class="form-label">@T["City"]</label>
+                    <div id="delivery-city-picker" class="delivery-city-picker mb-3">
+                        <div class="input-group">
+                            <input asp-for="City" id="delivery-city" class="form-control" maxlength="100" autocomplete="address-level2" aria-describedby="delivery-city-status" />
+                            <button type="button" id="delivery-city-toggle" class="btn btn-outline-secondary" aria-label="@T["ToggleCities"]" aria-controls="delivery-cities" aria-expanded="false" hidden>
+                                <span aria-hidden="true">▾</span>
+                            </button>
+                        </div>
+                        <div id="delivery-city-popup" class="delivery-city-popup" hidden>
+                            <div id="delivery-cities" role="listbox" aria-label="@T["City"]"></div>
+                            <p id="delivery-city-empty" class="small text-muted p-3 mb-0" hidden>@T["NoCitiesFound"]</p>
+                        </div>
+                    </div>
+                    <p id="delivery-city-status" class="small text-muted" role="status" data-loading="@T["CitiesLoading"]" data-error="@T["CitiesFailed"]" data-select="@T["ChooseCity"]"></p>
+                    <div data-delivery-address>
+                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"]</label>
+                        <input asp-for="PostalCode" class="form-control mb-3" maxlength="4" inputmode="numeric" autocomplete="postal-code" />
+                        <label asp-for="Address" class="form-label">@T["Address"]</label>
+                        <input asp-for="Address" class="form-control mb-3" maxlength="500" autocomplete="street-address" />
+                        <p class="small text-muted">@T["AddressHelp"]</p>
+                    </div>
+                    <div data-delivery-office>
+                        <label for="delivery-office" class="form-label d-block">@T["Office"]</label>
+                        <select asp-for="OfficeCode" id="delivery-office" class="form-select mb-3" aria-describedby="delivery-office-status">
+                            <option value="">@T["SelectOffice"]</option>
+                            @if (Model.Offices.Count == 0 && !string.IsNullOrEmpty(Model.OfficeCode))
+                            {
+                                @if (Model.Quote?.Office is { } quotedOffice && quotedOffice.Code == Model.OfficeCode)
+                                {
+                                    <option value="@Model.OfficeCode">@quotedOffice.Name — @quotedOffice.Address</option>
+                                }
+                                else
+                                {
+                                    <option value="@Model.OfficeCode">@T["Office"] @Model.OfficeCode</option>
+                                }
+                            }
+                            @foreach (var office in Model.Offices)
+                            {
+                                <option value="@office.Code">@office.Name — @office.Address</option>
+                            }
+                        </select>
+                        <p id="delivery-office-status" class="small text-muted" role="status" data-loading="@T["OfficesLoading"]" data-error="@T["OfficeLookupFailed"]" data-select="@T["SelectOffice"]" data-errors="@System.Text.Json.JsonSerializer.Serialize(officeErrors)"></p>
+                    </div>
+                </div>
+                <p class="small text-muted" data-delivery-own>@T["OwnPolicy"] @T["GeocodingNotice"]</p>
+                <p class="small text-muted" data-delivery-courier>@T["CourierPolicy"]</p>
+                <p class="small text-muted" data-delivery-pickup>@DeliverySettingsService.OriginAddress</p>
+                <button type="submit" class="btn algara-btn-primary">@T["Calculate"]</button>
+            </div>
+        </form>
+        @if (Model.Quote is { } quote)
+        {
+            <div id="delivery-quote-result" class="card @(quote.IsTest ? "border-warning" : "border-success") mt-4" role="status" aria-live="polite">
+                <div class="card-body">
+                    <h2 class="h5">@T[quote.IsTest ? "TestQuoteTitle" : "QuoteTitle"]</h2>
+                    @if (quote.IsTest)
+                    {
+                        <p class="alert alert-warning" role="alert">@T["TestQuoteNotice"]</p>
+                    }
+                    <dl class="row mb-2">
+                        <dt class="col-7">@T["Goods"]</dt><dd class="col-5 text-end">@quote.GoodsAmount.ToString("N2") €</dd>
+                        <dt class="col-7">@T["Delivery"]</dt><dd class="col-5 text-end">@quote.DeliveryAmount.ToString("N2") €</dd>
+                        <dt class="col-7 fs-5">@T["Total"]</dt><dd class="col-5 text-end fs-5 fw-bold">@quote.Total.ToString("N2") €</dd>
+                    </dl>
+                    @if (quote.DistanceKm.HasValue)
+                    {
+                        <p class="small mb-1">@T["Distance"]: @quote.DistanceKm.Value.ToString("N2") km</p>
+                        <div class="border-start ps-2 my-2">
+                            <p class="small mb-1">@quote.ResolvedAddress</p>
+                            <span translate="no" style="font:400 12px sans-serif;white-space:nowrap;color:#5e5e5e">Google Maps</span>
+                        </div>
+                    }
+                    <p class="small text-muted mb-1">@T["QuoteTime"] @quote.CalculatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</p>
+                    <p class="small text-muted mb-0">@T["QuoteNotice"]</p>
+                </div>
+            </div>
+        }
+        <p class="small text-muted mt-3">@T["PaymentNotice"]</p>
+    }
+</div>
+@section Scripts {
+    <script src="~/js/delivery-quote.js" asp-append-version="true"></script>
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/delivery-quote.css" asp-append-version="true" />
+}

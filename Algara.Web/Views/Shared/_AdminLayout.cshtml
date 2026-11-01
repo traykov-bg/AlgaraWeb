@@ -154,6 +154,7 @@
                 <li staff-permission="Access.ManagePermissions"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminAccess" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" href="@Url.Content("~/admin/access")"><i class="bi bi-shield-lock"></i> Роли и права</a></li>
                 <li staff-permission="Access.ViewHistory"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminAccess" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")" href="@Url.Content("~/admin/access/history")"><i class="bi bi-clock-history"></i> История на достъпа</a></li>
                 <li staff-permission="Settings.Manage"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminEmailSettings" ? "active" : "")" asp-controller="AdminEmailSettings" asp-action="Index"><i class="bi bi-envelope"></i> Имейл настройки</a></li>
+                <li staff-permission="Settings.Manage"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminDeliverySettings" ? "active" : "")" asp-controller="AdminDeliverySettings" asp-action="Index"><i class="bi bi-truck"></i> Настройки за доставка</a></li>
             </ul>
             <ul class="nav flex-column">
                 <li>

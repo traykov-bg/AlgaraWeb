@@ -47,6 +47,14 @@ namespace Algara.Web.ViewModels.Admin
         [Display(Name = "Дълбочина (см)")]
         public decimal? DepthCm { get; set; }
 
+        [Display(Name = "Позволява куриер")]
+        public bool AllowsCourier { get; set; }
+
+        [Display(Name = "Потвърждавам, че размерите от каталога са размерите на опакования колет")]
+        public bool UseCatalogDimensionsForShipping { get; set; }
+
+        public List<AdminProductShippingParcelViewModel> ShippingParcels { get; set; } = [];
+
         [Required(ErrorMessage = "Цената е задължителна")]
         [Range(0.01, 9_999_999, ErrorMessage = "Невалидна цена")]
         [Display(Name = "Цена (€)")]
@@ -84,6 +92,16 @@ namespace Algara.Web.ViewModels.Admin
         // Под-категории
         public List<int> SelectedSubCategoryNs { get; set; } = new();
         public List<SubCategory> AvailableSubCategories { get; set; } = new();
+    }
+
+    public class AdminProductShippingParcelViewModel
+    {
+        [Required(ErrorMessage = "Въведете теглото с опаковката.")]
+        [Range(typeof(decimal), "0.001", "100000", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true)]
+        public decimal? WeightKg { get; set; }
+        public decimal? WidthCm { get; set; }
+        public decimal? HeightCm { get; set; }
+        public decimal? DepthCm { get; set; }
     }
 
     public class AdminProductImageViewModel

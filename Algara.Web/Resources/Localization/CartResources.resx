@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Количка</value></data>
+  <data name="Empty" xml:space="preserve"><value>Количката е празна</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Все още не сте добавили продукти към количката.</value></data>
+  <data name="Browse" xml:space="preserve"><value>Разгледай каталога</value></data>
+  <data name="Add" xml:space="preserve"><value>Добави в количката</value></data>
+  <data name="Added" xml:space="preserve"><value>Продуктът е добавен в количката.</value></data>
+  <data name="Updated" xml:space="preserve"><value>Количеството е обновено.</value></data>
+  <data name="Quantity" xml:space="preserve"><value>Количество</value></data>
+  <data name="Update" xml:space="preserve"><value>Обнови</value></data>
+  <data name="Remove" xml:space="preserve"><value>Премахни</value></data>
+  <data name="RemoveNamed" xml:space="preserve"><value>Премахни {0} от количката</value></data>
+  <data name="UnitPrice" xml:space="preserve"><value>Единична цена</value></data>
+  <data name="Summary" xml:space="preserve"><value>Обща стойност</value></data>
+  <data name="GoodsSubtotal" xml:space="preserve"><value>Стоки след отстъпки</value></data>
+  <data name="DeliveryNext" xml:space="preserve"><value>Цената на доставката се изчислява след избор на начин и адрес или офис.</value></data>
+  <data name="CalculateDelivery" xml:space="preserve"><value>Изчисли доставка</value></data>
+  <data name="ResolveBeforeQuote" xml:space="preserve"><value>Проверете отбелязаните артикули, преди да изчислите доставката.</value></data>
+  <data name="Contact" xml:space="preserve"><value>Свържете се с нас</value></data>
+  <data name="ContinueShopping" xml:space="preserve"><value>Продължи пазаруването</value></data>
+  <data name="Clear" xml:space="preserve"><value>Изпразни количката</value></data>
+  <data name="LivePricesNotice" xml:space="preserve"><value>Количката не резервира наличности. Цените и наличностите се проверяват отново при всяко отваряне.</value></data>
+  <data name="UnavailableProduct" xml:space="preserve"><value>Недостъпен продукт</value></data>
+  <data name="IssueMissingProduct" xml:space="preserve"><value>Този продукт вече не е достъпен. Премахнете го от количката.</value></data>
+  <data name="IssueInactiveProduct" xml:space="preserve"><value>Този продукт вече не се предлага. Премахнете го от количката.</value></data>
+  <data name="IssueInvalidVariant" xml:space="preserve"><value>Избраният вариант вече не се предлага. Отворете продукта и изберете друг вариант.</value></data>
+  <data name="IssueUnknownStock" xml:space="preserve"><value>Наличността не е уточнена. Свържете се с нас.</value></data>
+  <data name="IssueInquiryRequired" xml:space="preserve"><value>Артикулът е по запитване. Свържете се с нас за наличност.</value></data>
+  <data name="IssueInsufficientStock" xml:space="preserve"><value>Няма достатъчно налични бройки. Намалете количеството или се свържете с нас.</value></data>
+  <data name="IssueInvalidPrice" xml:space="preserve"><value>Цената не може да бъде потвърдена. Свържете се с нас.</value></data>
+  <data name="IssueInvalidQuantity" xml:space="preserve"><value>Въведете цяло количество от 1 до 99 броя за един артикул.</value></data>
+  <data name="IssueLineLimit" xml:space="preserve"><value>В количката могат да се добавят до 30 различни артикула или варианта.</value></data>
+  <data name="IssueMissingLine" xml:space="preserve"><value>Артикулът вече не е в количката. Обновете страницата.</value></data>
+</root>

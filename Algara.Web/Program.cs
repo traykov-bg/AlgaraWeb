@@ -92,9 +92,26 @@ try
     builder.Services.AddScoped<EmailOutboxDispatcher>();
     builder.Services.AddScoped<IAccountEmailService, AccountEmailService>();
     builder.Services.AddHostedService<EmailOutboxWorker>();
+    builder.Services.AddScoped<Algara.Web.Services.Cart.ICartStore, Algara.Web.Services.Cart.ProtectedCookieCartStore>();
+    builder.Services.AddScoped<Algara.Web.Services.Cart.CartService>();
+    builder.Services.AddSingleton<Algara.Web.Services.Shipping.DeliverySecretProtector>();
+    builder.Services.AddScoped<Algara.Web.Services.Shipping.DeliverySettingsService>();
+    builder.Services.AddScoped<Algara.Web.Services.Shipping.IDeliverySettingsReader>(sp => sp.GetRequiredService<Algara.Web.Services.Shipping.DeliverySettingsService>());
+    builder.Services.AddScoped<Algara.Web.Services.Shipping.DeliveryQuoteService>();
+    builder.Services.AddHttpClient<Algara.Web.Services.Shipping.Carriers.ICourierGateway, Algara.Web.Services.Shipping.Carriers.CourierGateway>()
+        .RemoveAllLoggers()
+        .ConfigurePrimaryHttpMessageHandler(Algara.Web.Services.Shipping.Carriers.CourierGateway.CreateHandler);
+    builder.Services.AddHttpClient<Algara.Web.Services.Shipping.IAddressGeocoder, Algara.Web.Services.Shipping.GoogleAddressGeocoder>()
+        .RemoveAllLoggers()
+        .ConfigurePrimaryHttpMessageHandler(Algara.Web.Services.Shipping.Carriers.CourierGateway.CreateHandler);
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("DeliveryQuotes", context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+            }));
         options.AddPolicy("AccountEmail", context => RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
             {

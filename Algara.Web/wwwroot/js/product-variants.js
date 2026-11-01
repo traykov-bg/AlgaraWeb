@@ -32,6 +32,8 @@
             text('[data-variant-original]', choice.getAttribute('data-original'));
             text('[data-variant-name]', choice.getAttribute('data-name'));
             text('[data-variant-status]', choice.getAttribute('data-status'));
+            var cartVariant = detail.querySelector('[data-cart-variant]');
+            if (cartVariant) cartVariant.value = choice.getAttribute('data-variant-id');
 
             var source = choice.getAttribute('data-image');
             if (main) {

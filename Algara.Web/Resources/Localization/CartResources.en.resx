@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Cart</value></data>
+  <data name="Empty" xml:space="preserve"><value>Your cart is empty</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>You have not added any products yet.</value></data>
+  <data name="Browse" xml:space="preserve"><value>Browse the catalog</value></data>
+  <data name="Add" xml:space="preserve"><value>Add to cart</value></data>
+  <data name="Added" xml:space="preserve"><value>The product has been added to your cart.</value></data>
+  <data name="Updated" xml:space="preserve"><value>The quantity has been updated.</value></data>
+  <data name="Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Update" xml:space="preserve"><value>Update</value></data>
+  <data name="Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="RemoveNamed" xml:space="preserve"><value>Remove {0} from the cart</value></data>
+  <data name="UnitPrice" xml:space="preserve"><value>Unit price</value></data>
+  <data name="Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="GoodsSubtotal" xml:space="preserve"><value>Goods after discounts</value></data>
+  <data name="DeliveryNext" xml:space="preserve"><value>Delivery is calculated after choosing a delivery method and an address or office.</value></data>
+  <data name="CalculateDelivery" xml:space="preserve"><value>Calculate delivery</value></data>
+  <data name="ResolveBeforeQuote" xml:space="preserve"><value>Please resolve the marked items before calculating delivery.</value></data>
+  <data name="Contact" xml:space="preserve"><value>Contact us</value></data>
+  <data name="ContinueShopping" xml:space="preserve"><value>Continue shopping</value></data>
+  <data name="Clear" xml:space="preserve"><value>Empty cart</value></data>
+  <data name="LivePricesNotice" xml:space="preserve"><value>The cart does not reserve stock. Prices and availability are checked again whenever you open it.</value></data>
+  <data name="UnavailableProduct" xml:space="preserve"><value>Unavailable product</value></data>
+  <data name="IssueMissingProduct" xml:space="preserve"><value>This product is no longer available. Please remove it from your cart.</value></data>
+  <data name="IssueInactiveProduct" xml:space="preserve"><value>This product is no longer offered. Please remove it from your cart.</value></data>
+  <data name="IssueInvalidVariant" xml:space="preserve"><value>The selected variant is unavailable. Open the product and choose another variant.</value></data>
+  <data name="IssueUnknownStock" xml:space="preserve"><value>Availability has not been confirmed. Please contact us.</value></data>
+  <data name="IssueInquiryRequired" xml:space="preserve"><value>This item requires an inquiry. Please contact us about availability.</value></data>
+  <data name="IssueInsufficientStock" xml:space="preserve"><value>There is not enough stock. Reduce the quantity or contact us.</value></data>
+  <data name="IssueInvalidPrice" xml:space="preserve"><value>The price could not be confirmed. Please contact us.</value></data>
+  <data name="IssueInvalidQuantity" xml:space="preserve"><value>Enter a whole quantity from 1 to 99 for each item.</value></data>
+  <data name="IssueLineLimit" xml:space="preserve"><value>Your cart can contain up to 30 different items or variants.</value></data>
+  <data name="IssueMissingLine" xml:space="preserve"><value>The item is no longer in your cart. Refresh the page.</value></data>
+</root>

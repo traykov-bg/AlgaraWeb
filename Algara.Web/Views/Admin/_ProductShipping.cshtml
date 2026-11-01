@@ -1,0 +1,92 @@
+﻿@model Algara.Web.ViewModels.Admin.AdminProductFormViewModel
+@using Algara.Data.Models
+
+<section class="border rounded p-3 mb-4" aria-labelledby="shippingHeading" data-product-shipping data-max-parcels="@ProductShippingRules.MaxParcels">
+    <h2 id="shippingHeading" class="h6 fw-semibold">Опаковка и транспорт</h2>
+    <p class="text-muted small">Опишете всички колети за <strong>една бройка</strong> от продукта. При повече бройки в количката всеки комплект колети се повтаря. Данните важат и за вариантите на този продукт.</p>
+    <div class="form-check mb-2">
+        <input class="form-check-input" asp-for="AllowsCourier" />
+        <label class="form-check-label" asp-for="AllowsCourier"></label>
+    </div>
+    <p class="text-muted small">Включете само за стоки, които могат да се доставят с куриер. Необходимо е пълно тегло и размери на опаковката; размерите в каталога не се приемат автоматично за транспортни.</p>
+    <div class="form-check mb-2">
+        <input class="form-check-input" asp-for="UseCatalogDimensionsForShipping" data-shipping-use-catalog />
+        <label class="form-check-label" asp-for="UseCatalogDimensionsForShipping"></label>
+    </div>
+    <p class="text-muted small">Това потвърждение е допустимо само за един колет и три попълнени размера в каталога. В останалите случаи въведете отделни транспортни размери за всеки колет.</p>
+    <span asp-validation-for="UseCatalogDimensionsForShipping" class="text-danger small d-block"></span>
+    <span asp-validation-for="ShippingParcels" class="text-danger small d-block"></span>
+    <div data-parcel-list>
+        @for (var i = 0; i < Model.ShippingParcels.Count; i++)
+        {
+            <div class="border rounded p-3 my-2" data-parcel-row>
+                <input type="hidden" name="__Invariant" value="ShippingParcels[@i].WeightKg" data-parcel-invariant="WeightKg" />
+                <input type="hidden" name="__Invariant" value="ShippingParcels[@i].WidthCm" data-parcel-invariant="WidthCm" />
+                <input type="hidden" name="__Invariant" value="ShippingParcels[@i].HeightCm" data-parcel-invariant="HeightCm" />
+                <input type="hidden" name="__Invariant" value="ShippingParcels[@i].DepthCm" data-parcel-invariant="DepthCm" />
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3 class="h6 mb-0" data-parcel-title>Колет @(i + 1)</h3>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-parcel-remove>Премахни</button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-sm-6 col-lg-3">
+                        <label asp-for="ShippingParcels[i].WeightKg" class="form-label" data-parcel-label="WeightKg">Тегло с опаковката (кг)</label>
+                        <input asp-for="ShippingParcels[i].WeightKg" type="number" min="0.001" max="100000" step="0.001" required class="form-control" data-parcel-field="WeightKg" />
+                        <span asp-validation-for="ShippingParcels[i].WeightKg" class="text-danger small" data-parcel-error="WeightKg"></span>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label asp-for="ShippingParcels[i].WidthCm" class="form-label" data-parcel-label="WidthCm">Ширина (см)</label>
+                        <input asp-for="ShippingParcels[i].WidthCm" type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="WidthCm" data-parcel-dimension />
+                        <span asp-validation-for="ShippingParcels[i].WidthCm" class="text-danger small" data-parcel-error="WidthCm"></span>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label asp-for="ShippingParcels[i].HeightCm" class="form-label" data-parcel-label="HeightCm">Височина (см)</label>
+                        <input asp-for="ShippingParcels[i].HeightCm" type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="HeightCm" data-parcel-dimension />
+                        <span asp-validation-for="ShippingParcels[i].HeightCm" class="text-danger small" data-parcel-error="HeightCm"></span>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label asp-for="ShippingParcels[i].DepthCm" class="form-label" data-parcel-label="DepthCm">Дълбочина (см)</label>
+                        <input asp-for="ShippingParcels[i].DepthCm" type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="DepthCm" data-parcel-dimension />
+                        <span asp-validation-for="ShippingParcels[i].DepthCm" class="text-danger small" data-parcel-error="DepthCm"></span>
+                    </div>
+                </div>
+                <p data-parcel-catalog-note hidden class="small text-muted mt-2 mb-0">Използват се потвърдените размери от каталога по-горе.</p>
+            </div>
+        }
+    </div>
+    <p data-parcel-empty hidden="@(Model.ShippingParcels.Count > 0)" class="text-muted small">Няма въведени колети.</p>
+    <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-parcel-add>Добави колет</button>
+    <p class="text-muted small mb-0 mt-2" data-parcel-status role="status" aria-live="polite"></p>
+    <noscript><p class="text-danger small mt-2">За добавяне и премахване на колети включете JavaScript.</p></noscript>
+    <template data-parcel-template>
+        <div class="border rounded p-3 my-2" data-parcel-row>
+            <input type="hidden" name="__Invariant" data-parcel-invariant="WeightKg" />
+            <input type="hidden" name="__Invariant" data-parcel-invariant="WidthCm" />
+            <input type="hidden" name="__Invariant" data-parcel-invariant="HeightCm" />
+            <input type="hidden" name="__Invariant" data-parcel-invariant="DepthCm" />
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="h6 mb-0" data-parcel-title></h3>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-parcel-remove>Премахни</button>
+            </div>
+            <div class="row g-2">
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" data-parcel-label="WeightKg">Тегло с опаковката (кг)</label>
+                    <input type="number" min="0.001" max="100000" step="0.001" required class="form-control" data-parcel-field="WeightKg" />
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" data-parcel-label="WidthCm">Ширина (см)</label>
+                    <input type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="WidthCm" data-parcel-dimension />
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" data-parcel-label="HeightCm">Височина (см)</label>
+                    <input type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="HeightCm" data-parcel-dimension />
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" data-parcel-label="DepthCm">Дълбочина (см)</label>
+                    <input type="number" min="0.01" max="100000" step="0.01" class="form-control" data-parcel-field="DepthCm" data-parcel-dimension />
+                </div>
+            </div>
+            <p data-parcel-catalog-note hidden class="small text-muted mt-2 mb-0">Използват се потвърдените размери от каталога по-горе.</p>
+        </div>
+    </template>
+</section>

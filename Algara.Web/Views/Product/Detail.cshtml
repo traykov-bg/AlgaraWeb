@@ -1,5 +1,6 @@
 ﻿@model Algara.Data.Models.Product
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CartResources> CartT
 
 @{
     var productName = Model.GetName();
@@ -121,6 +122,18 @@
             <p class="fw-semibold">@T["Availability" + Model.GetAvailability()]</p>
         }
         <p class="small"><a asp-controller="Home" asp-action="Delivery">@T["DeliveryTerms"]</a></p>
+        @if (Model.OptionKind == ProductOptionKind.None || selectedVariant != null)
+        {
+            <form asp-controller="Order" asp-action="Add" method="post" class="d-flex align-items-end flex-wrap gap-2 my-4">
+                <input type="hidden" name="productN" value="@Model.N" />
+                <input type="hidden" name="variantN" value="@selectedVariant?.N" data-cart-variant />
+                <label class="small">
+                    @CartT["Quantity"]
+                    <input type="number" name="quantity" value="1" min="1" max="99" step="1" required class="form-control" style="width: 6rem" />
+                </label>
+                <button type="submit" class="btn algara-btn-primary"><i class="bi bi-cart-plus me-2" aria-hidden="true"></i>@CartT["Add"]</button>
+            </form>
+        }
         @if (!string.IsNullOrWhiteSpace(description))
         {
             <p class="algara-product-description">@description</p>

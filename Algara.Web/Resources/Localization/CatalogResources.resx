@@ -58,11 +58,27 @@
   <data name="DeliveryIntro" xml:space="preserve"><value>Общите срокове важат според наличността на избрания продукт или вариант.</value></data>
   <data name="DeliveryInStock" xml:space="preserve"><value>Доставка до {0} работни дни за всеки продукт в наличност.</value></data>
   <data name="DeliveryManufacturingTitle" xml:space="preserve"><value>Изработка на мека мебел</value></data>
-  <data name="DeliveryManufacturing" xml:space="preserve"><value>При липса на наличност срокът за изработка на мека мебел е {0} работни дни.</value></data>
+  <data name="DeliveryManufacturing" xml:space="preserve"><value>При липса на наличност срокът за изработка на мека мебел е до {0} работни дни.</value></data>
   <data name="DeliveryManufacturingExtra" xml:space="preserve"><value>Срокът за изработка не включва доставката. Доставката е допълнително до {0} работни дни.</value></data>
   <data name="DeliveryInquiry" xml:space="preserve"><value>Аксесоари и други продукти, които не са мека мебел и не са налични, се предлагат по запитване.</value></data>
   <data name="DeliveryVariantStock" xml:space="preserve"><value>Наличността се отнася за конкретния цвят или комбинация от дамаска и цвят. Ако няма посочена наличност, свържете се с нас за уточнение.</value></data>
   <data name="DeliveryTerms" xml:space="preserve"><value>Условия и срокове за доставка</value></data>
+  <data name="DeliveryMethodsTitle" xml:space="preserve"><value>Начини и цени за доставка</value></data>
+  <data name="DeliveryOwnTransportTitle" xml:space="preserve"><value>Собствен транспорт</value></data>
+  <data name="DeliveryOwnTransportEligibility" xml:space="preserve"><value>Големите мебели доставяме със собствен транспорт. Ако поръчката съдържа голяма мебел и по-малки артикули, цялата доставка е със собствен транспорт.</value></data>
+  <data name="DeliveryOwnTransportPrice" xml:space="preserve"><value>Доставката е безплатна в радиус до 50 км включително от Пловдив. Извън този радиус се доплащат 100 € за доставка.</value></data>
+  <data name="DeliveryCourierTitle" xml:space="preserve"><value>Еконт или Спиди</value></data>
+  <data name="DeliveryCourierEligibility" xml:space="preserve"><value>За поръчки само с аксесоари и други малки артикули, подходящи за куриер, можете да изберете доставка до адрес или до конкретен офис на Еконт или Спиди.</value></data>
+  <data name="DeliveryCourierPrice" xml:space="preserve"><value>Куриерската доставка е за сметка на клиента при стойност на стоките след отстъпки до 100 € включително и е безплатна над 100 €. Доставка и допълнителни услуги не се включват в този праг.</value></data>
+  <data name="DeliveryPickupTitle" xml:space="preserve"><value>Вземане от магазина</value></data>
+  <data name="DeliveryPickupDescription" xml:space="preserve"><value>Можете да вземете поръчката си от магазина, включително големи мебели. Получаването се уговаря с наш служител.</value></data>
+  <data name="DeliveryAdditionalServicesTitle" xml:space="preserve"><value>Качване по етажи и монтаж</value></data>
+  <data name="DeliveryAdditionalServicesDescription" xml:space="preserve"><value>При доставка със собствен транспорт можете да заявите качване по етажи и монтаж в коментара към поръчката. Посочете етаж, наличие на асансьор и особености на достъпа. Тези услуги не са включени в цената за транспорт; цената им се уточнява отделно и се заплаща при доставката.</value></data>
+  <data name="DeliveryPaymentOnReceipt" xml:space="preserve"><value>Плащането е при получаване: с наложен платеж при куриер, на нашия екип при собствен транспорт или в магазина при вземане.</value></data>
+  <data name="DeliveryTimeframesTitle" xml:space="preserve"><value>Срокове за изпълнение</value></data>
+  <data name="DeliveryConfirmationStart" xml:space="preserve"><value>Сроковете започват от момента, в който наш служител потвърди поръчката.</value></data>
+  <data name="DeliveryMixedOrder" xml:space="preserve"><value>Когато поръчката включва налични артикули и артикули за изработка, те се доставят заедно след готовност на цялата поръчка. Ако желаете наличните по-рано, уговорете това по телефона с наш служител, който ще ги отдели в друга поръчка.</value></data>
+  <data name="DeliverySplitCharges" xml:space="preserve"><value>При разделяне условията и цената за доставка се преизчисляват за всяка отделна поръчка и се съгласуват с вас.</value></data>
   <data name="AvailabilityUnknown" xml:space="preserve"><value>Наличността не е уточнена</value></data>
   <data name="AvailabilityInStock" xml:space="preserve"><value>В наличност</value></data>
   <data name="AvailabilityMadeToOrder" xml:space="preserve"><value>Изработка по поръчка</value></data>

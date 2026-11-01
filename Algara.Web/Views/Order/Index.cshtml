@@ -1,12 +1,119 @@
-﻿@{
-    ViewData["Title"] = "Количка";
+﻿@model Algara.Web.Services.Cart.CartSnapshot
+@using Algara.Web.Services.Cart
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CartResources> T
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> CatalogT
+@{
+    ViewData["Title"] = T["Title"].Value;
+    var message = TempData["CartMessage"] as string;
 }
-
-<div class="text-center py-5">
-    <i class="bi bi-cart3" style="font-size: 4rem; color: var(--algara-border);"></i>
-    <h2 class="mt-3">Количката е празна</h2>
-    <p class="text-muted">Все още не сте добавили продукти към количката.</p>
-    <a asp-controller="Product" asp-action="Index" class="btn algara-btn-primary mt-2">
-        Разгледай каталога
-    </a>
-</div>
+<h1 class="h2 mb-4">@T["Title"]</h1>
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @(message.StartsWith("Issue", StringComparison.Ordinal) ? "alert-warning" : "alert-success")" role="status">@T[message]</div>
+}
+@if (Model.Lines.Count == 0)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-cart3 display-3 text-muted" aria-hidden="true"></i>
+        <h2 class="h4 mt-3">@T["Empty"]</h2>
+        <p class="text-muted">@T["EmptyHint"]</p>
+        <a asp-controller="Product" asp-action="Index" class="btn algara-btn-primary mt-2">@T["Browse"]</a>
+    </div>
+}
+else
+{
+    <p class="text-muted small">@T["LivePricesNotice"]</p>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            @foreach (var line in Model.Lines)
+            {
+                var entry = line.Entry;
+                <article class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start gap-3">
+                            @if (!string.IsNullOrWhiteSpace(line.ImageUrl))
+                            {
+                                <img src="@line.ImageUrl" alt="" class="rounded object-fit-contain flex-shrink-0" width="80" height="80" />
+                            }
+                            <div class="flex-grow-1">
+                                <h2 class="h6 mb-1">
+                                    @if (line.Product is { IsActive: true })
+                                    {
+                                        <a asp-controller="Product" asp-action="Detail" asp-route-n="@entry.ProductN" asp-route-variant="@entry.VariantN">@line.Name</a>
+                                    }
+                                    else
+                                    {
+                                        @(string.IsNullOrWhiteSpace(line.Name) ? T["UnavailableProduct"].Value : line.Name)
+                                    }
+                                </h2>
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                {
+                                    <p class="small mb-1">@line.VariantName</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Sku))
+                                {
+                                    <p class="small text-muted mb-1">@CatalogT["Sku"]: @line.Sku</p>
+                                }
+                                @if (line.Issue != CartLineIssue.None)
+                                {
+                                    <p class="text-danger small mb-2" role="status">@T["Issue" + line.Issue]</p>
+                                }
+                                else
+                                {
+                                    <p class="small mb-2">@CatalogT["Availability" + line.Availability]</p>
+                                }
+                                @if (line.UnitPrice.HasValue)
+                                {
+                                    <p class="small mb-0">@T["UnitPrice"]: @line.UnitPrice.Value.ToString("N2") €</p>
+                                }
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mt-3">
+                            <form asp-action="Update" method="post" class="d-flex align-items-end flex-wrap gap-2">
+                                <input type="hidden" name="productN" value="@entry.ProductN" />
+                                <input type="hidden" name="variantN" value="@entry.VariantN" />
+                                <label class="small">
+                                    @T["Quantity"]
+                                    <input type="number" name="quantity" value="@entry.Quantity" min="1" max="@CartService.MaxQuantity" step="1" required class="form-control form-control-sm" style="width: 6rem" />
+                                </label>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">@T["Update"]</button>
+                            </form>
+                            <div class="d-flex align-items-center gap-3">
+                                <strong>@(line.LineTotal.HasValue ? line.LineTotal.Value.ToString("N2") + " €" : "—")</strong>
+                                <form asp-action="Remove" method="post">
+                                    <input type="hidden" name="productN" value="@entry.ProductN" />
+                                    <input type="hidden" name="variantN" value="@entry.VariantN" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="@T["RemoveNamed", line.Name]">@T["Remove"]</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            }
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary">@T["ContinueShopping"]</a>
+                <form asp-action="Clear" method="post">
+                    <button type="submit" class="btn btn-link text-muted">@T["Clear"]</button>
+                </form>
+            </div>
+        </div>
+        <aside class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h2 class="h5">@T["Summary"]</h2>
+                    <div class="d-flex justify-content-between gap-2 my-3"><span>@T["GoodsSubtotal"]</span><strong>@Model.GoodsSubtotal.ToString("N2") €</strong></div>
+                    <p class="small text-muted">@T["DeliveryNext"]</p>
+                    @if (Model.CanQuote)
+                    {
+                        <a asp-controller="Shipping" asp-action="Index" class="btn algara-btn-primary w-100">@T["CalculateDelivery"]</a>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-0">@T["ResolveBeforeQuote"]</div>
+                        <a asp-controller="Home" asp-action="Contact" class="btn btn-outline-secondary w-100 mt-3">@T["Contact"]</a>
+                    }
+                </div>
+            </div>
+        </aside>
+    </div>
+}

@@ -24,6 +24,95 @@ namespace Algara.UnitTests.Controllers;
 public sealed class AdminProductControllerTests
 {
     [Fact]
+    public async Task ShippingCreateStoresSeparateParcelDataAndExplicitEligibility()
+    {
+        using var fixture = new Fixture();
+        var form = Form();
+        form.AllowsCourier = true;
+        form.ShippingParcels =
+        [
+            new() { WeightKg = 1.125m, WidthCm = 10, HeightCm = 20, DepthCm = 30 },
+            new() { WeightKg = 2.555m, WidthCm = 40, HeightCm = 50, DepthCm = 60 }
+        ];
+        Redirect(await fixture.Controller.ProductCreate(form));
+        var product = Assert.Single(fixture.Added);
+        Assert.True(product.AllowsCourier);
+        Assert.False(product.UseCatalogDimensionsForShipping);
+        Assert.Equal([1, 2], product.ShippingParcels.Select(p => p.Position));
+        Assert.True(ProductShippingRules.TryGetParcels(product, out var parcels));
+        Assert.Equal(2.555m, parcels[1].WeightKg);
+        Assert.Equal(40m, parcels[1].WidthCm);
+    }
+
+    [Fact]
+    public async Task ShippingConfirmedCatalogDimensionsRoundTripWithoutCopyingDimensions()
+    {
+        var product = Existing();
+        product.AllowsCourier = true;
+        product.UseCatalogDimensionsForShipping = true;
+        product.WidthCm = 10; product.HeightCm = 20; product.DepthCm = 30;
+        product.ShippingParcels.Add(new() { N = 123, Position = 1, ProductN = product.N, WeightKg = 2.125m });
+        using var fixture = new Fixture(product);
+        var form = Model(await fixture.Controller.ProductEdit(product.N));
+        Assert.True(form.AllowsCourier);
+        Assert.True(form.UseCatalogDimensionsForShipping);
+        Assert.Equal(2.125m, Assert.Single(form.ShippingParcels).WeightKg);
+        Assert.Null(form.ShippingParcels[0].WidthCm);
+        form.ShippingParcels[0].WeightKg = 3.5m;
+        Redirect(await fixture.Controller.ProductEdit(form));
+        Assert.Equal(123, Assert.Single(product.ShippingParcels).N);
+        Assert.Equal(3.5m, product.ShippingParcels.Single().WeightKg);
+    }
+
+    [Fact]
+    public async Task ShippingIncompleteCourierDataCannotSaveOrChangeExistingProduct()
+    {
+        var product = Existing();
+        using var fixture = new Fixture(product);
+        var form = Form(product.N);
+        form.AllowsCourier = true;
+        form.ShippingParcels = [new() { WeightKg = 1, WidthCm = 1, HeightCm = 1 }];
+        Assert.Same(form, Model(await fixture.Controller.ProductEdit(form)));
+        AssertError(fixture, "ShippingParcels[0].DepthCm");
+        Assert.Empty(fixture.Updated);
+        Assert.False(product.AllowsCourier);
+        Assert.Empty(product.ShippingParcels);
+    }
+
+    [Fact]
+    public async Task ShippingRemovalAndUpdatePreserveRetainedRowIdentity()
+    {
+        var product = Existing();
+        product.ShippingParcels =
+        [
+            new() { N = 123, Position = 1, WeightKg = 1, WidthCm = 10, HeightCm = 20, DepthCm = 30 },
+            new() { N = 124, Position = 2, WeightKg = 2, WidthCm = 40, HeightCm = 50, DepthCm = 60 }
+        ];
+        using var fixture = new Fixture(product);
+        var form = Form(product.N);
+        form.ShippingParcels = [new() { WeightKg = 3, WidthCm = 30, HeightCm = 40, DepthCm = 50 }];
+        Redirect(await fixture.Controller.ProductEdit(form));
+        var retained = Assert.Single(product.ShippingParcels);
+        Assert.Equal(123, retained.N);
+        Assert.Equal(1, retained.Position);
+        Assert.Equal(3m, retained.WeightKg);
+    }
+
+    [Fact]
+    public async Task ShippingStaleFormCannotOverwriteNewParcelData()
+    {
+        var product = Existing();
+        product.RowVersion = [1, 2, 3];
+        using var fixture = new Fixture(product);
+        var form = Form(product.N);
+        form.RowVersion = Convert.ToBase64String([1, 2, 2]);
+        form.ShippingParcels = [new() { WeightKg = 1, WidthCm = 1, HeightCm = 1, DepthCm = 1 }];
+        Model(await fixture.Controller.ProductEdit(form));
+        Assert.Empty(fixture.Updated);
+        Assert.Empty(product.ShippingParcels);
+    }
+
+    [Fact]
     public async Task CreateGet_ReturnsActiveCategoriesAndEmptyGallery()
     {
         using var fixture = new Fixture();

@@ -720,6 +720,11 @@ namespace Algara.Web.ShopMigrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<bool>("AllowsCourier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<int?>("CategoryN")
                         .HasColumnType("int");
 
@@ -778,6 +783,11 @@ namespace Algara.Web.ShopMigrations
 
                     b.Property<int?>("StockQuantity")
                         .HasColumnType("int");
+
+                    b.Property<bool>("UseCatalogDimensionsForShipping")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<decimal?>("WidthCm")
                         .HasColumnType("decimal(10,2)");
@@ -884,6 +894,51 @@ namespace Algara.Web.ShopMigrations
                     b.HasIndex("PromotionN");
 
                     b.ToTable("ProductPromotions", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.ProductShippingParcel", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<decimal?>("DepthCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal?>("HeightCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductN")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(9, 3)
+                        .HasColumnType("decimal(9,3)");
+
+                    b.Property<decimal?>("WidthCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("ProductN", "Position")
+                        .IsUnique();
+
+                    b.ToTable("ProductShippingParcels", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductShippingParcels_Dimensions", "([WidthCm] IS NULL AND [HeightCm] IS NULL AND [DepthCm] IS NULL) OR ([WidthCm] IS NOT NULL AND [HeightCm] IS NOT NULL AND [DepthCm] IS NOT NULL AND [WidthCm] >= 0.01 AND [WidthCm] <= 100000 AND [HeightCm] >= 0.01 AND [HeightCm] <= 100000 AND [DepthCm] >= 0.01 AND [DepthCm] <= 100000)");
+
+                            t.HasCheckConstraint("CK_ProductShippingParcels_Position", "[Position] >= 1 AND [Position] <= 50");
+
+                            t.HasCheckConstraint("CK_ProductShippingParcels_Weight", "[WeightKg] >= 0.001 AND [WeightKg] <= 100000");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.ProductSubCategory", b =>
@@ -1392,6 +1447,17 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Promotion");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.ProductShippingParcel", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Product", "Product")
+                        .WithMany("ShippingParcels")
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.ProductSubCategory", b =>
                 {
                     b.HasOne("Algara.Data.Models.Product", "Product")
@@ -1488,6 +1554,8 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("ProductPromotions");
 
                     b.Navigation("ProductSubCategories");
+
+                    b.Navigation("ShippingParcels");
 
                     b.Navigation("Translations");
 

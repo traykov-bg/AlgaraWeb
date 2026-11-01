@@ -19,6 +19,7 @@ namespace Algara.Data.Repositories
                     .ThenInclude(pp => pp.Promotion)
                 .Include(p => p.Translations)
                 .Include(p => p.Images)
+                .Include(p => p.ShippingParcels)
                 .Include(p => p.Variants).ThenInclude(v => v.Color).ThenInclude(c => c.Fabric)
                 .Include(p => p.Variants).ThenInclude(v => v.Image)
                 .Include(p => p.FabricSurcharges).ThenInclude(s => s.Fabric)
@@ -55,6 +56,7 @@ namespace Algara.Data.Repositories
 
         public async Task AddAsync(Product product)
         {
+            ValidateShipping(product);
             await using var transaction = await BeginCatalogWriteAsync();
             product.Sku = ProductSku.Normalize(product.Sku);
             var automaticSku = product.Sku.Length == 0;
@@ -89,6 +91,7 @@ namespace Algara.Data.Repositories
 
         public async Task UpdateAsync(Product product)
         {
+            ValidateShipping(product);
             await using var transaction = await BeginCatalogWriteAsync();
             product.Sku = ProductSku.Normalize(product.Sku);
             await ValidateSkuAsync(product);
@@ -106,6 +109,12 @@ namespace Algara.Data.Repositories
             {
                 throw new ProductSkuConflictException(product.Sku, ex);
             }
+        }
+
+        private static void ValidateShipping(Product product)
+        {
+            if (ProductShippingRules.Validate(product).Count > 0)
+                throw new ArgumentException("Product shipping data is incomplete or invalid.", nameof(product));
         }
 
         private async Task ValidateSkuAsync(Product product)

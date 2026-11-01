@@ -281,6 +281,7 @@ namespace Algara.Data.Data
                  .HasDatabaseName("IX_HeroSlides_Active_Order");
             });
 
+            ConfigureProductShipping(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
     }

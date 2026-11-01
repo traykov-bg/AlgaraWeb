@@ -488,6 +488,69 @@ namespace Algara.Web.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Identity.Models.CourierConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProtectedPassword")
+                        .HasMaxLength(8192)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SenderClientNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SenderName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SenderOfficeCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SenderPhone")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("UseSandbox")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CourierConfigurations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CourierConfigurations_EnabledSecret", "[Enabled] = 0 OR ([ProtectedPassword] IS NOT NULL AND LEN([ProtectedPassword]) > 0)");
+
+                            t.HasCheckConstraint("CK_CourierConfigurations_Provider", "[Id] IN (1,2)");
+
+                            t.HasCheckConstraint("CK_CourierConfigurations_Sandbox", "[UseSandbox] = 0 OR [Id] = 1");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Identity.Models.EmailOutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -662,6 +725,44 @@ namespace Algara.Web.Migrations
                     b.HasIndex("OccurredAtUtc");
 
                     b.ToTable("SmtpSettingsAuditEvents");
+                });
+
+            modelBuilder.Entity("Algara.Identity.Models.TransportConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("GeocodingEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("OriginLatitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<decimal?>("OriginLongitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<string>("ProtectedGeocodingKey")
+                        .HasMaxLength(8192)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TransportConfigurations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TransportConfigurations_EnabledSecret", "[GeocodingEnabled] = 0 OR ([OriginLatitude] IS NOT NULL AND [OriginLongitude] IS NOT NULL AND [ProtectedGeocodingKey] IS NOT NULL AND LEN([ProtectedGeocodingKey]) > 0)");
+
+                            t.HasCheckConstraint("CK_TransportConfigurations_Origin", "([OriginLatitude] IS NULL AND [OriginLongitude] IS NULL) OR ([OriginLatitude] IS NOT NULL AND [OriginLongitude] IS NOT NULL AND [OriginLatitude] BETWEEN -90 AND 90 AND [OriginLongitude] BETWEEN -180 AND 180)");
+
+                            t.HasCheckConstraint("CK_TransportConfigurations_Singleton", "[Id] = 1");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Identity.Models.UserAddress", b =>

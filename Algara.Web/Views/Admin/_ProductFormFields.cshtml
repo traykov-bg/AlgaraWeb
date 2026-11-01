@@ -66,6 +66,8 @@
     <div class="form-text mt-2">Размерите и материалите са незадължителни. Попълнените стойности се показват в продуктовата страница.</div>
 </div>
 
+@await Html.PartialAsync("_ProductShipping", Model)
+
 <div class="row g-3 mb-3">
     <div class="col-sm-6">
         <label asp-for="Price" class="form-label fw-semibold"></label>

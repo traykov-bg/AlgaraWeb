@@ -22,11 +22,14 @@ namespace Algara.Identity.Data
         public DbSet<AccountEmailToken> AccountEmailTokens { get; set; }
         public DbSet<AccountEmailAuditEvent> AccountEmailAuditEvents { get; set; }
         public DbSet<EmailOutboxMessage> EmailOutboxMessages { get; set; }
+        public DbSet<CourierConfiguration> CourierConfigurations { get; set; }
+        public DbSet<TransportConfiguration> TransportConfigurations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             AccountEmailMapping.Configure(modelBuilder);
             EmailOutboxMapping.Configure(modelBuilder);
+            DeliveryConfigurationMapping.Configure(modelBuilder);
             modelBuilder.Entity<ApplicationUser>()
                 .HasKey(u => u.N); // Казваме, че Primary Key е N
 

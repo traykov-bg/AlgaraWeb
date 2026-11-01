@@ -1,0 +1,72 @@
+﻿@model Algara.Web.ViewModels.Admin.DeliverySettingsForm
+@using Algara.Web.Services.Shipping
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Настройки за доставка";
+}
+<h1 class="h4">Настройки за доставка</h1>
+<p class="text-muted">Тези настройки се попълват еднократно от Администратор. Клиентът избира начин на доставка, населено място и офис или адрес; не въвежда API данни.</p>
+<form asp-action="Index" method="post" autocomplete="off" style="max-width:65rem">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="card mb-3"><div class="card-body">
+        <h2 class="h5">Еконт</h2>
+        <p class="small text-muted">Изберете средата, към която принадлежи API профилът. Адресът на услугата се избира автоматично; не го въвеждайте като потребителско име. Пратката се предава в офиса на подателя. Използва се само изчисление.</p>
+        <input asp-for="Econt.ExpectedVersion" type="hidden" />
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="Econt.UseSandbox" class="form-label">Система на Еконт</label>
+                <select asp-for="Econt.UseSandbox" class="form-select" aria-describedby="econt-environment-help">
+                    <option value="false">Реална система — собствен e-Econt профил</option>
+                    <option value="true">Тестова система — demo.econt.com</option>
+                </select>
+                <div id="econt-environment-help" class="form-text">При смяна на системата или потребителя въведете отново съответната парола. За публичния тестов профил потребителят е <code>iasp-dev</code>; паролата е публикувана в <a href="https://www.econt.com/developers/soap-json-api.html" target="_blank" rel="noopener noreferrer">официалните указания на Еконт</a>. Тестовите резултати не потвърждават реалните ви договорни цени.</div>
+            </div>
+            <div class="col-md-6"><label asp-for="Econt.UserName" class="form-label">API потребителско име</label><input asp-for="Econt.UserName" class="form-control" maxlength="200" aria-describedby="econt-user-help" /><div id="econt-user-help" class="form-text">Името за вход в избраната система, например <code>iasp-dev</code> за публичния тест. Това поле не е URL или клиентски номер.</div></div>
+            <div class="col-md-6"><label for="Econt_Password" class="form-label">Нова API парола</label><input id="Econt_Password" name="Econt.Password" type="password" value="" autocomplete="new-password" maxlength="1000" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Econt.SenderClientNumber" class="form-label">Клиентски номер на подателя</label><input asp-for="Econt.SenderClientNumber" class="form-control" maxlength="64" aria-describedby="econt-client-help" /><div id="econt-client-help" class="form-text">Номерът, който Еконт е присвоил на подателя в избрания профил. Различен е от потребителското име. Вземете го от профила или от обслужващия ви офис на Еконт.</div></div>
+            <div class="col-md-6"><label asp-for="Econt.SenderOfficeCode" class="form-label">Код на офис, от който изпращате</label><input asp-for="Econt.SenderOfficeCode" class="form-control" maxlength="64" aria-describedby="econt-office-help" /><div id="econt-office-help" class="form-text">Кодът на конкретния офис на Еконт, в който предавате пратките. Това не е пощенският код на града или офисът на клиента.</div></div>
+            <div class="col-md-6"><label asp-for="Econt.SenderName" class="form-label">Име на подателя</label><input asp-for="Econt.SenderName" class="form-control" maxlength="200" /></div>
+            <div class="col-md-6"><label asp-for="Econt.SenderPhone" class="form-label">Телефон на подателя</label><input asp-for="Econt.SenderPhone" class="form-control" maxlength="40" /></div>
+        </div>
+        <p class="form-text">Клиентският номер, името и телефонът на подателя трябва да съответстват на един и същ профил в избраната система на Еконт. Не използвайте вашите реални данни с клиентския номер на публичния тестов профил.</p>
+        <p class="form-text">@(Model.Econt.HasReadablePassword ? "Има записана парола, която приложението може да прочете." : "Няма използваема записана парола.") Това не потвърждава вход в Еконт. Празното поле запазва паролата при непроменени система и потребител.</p>
+        <div class="form-check"><input asp-for="Econt.RemovePassword" class="form-check-input" /><label asp-for="Econt.RemovePassword" class="form-check-label">Премахни паролата</label></div>
+        <div class="form-check"><input asp-for="Econt.Enabled" class="form-check-input" /><label asp-for="Econt.Enabled" class="form-check-label">Включи Еконт</label></div>
+    </div></div>
+    <div class="card mb-3"><div class="card-body">
+        <h2 class="h5">Спиди</h2>
+        <p class="small text-muted">API профил и клиентски идентификатор на подателя. Без офис на подателя се използва адресът от договора; услугата трябва да поддържа избрания маршрут.</p>
+        <input asp-for="Speedy.ExpectedVersion" type="hidden" />
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="Speedy.UserName" class="form-label">API потребител</label><input asp-for="Speedy.UserName" class="form-control" maxlength="200" /></div>
+            <div class="col-md-6"><label for="Speedy_Password" class="form-label">Нова API парола</label><input id="Speedy_Password" name="Speedy.Password" type="password" value="" autocomplete="new-password" maxlength="1000" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Speedy.SenderClientNumber" class="form-label">Клиентски ID на подателя</label><input asp-for="Speedy.SenderClientNumber" class="form-control" maxlength="64" /></div>
+            <div class="col-md-4"><label asp-for="Speedy.SenderOfficeCode" class="form-label">ID на офис на подателя (по избор)</label><input asp-for="Speedy.SenderOfficeCode" class="form-control" maxlength="64" /></div>
+            <div class="col-md-4"><label asp-for="Speedy.ServiceId" class="form-label">ID на договорената услуга</label><input asp-for="Speedy.ServiceId" class="form-control" type="number" min="1" /></div>
+        </div>
+        <p class="form-text">@(Model.Speedy.HasReadablePassword ? "Има използваема записана парола." : "Няма използваема записана парола.") Празното поле запазва паролата.</p>
+        <div class="form-check"><input asp-for="Speedy.RemovePassword" class="form-check-input" /><label asp-for="Speedy.RemovePassword" class="form-check-label">Премахни паролата</label></div>
+        <div class="form-check"><input asp-for="Speedy.Enabled" class="form-check-input" /><label asp-for="Speedy.Enabled" class="form-check-label">Включи Спиди</label></div>
+    </div></div>
+    <div class="card mb-3"><div class="card-body">
+        <h2 class="h5">Собствен транспорт — радиус от Пловдив</h2>
+        <p>@DeliverySettingsService.OriginAddress</p>
+        <p class="small text-muted">Потвърдете точните координати на този адрес преди включване. До 50 км включително: 0 €; извън радиуса: 100 €. Разстоянието е по права линия.</p>
+        <input asp-for="Transport.ExpectedVersion" type="hidden" />
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="Transport.OriginLatitude" class="form-label">Географска ширина</label><input asp-for="Transport.OriginLatitude" type="number" step="0.0000001" min="-90" max="90" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Transport.OriginLongitude" class="form-label">Географска дължина</label><input asp-for="Transport.OriginLongitude" type="number" step="0.0000001" min="-180" max="180" class="form-control" /></div>
+            <div class="col-12"><label for="Transport_GeocodingKey" class="form-label">Нов Google Geocoding API ключ</label><input id="Transport_GeocodingKey" name="Transport.GeocodingKey" type="password" value="" autocomplete="new-password" maxlength="1024" class="form-control" /></div>
+        </div>
+        <p class="form-text">Използването на Google Geocoding изисква собствен активиран профил и може да се таксува от доставчика. Ключът се използва само от сървъра. Ограничете го до Geocoding API и сървърния IP в Google Cloud.</p>
+        <p class="form-text">@(Model.Transport.HasReadableKey ? "Има използваем записан ключ." : "Няма използваем записан ключ.") Празното поле запазва ключа.</p>
+        <div class="form-check"><input asp-for="Transport.RemoveGeocodingKey" class="form-check-input" /><label asp-for="Transport.RemoveGeocodingKey" class="form-check-label">Премахни ключа</label></div>
+        <div class="form-check"><input asp-for="Transport.GeocodingEnabled" class="form-check-input" /><label asp-for="Transport.GeocodingEnabled" class="form-check-label">Включи автоматичното намиране на адрес и калкулация за собствен транспорт</label></div>
+    </div></div>
+    <button type="submit" class="btn btn-primary">Запази настройките</button>
+</form>
+@if (Model.History.Count > 0)
+{
+    <h2 class="h6 mt-4">Последни записи (UTC)</h2>
+    <ul class="small text-muted">@foreach (var item in Model.History) { <li>@item</li> }</ul>
+}

@@ -1,11 +1,13 @@
 ﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> T
 @inject Algara.Data.Repositories.ICategoryRepository _catRepo
+@inject Algara.Web.Services.Cart.ICartStore CartStore
 @inject Algara.Identity.Data.IdentityDbContext _identityDb
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 @{
     var selectedLanguage = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var cartCount = CartStore.Read().Sum(entry => entry.Quantity);
     var languageReturnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
     var navCategories = await _catRepo.GetAllWithSubCategoriesAsync();
     string? navDisplayName = null;
@@ -135,6 +137,10 @@
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
             <a class="algara-cart-btn" asp-controller="Order" asp-action="Index" title="@T["Cart"]">
                 <i class="bi bi-cart3"></i>
+                @if (cartCount > 0)
+                {
+                    <span class="badge rounded-pill bg-secondary">@cartCount</span>
+                }
             </a>
 
             @if (User.Identity?.IsAuthenticated == true)

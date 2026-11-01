@@ -46,6 +46,7 @@ public partial class AdminController
             Images = ImageRows(product)
         };
         ReadVariantForm(vm, product);
+        ReadShippingForm(vm, product);
         return View(await PrepareProductFormAsync(vm, product));
     }
 
@@ -71,6 +72,7 @@ public partial class AdminController
     private Task<Product?> LoadEditableProductAsync(int n)
         => _shopDb.Products.Include(p => p.ProductSubCategories)
             .Include(p => p.Translations).Include(p => p.Images)
+            .Include(p => p.ShippingParcels)
             .Include(p => p.Variants).ThenInclude(v => v.Color).ThenInclude(c => c.Fabric)
             .Include(p => p.FabricSurcharges)
             .AsSplitQuery().FirstOrDefaultAsync(p => p.N == n);
@@ -81,6 +83,7 @@ public partial class AdminController
         vm.SelectedSubCategoryNs ??= [];
         vm.Variants ??= [];
         vm.FabricSurcharges ??= [];
+        vm.ShippingParcels ??= [];
         if (!await ProductFieldPermissionsAsync(vm, existing)) return Forbid();
         vm.Sku = ProductSku.Normalize(vm.Sku);
         vm.Name = vm.Name?.Trim() ?? string.Empty;
@@ -98,6 +101,7 @@ public partial class AdminController
             }
             await ValidateProductFormAsync(vm, existing);
             await ValidateProductVariantsAsync(vm, existing);
+            ValidateShippingForm(vm);
             ValidateGallery(vm, originalImages);
             if (!ModelState.IsValid)
             {
@@ -113,6 +117,7 @@ public partial class AdminController
             var product = existing ?? new Product();
             ApplyProductForm(product, vm, savedUrls);
             ApplyVariantForm(product, vm);
+            ApplyShippingForm(product, vm);
             if (existing == null) await _productRepo.AddAsync(product);
             else await _productRepo.UpdateAsync(product);
             saved = true;
