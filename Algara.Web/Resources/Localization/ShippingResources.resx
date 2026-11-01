@@ -36,7 +36,7 @@
   <data name="InvalidAddress" xml:space="preserve"><value>Въведете населено място, четирицифрен пощенски код и пълен адрес с номер.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Заредете офисите за населеното място и изберете конкретен офис.</value></data>
   <data name="TransportUnavailable" xml:space="preserve"><value>Автоматичното изчисляване за собствен транспорт още не е настроено. Можете да изберете вземане от магазина или да се свържете с нас.</value></data>
-  <data name="AddressUnresolved" xml:space="preserve"><value>Не успяхме да определим точния адрес. Проверете улицата, номера и пощенския код или се свържете с нас. Цена не е изчислена.</value></data>
+  <data name="AddressUnresolved" xml:space="preserve"><value>Не успяхме да определим точния адрес. Проверете населеното място, улицата или квартала и номера на сградата, или се свържете с нас. Цена не е изчислена.</value></data>
   <data name="CourierNotAllowed" xml:space="preserve"><value>Поне един артикул не позволява куриер. За цялата количка изберете собствен транспорт или вземане от магазина.</value></data>
   <data name="IncompleteParcels" xml:space="preserve"><value>Липсват пълни транспортни данни или броят колети надхвърля поддържаната калкулация. Свържете се с нас или изберете друг начин на получаване.</value></data>
   <data name="CourierUnavailable" xml:space="preserve"><value>Избраният куриер още не е настроен за автоматична калкулация. Изберете друг начин на получаване или се свържете с нас.</value></data>
@@ -57,4 +57,8 @@
   <data name="ToggleCities" xml:space="preserve"><value>Покажи или скрий населените места</value></data>
   <data name="NoCitiesFound" xml:space="preserve"><value>Няма намерени населени места.</value></data>
   <data name="OfficesLoading" xml:space="preserve"><value>Зареждане на офиси…</value></data>
+  <data name="Optional" xml:space="preserve"><value>(незадължителен)</value></data>
+  <data name="GeocodingUnavailable" xml:space="preserve"><value>Услугата за намиране на адрес временно не е достъпна. Опитайте по-късно или се свържете с нас. Цена не е изчислена.</value></data>
+  <data name="OwnTransportNotAllowed" xml:space="preserve"><value>За количка само с артикули, позволяващи куриер, изберете куриер или вземане от магазина. Собствен транспорт не се предлага.</value></data>
+  <data name="CourierOnlyCart" xml:space="preserve"><value>Всички артикули позволяват куриер. Можете да изберете куриерска доставка или вземане от магазина.</value></data>
 </root>

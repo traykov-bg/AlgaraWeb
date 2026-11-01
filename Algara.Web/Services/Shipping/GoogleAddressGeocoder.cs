@@ -4,20 +4,25 @@ using System.Text.Json;
 namespace Algara.Web.Services.Shipping;
 
 public sealed record GeocodedAddress(decimal Latitude, decimal Longitude, string DisplayAddress);
+public enum GeocodingError { AddressUnresolved, ServiceUnavailable }
+public sealed record GeocodingResult(GeocodedAddress? Address = null, GeocodingError? Error = null);
 public interface IAddressGeocoder
 {
-    Task<GeocodedAddress?> FindAsync(string apiKey, string city, string postalCode, string address, CancellationToken ct = default);
+    Task<GeocodingResult> ResolveAsync(string apiKey, string city, string postalCode, string address, CancellationToken ct = default);
 }
 
 public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
 {
     public async Task<GeocodedAddress?> FindAsync(string apiKey, string city, string postalCode, string address, CancellationToken ct = default)
+        => (await ResolveAsync(apiKey, city, postalCode, address, ct)).Address;
+
+    public async Task<GeocodingResult> ResolveAsync(string apiKey, string city, string postalCode, string address, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(address) ||
-            !ValidPostalCode(postalCode) || city.Length > 100 || address.Length > 500 ||
-            city.Contains('|') || city.Contains(':') || city.Any(char.IsControl) || address.Any(char.IsControl)) return null;
+            city.Length > 100 || address.Length > 500 ||
+            city.Contains('|') || city.Contains(':') || city.Any(char.IsControl) || address.Any(char.IsControl)) return new(Error: GeocodingError.ServiceUnavailable);
         var uri = "https://maps.googleapis.com/maps/api/geocode/json?address=" + Uri.EscapeDataString(address) +
-            "&components=" + Uri.EscapeDataString($"country:BG|postal_code:{postalCode}|locality:{city}") +
+            "&components=" + Uri.EscapeDataString($"country:BG|locality:{city}") +
             "&language=bg&key=" + Uri.EscapeDataString(apiKey);
         try
         {
@@ -25,26 +30,30 @@ public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
             timeout.CancelAfter(TimeSpan.FromSeconds(12));
             // The named HttpClient has all logging removed: the query includes a private API key and address.
             using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-            if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength > 256 * 1024) return null;
+            if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength > 256 * 1024) return new(Error: GeocodingError.ServiceUnavailable);
             await using var input = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var output = new MemoryStream();
             var buffer = new byte[4096];
             int size;
             while ((size = await input.ReadAsync(buffer, timeout.Token)) > 0)
             {
-                if (output.Length + size > 256 * 1024) return null;
+                if (output.Length + size > 256 * 1024) return new(Error: GeocodingError.ServiceUnavailable);
                 output.Write(buffer, 0, size);
             }
             using var json = JsonDocument.Parse(output.ToArray(), new JsonDocumentOptions { MaxDepth = 24 });
-            return Parse(json.RootElement, postalCode);
+            var root = json.RootElement;
+            if (Text(root, "status") == "ZERO_RESULTS") return new(Error: GeocodingError.AddressUnresolved);
+            if (Text(root, "status") != "OK") return new(Error: GeocodingError.ServiceUnavailable);
+            var found = Parse(root);
+            return found == null ? new(Error: GeocodingError.AddressUnresolved) : new(Address: found);
         }
-        catch (HttpRequestException) { return null; }
-        catch (IOException) { return null; }
-        catch (JsonException) { return null; }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }
+        catch (HttpRequestException) { return new(Error: GeocodingError.ServiceUnavailable); }
+        catch (IOException) { return new(Error: GeocodingError.ServiceUnavailable); }
+        catch (JsonException) { return new(Error: GeocodingError.ServiceUnavailable); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(Error: GeocodingError.ServiceUnavailable); }
     }
 
-    public static GeocodedAddress? Parse(JsonElement root, string postalCode)
+    public static GeocodedAddress? Parse(JsonElement root)
     {
         if (root.ValueKind != JsonValueKind.Object || Text(root, "status") != "OK" || !root.TryGetProperty("results", out var results) ||
             results.ValueKind != JsonValueKind.Array || results.GetArrayLength() != 1) return null;
@@ -64,7 +73,7 @@ public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
             types.EnumerateArray().Any(t => t.ValueKind == JsonValueKind.String && t.GetString() == type) &&
             (value == null || Text(p, "short_name") == value));
         var formatted = Text(result, "formatted_address");
-        return Has("country", "BG") && Has("postal_code", postalCode) && Has("street_number") &&
+        return Has("country", "BG") && Has("street_number") &&
             !string.IsNullOrWhiteSpace(formatted) && formatted.Length <= 1000
             ? new(latitude, longitude, formatted) : null;
     }

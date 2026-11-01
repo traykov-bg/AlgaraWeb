@@ -192,13 +192,13 @@ public class DeliveryQuoteTests
     {
         var fixture = new Fixture();
         fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync((TransportQuoteSettings?)null);
-        var result = await fixture.Service.CalculateAsync(Cart(Product()), DeliveryMethod.OwnTransport, "Plovdiv", "4000", "Street 1", null);
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), DeliveryMethod.OwnTransport, "Plovdiv", "4000", "Street 1", null);
         Assert.Equal("TransportUnavailable", result.ErrorKey);
         Assert.Null(result.Quote);
         fixture.Geocoder.VerifyNoOtherCalls();
         fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new TransportQuoteSettings(42.15m, 24.75m, "synthetic-key"));
-        fixture.Geocoder.Setup(g => g.FindAsync("synthetic-key", "Plovdiv", "4000", "Street 1", It.IsAny<CancellationToken>())).ReturnsAsync((GeocodedAddress?)null);
-        result = await fixture.Service.CalculateAsync(Cart(Product()), DeliveryMethod.OwnTransport, "Plovdiv", "4000", "Street 1", null);
+        fixture.Geocoder.Setup(g => g.ResolveAsync("synthetic-key", "Plovdiv", "4000", "Street 1", It.IsAny<CancellationToken>())).ReturnsAsync(new GeocodingResult(Error: GeocodingError.AddressUnresolved));
+        result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), DeliveryMethod.OwnTransport, "Plovdiv", "4000", "Street 1", null);
         Assert.Equal("AddressUnresolved", result.ErrorKey);
         Assert.Null(result.Quote);
     }
@@ -208,9 +208,9 @@ public class DeliveryQuoteTests
     {
         var fixture = new Fixture();
         fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new TransportQuoteSettings(42.15m, 24.75m, "synthetic-key"));
-        fixture.Geocoder.Setup(g => g.FindAsync("synthetic-key", "Far city", "1000", "Street 1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new GeocodedAddress(43.15m, 24.75m, "Resolved destination"));
-        var result = await fixture.Service.CalculateAsync(Cart(Product(5000)), DeliveryMethod.OwnTransport, "Far city", "1000", "Street 1", null);
+        fixture.Geocoder.Setup(g => g.ResolveAsync("synthetic-key", "Far city", "1000", "Street 1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeocodingResult(new GeocodedAddress(43.15m, 24.75m, "Resolved destination")));
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct(5000)), DeliveryMethod.OwnTransport, "Far city", "1000", "Street 1", null);
         Assert.Equal(100m, result.Quote!.DeliveryAmount);
         Assert.Equal(5100m, result.Quote.Total);
         Assert.False(result.Quote.IsTest);
@@ -595,6 +595,13 @@ public class DeliveryQuoteTests
         };
     }
 
+    private static Product LargeProduct(decimal price = 80)
+    {
+        var product = Product(price);
+        product.AllowsCourier = false;
+        return product;
+    }
+
     private static Product Product(decimal price = 80) => new()
     {
         N = 1, Name = "Lamp", Sku = "LAMP", Price = price, StockQuantity = 99, AllowsCourier = true,
@@ -603,6 +610,85 @@ public class DeliveryQuoteTests
     private static CartLine Line(Product product, int quantity = 1)
         => CartService.Evaluate(new(product.N, null, quantity), product, DateTime.Now);
     private static CartSnapshot Cart(Product product, int quantity = 1) => new() { Lines = [Line(product, quantity)] };
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("8001")]
+    public async Task OwnTransportAllowsMissingOrDifferentPostalCode(string? postalCode)
+    {
+        var fixture = new Fixture();
+        fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new TransportQuoteSettings(42.15m, 24.75m, "synthetic-key"));
+        fixture.Geocoder.Setup(g => g.ResolveAsync("synthetic-key", "Plovdiv", postalCode ?? "", "Street 1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeocodingResult(new GeocodedAddress(42.15m, 24.75m, "Resolved address")));
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), DeliveryMethod.OwnTransport, "Plovdiv", postalCode, "Street 1", null);
+        Assert.Null(result.ErrorKey);
+        Assert.Equal(0m, result.Quote!.DeliveryAmount);
+        Assert.Equal("Resolved address", result.Quote.ResolvedAddress);
+    }
+
+    [Fact]
+    public async Task OwnTransportServiceFailureDoesNotBlameCustomerAddress()
+    {
+        var fixture = new Fixture();
+        fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new TransportQuoteSettings(42.15m, 24.75m, "synthetic-key"));
+        fixture.Geocoder.Setup(g => g.ResolveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeocodingResult(Error: GeocodingError.ServiceUnavailable));
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), DeliveryMethod.OwnTransport, "Plovdiv", null, "Street 1", null);
+        Assert.Equal("GeocodingUnavailable", result.ErrorKey);
+        Assert.Null(result.Quote);
+    }
+
+    [Theory]
+    [InlineData(DeliveryMethod.EcontAddress)]
+    [InlineData(DeliveryMethod.SpeedyAddress)]
+    public async Task CourierAddressStillRequiresPostalCode(DeliveryMethod method)
+    {
+        var fixture = new Fixture();
+        var result = await fixture.Service.CalculateAsync(Cart(Product()), method, "Plovdiv", null, "Street 1", null);
+        Assert.Equal("InvalidAddress", result.ErrorKey);
+        fixture.Couriers.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void DeliveryMethodsAreMutuallyExclusiveForSmallLargeAndMixedCarts(bool hasLarge, bool mixed)
+    {
+        var large = LargeProduct(); large.N = 2;
+        var cart = mixed ? new CartSnapshot { Lines = [Line(Product()), Line(large)] }
+            : Cart(hasLarge ? large : Product());
+        Assert.Equal(!hasLarge, DeliveryQuoteService.AllowsCourier(cart));
+        Assert.Equal(hasLarge, DeliveryQuoteService.AllowsOwnTransport(cart));
+        Assert.False(DeliveryQuoteService.AllowsOwnTransport(new CartSnapshot()));
+    }
+
+    [Fact]
+    public async Task ForgedOwnTransportRequestForSmallItemsDoesNotCallSettingsOrGeocoding()
+    {
+        var fixture = new Fixture();
+        var result = await fixture.Service.CalculateAsync(Cart(Product(10)), DeliveryMethod.OwnTransport, "Burgas", "8001", "Street 1", null);
+        Assert.Equal("OwnTransportNotAllowed", result.ErrorKey);
+        Assert.Null(result.Quote);
+        fixture.Settings.VerifyNoOtherCalls();
+        fixture.Geocoder.VerifyNoOtherCalls();
+        fixture.Couriers.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(DeliveryMethod.EcontOffice)]
+    [InlineData(DeliveryMethod.EcontAddress)]
+    [InlineData(DeliveryMethod.SpeedyOffice)]
+    [InlineData(DeliveryMethod.SpeedyAddress)]
+    public async Task LargeItemsCannotUseAnyCourierMethod(DeliveryMethod method)
+    {
+        var fixture = new Fixture();
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), method, "Plovdiv", "4000", "Street 1", "7");
+        Assert.Equal("CourierNotAllowed", result.ErrorKey);
+        Assert.Null(result.Quote);
+        fixture.Settings.VerifyNoOtherCalls(); fixture.Couriers.VerifyNoOtherCalls();
+    }
+
     private sealed class Fixture
     {
         public Mock<IDeliverySettingsReader> Settings { get; } = new(MockBehavior.Strict);

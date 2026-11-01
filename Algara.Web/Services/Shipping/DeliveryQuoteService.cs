@@ -23,6 +23,7 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         _ => null
     };
     public static bool AllowsCourier(CartSnapshot cart) => cart.CanQuote && cart.Lines.All(x => x.Product is { AllowsCourier: true });
+    public static bool AllowsOwnTransport(CartSnapshot cart) => cart.CanQuote && cart.Lines.Any(x => x.Product is { AllowsCourier: false });
     public static bool TryBuildParcels(CartSnapshot cart, out IReadOnlyList<CourierParcel> parcels)
     {
         var result = new List<CourierParcel>();
@@ -44,6 +45,7 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         if (!cart.CanQuote) return new(ErrorKey: "InvalidCart");
         if (!Enum.IsDefined(method)) return new(ErrorKey: "InvalidMethod");
         if (method == DeliveryMethod.Pickup) return Success(cart, 0m);
+        if (method == DeliveryMethod.OwnTransport && !AllowsOwnTransport(cart)) return new(ErrorKey: "OwnTransportNotAllowed");
         city = city?.Trim(); postalCode = postalCode?.Trim(); address = address?.Trim(); officeCode = officeCode?.Trim();
         if (string.IsNullOrWhiteSpace(city) || city.Length is < 2 or > 100 || city.Any(char.IsControl))
             return new(ErrorKey: "InvalidAddress");
@@ -51,14 +53,15 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         {
             if (string.IsNullOrWhiteSpace(officeCode) || officeCode.Length > 40) return new(ErrorKey: "ChooseOffice");
         }
-        else if (!GoogleAddressGeocoder.ValidPostalCode(postalCode) || string.IsNullOrWhiteSpace(address) ||
+        else if ((method != DeliveryMethod.OwnTransport && !GoogleAddressGeocoder.ValidPostalCode(postalCode)) || string.IsNullOrWhiteSpace(address) ||
             address.Length > 500 || address.Any(char.IsControl)) return new(ErrorKey: "InvalidAddress");
         if (method == DeliveryMethod.OwnTransport)
         {
             var transport = await settings.GetTransportAsync(ct);
             if (transport == null) return new(ErrorKey: "TransportUnavailable");
-            var destination = await geocoder.FindAsync(transport.ApiKey, city, postalCode!, address!, ct);
-            if (destination == null) return new(ErrorKey: "AddressUnresolved");
+            var resolved = await geocoder.ResolveAsync(transport.ApiKey, city, postalCode ?? string.Empty, address!, ct);
+            var destination = resolved.Address;
+            if (destination == null) return new(ErrorKey: resolved.Error == GeocodingError.ServiceUnavailable ? "GeocodingUnavailable" : "AddressUnresolved");
             var distance = DistanceKm(transport.Latitude, transport.Longitude, destination.Latitude, destination.Longitude);
             return new(new(cart.GoodsSubtotal, OwnTransportAmount(distance), clock.GetUtcNow(), distance, destination.DisplayAddress));
         }

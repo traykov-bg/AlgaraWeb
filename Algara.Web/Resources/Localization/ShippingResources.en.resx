@@ -36,7 +36,7 @@
   <data name="InvalidAddress" xml:space="preserve"><value>Enter a city, four-digit postal code and complete street address with a building number.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Load offices for the city and select one.</value></data>
   <data name="TransportUnavailable" xml:space="preserve"><value>Automatic calculation for our transport is not configured yet. Choose store pickup or contact us.</value></data>
-  <data name="AddressUnresolved" xml:space="preserve"><value>We could not locate the exact address. Check the street, building number and postal code, or contact us. No price has been calculated.</value></data>
+  <data name="AddressUnresolved" xml:space="preserve"><value>We could not determine the exact address. Check the city, street or neighbourhood and building number, or contact us. No price has been calculated.</value></data>
   <data name="CourierNotAllowed" xml:space="preserve"><value>At least one item cannot ship by courier. Choose our transport or store pickup for the whole cart.</value></data>
   <data name="IncompleteParcels" xml:space="preserve"><value>Parcel information is incomplete or the number of parcels exceeds calculation limits. Contact us or choose another delivery method.</value></data>
   <data name="CourierUnavailable" xml:space="preserve"><value>This courier is not configured for automatic quotes yet. Choose another delivery method or contact us.</value></data>
@@ -57,4 +57,8 @@
   <data name="ToggleCities" xml:space="preserve"><value>Show or hide cities</value></data>
   <data name="NoCitiesFound" xml:space="preserve"><value>No matching cities.</value></data>
   <data name="OfficesLoading" xml:space="preserve"><value>Loading offices…</value></data>
+  <data name="Optional" xml:space="preserve"><value>(optional)</value></data>
+  <data name="GeocodingUnavailable" xml:space="preserve"><value>The address lookup service is currently unavailable. Try again later or contact us. No price has been calculated.</value></data>
+  <data name="OwnTransportNotAllowed" xml:space="preserve"><value>For a cart containing only courier-eligible items, choose a courier or store pickup. Our transport is not available.</value></data>
+  <data name="CourierOnlyCart" xml:space="preserve"><value>All items are courier-eligible. Choose courier delivery or store pickup.</value></data>
 </root>

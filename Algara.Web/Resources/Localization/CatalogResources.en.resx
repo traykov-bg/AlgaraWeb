@@ -68,7 +68,7 @@
   <data name="DeliveryOwnTransportEligibility" xml:space="preserve"><value>We deliver large furniture using our own transport. If an order contains both large furniture and smaller items, the entire delivery uses our own transport.</value></data>
   <data name="DeliveryOwnTransportPrice" xml:space="preserve"><value>Delivery is free within a 50 km radius of Plovdiv, including the boundary. Outside this radius, a €100 delivery charge applies.</value></data>
   <data name="DeliveryCourierTitle" xml:space="preserve"><value>Econt or Speedy</value></data>
-  <data name="DeliveryCourierEligibility" xml:space="preserve"><value>For orders containing only accessories and other small items suitable for courier delivery, you can choose delivery to an address or a specific Econt or Speedy office.</value></data>
+  <data name="DeliveryCourierEligibility" xml:space="preserve"><value>For orders containing only accessories and other small courier-eligible items, choose delivery to an address or a specific Econt or Speedy office. Our transport is not available for these orders; store pickup is also available.</value></data>
   <data name="DeliveryCourierPrice" xml:space="preserve"><value>The customer pays for courier delivery when the value of the goods after discounts is €100 or less. Courier delivery is free above €100. Delivery and additional services do not count towards this threshold.</value></data>
   <data name="DeliveryPickupTitle" xml:space="preserve"><value>Store pickup</value></data>
   <data name="DeliveryPickupDescription" xml:space="preserve"><value>You can collect your order from the store, including large furniture. Arrange collection with a member of our team.</value></data>

@@ -23,6 +23,10 @@
         {
             <div class="alert alert-info">@T["CourierNotAllowed"]</div>
         }
+        @if (courierAllowed)
+        {
+            <p class="small text-muted">@T["CourierOnlyCart"]</p>
+        }
         @if (Model.ErrorKey != null)
         {
             <div class="alert alert-warning" role="alert">@T[Model.ErrorKey]</div>
@@ -32,7 +36,10 @@
                 <label for="delivery-method" class="form-label">@T["Method"]</label>
                 <select asp-for="Method" id="delivery-method" class="form-select mb-3">
                     <option value="0">@T["Pickup"]</option>
-                    <option value="1">@T["OwnTransport"]</option>
+                    @if (DeliveryQuoteService.AllowsOwnTransport(Model.Cart))
+                    {
+                        <option value="1">@T["OwnTransport"]</option>
+                    }
                     @if (courierAllowed)
                     {
                         <option value="2">@T["EcontOffice"]</option><option value="3">@T["EcontAddress"]</option>
@@ -55,7 +62,7 @@
                     </div>
                     <p id="delivery-city-status" class="small text-muted" role="status" data-loading="@T["CitiesLoading"]" data-error="@T["CitiesFailed"]" data-select="@T["ChooseCity"]"></p>
                     <div data-delivery-address>
-                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"]</label>
+                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"] <span data-delivery-own>@T["Optional"]</span></label>
                         <input asp-for="PostalCode" class="form-control mb-3" maxlength="4" inputmode="numeric" autocomplete="postal-code" />
                         <label asp-for="Address" class="form-label">@T["Address"]</label>
                         <input asp-for="Address" class="form-control mb-3" maxlength="500" autocomplete="street-address" />

@@ -12,7 +12,7 @@ public sealed class GoogleAddressGeocoderTests
     private const string Secret = "synthetic-private-key+?&";
 
     [Fact]
-    public async Task ExactRooftopAddressUsesFixedEndpointAndRestrictsCountryPostalCodeAndLocality()
+    public async Task ExactRooftopAddressUsesFixedEndpointAndRestrictsCountryAndLocalityWithoutPostalCode()
     {
         using var handler = new StubHandler((request, _) =>
         {
@@ -23,7 +23,7 @@ public sealed class GoogleAddressGeocoderTests
             Assert.Equal("/maps/api/geocode/json", uri.AbsolutePath);
             var query = QueryHelpers.ParseQuery(uri.Query);
             Assert.Equal("Example street 1", query["address"]);
-            Assert.Equal("country:BG|postal_code:4000|locality:Plovdiv", query["components"]);
+            Assert.Equal("country:BG|locality:Plovdiv", query["components"]);
             Assert.Equal("bg", query["language"]);
             Assert.Equal(Secret, query["key"]);
             Assert.Null(request.Content);
@@ -47,7 +47,6 @@ public sealed class GoogleAddressGeocoderTests
     [InlineData("range-interpolated")]
     [InlineData("ambiguous")]
     [InlineData("wrong-country")]
-    [InlineData("wrong-postcode")]
     [InlineData("missing-number")]
     [InlineData("latitude-outside")]
     [InlineData("longitude-outside")]
@@ -108,9 +107,6 @@ public sealed class GoogleAddressGeocoderTests
     [InlineData("", "Plovdiv", "4000", "Example street 1")]
     [InlineData("key", "Plovdiv|country:GR", "4000", "Example street 1")]
     [InlineData("key", "Plovdiv:GR", "4000", "Example street 1")]
-    [InlineData("key", "Plovdiv", "4000|country:GR", "Example street 1")]
-    [InlineData("key", "Plovdiv", "400", "Example street 1")]
-    [InlineData("key", "Plovdiv", "abcd", "Example street 1")]
     [InlineData("key", "Plovdiv", "4000", "")]
     [InlineData("key", "Plovdiv", "4000", "Example\nstreet")]
     public async Task InvalidInputCannotReachProvider(string key, string city, string postalCode, string address)
@@ -190,10 +186,43 @@ public sealed class GoogleAddressGeocoderTests
         var payload = JsonNode.Parse(Success())!;
         payload["results"]![0]!["partial_match"] = false;
         using var valid = JsonDocument.Parse(payload.ToJsonString());
-        Assert.NotNull(GoogleAddressGeocoder.Parse(valid.RootElement, "4000"));
+        Assert.NotNull(GoogleAddressGeocoder.Parse(valid.RootElement));
         payload["results"]![0]!["address_components"] = new JsonArray((JsonNode?)null, JsonValue.Create(1), new JsonObject());
         using var malformed = JsonDocument.Parse(payload.ToJsonString());
-        Assert.Null(GoogleAddressGeocoder.Parse(malformed.RootElement, "4000"));
+        Assert.Null(GoogleAddressGeocoder.Parse(malformed.RootElement));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("8001")]
+    [InlineData("8001|country:GR")]
+    public async Task PostalCodeNeverFiltersOrRejectsAnOtherwiseExactAddress(string postalCode)
+    {
+        using var handler = new StubHandler((request, _) => {
+            var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
+            Assert.Equal("country:BG|locality:Plovdiv", query["components"]);
+            return Task.FromResult(Json(Success()));
+        });
+        using var client = new HttpClient(handler);
+        var result = await new GoogleAddressGeocoder(client).ResolveAsync(Secret, "Plovdiv", postalCode, "Example street 1");
+        Assert.NotNull(result.Address);
+        Assert.Null(result.Error);
+    }
+
+    [Theory]
+    [InlineData("ZERO_RESULTS", GeocodingError.AddressUnresolved)]
+    [InlineData("REQUEST_DENIED", GeocodingError.ServiceUnavailable)]
+    [InlineData("OVER_QUERY_LIMIT", GeocodingError.ServiceUnavailable)]
+    [InlineData("OVER_DAILY_LIMIT", GeocodingError.ServiceUnavailable)]
+    [InlineData("UNKNOWN_ERROR", GeocodingError.ServiceUnavailable)]
+    public async Task ProviderFailureIsDistinctFromAnUnresolvedAddressWithoutLeakingDetails(string status, GeocodingError error)
+    {
+        using var handler = new StubHandler((_, _) => Task.FromResult(Json(JsonSerializer.Serialize(new { status, error_message = Secret, results = Array.Empty<object>() }))));
+        using var client = new HttpClient(handler);
+        var result = await new GoogleAddressGeocoder(client).ResolveAsync(Secret, "Plovdiv", "", "Example street 1");
+        Assert.Equal(error, result.Error);
+        Assert.Null(result.Address);
+        Assert.DoesNotContain(Secret, result.ToString());
     }
 
     private static string Success() => """
