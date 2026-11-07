@@ -500,6 +500,10 @@ namespace Algara.Web.ShopMigrations
                     b.Property<int?>("UserN")
                         .HasColumnType("int");
 
+                    b.Property<string>("WaybillNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("N");
 
                     b.HasIndex("SubmissionId")
@@ -555,6 +559,9 @@ namespace Algara.Web.ShopMigrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<int>("DeductedQuantity")
+                        .HasColumnType("int");
+
                     b.Property<int>("OrderN")
                         .HasColumnType("int");
 
@@ -596,6 +603,8 @@ namespace Algara.Web.ShopMigrations
 
                     b.ToTable("OrderItems", null, t =>
                         {
+                            t.HasCheckConstraint("CK_OrderItems_DeductedQuantity", "[DeductedQuantity] >= 0 AND [DeductedQuantity] <= [Quantity]");
+
                             t.HasCheckConstraint("CK_OrderItems_ReservedQuantity", "[ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]");
                         });
                 });

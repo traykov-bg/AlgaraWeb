@@ -88,8 +88,14 @@
                             }
                         }
                     </select>
+                    @if (Model.Order.Status is OrderStatus.Confirmed or OrderStatus.Shipped)
+                    {
+                        <label for="waybill" class="form-label">Товарителница</label>
+                        <input id="waybill" name="waybill" value="@Model.Order.WaybillNumber" maxlength="100" class="form-control mb-2" />
+                        <p class="small text-muted">Може да записвате и редактирате номера при „Потвърдена“ и „Изпратена“. При изпращане номерът се включва в имейла. Оставете празно, за да запазите текущия номер. Не се създава куриерска пратка.</p>
+                    }
                     <button type="submit" class="btn btn-sm btn-primary w-100">
-                        <i class="bi bi-floppy me-1"></i>Запиши статус
+                        <i class="bi bi-floppy me-1"></i>Запиши промените
                     </button>
                 </form>
             </div>
@@ -115,7 +121,7 @@
                 {
                     <tr>
                         <td>@(item.ProductName ?? item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
-                        <td class="text-center">@item.Quantity<br /><small>@item.VariantName @item.Sku</small></td>
+                        <td class="text-center">@item.Quantity<br /><small>Резервирани при подаване: @item.ReservedQuantity · Приспаднати: @item.DeductedQuantity · За изработка при поръчване: @(item.RequiresManufacturing ? "Да" : "Не")</small><br /><small>@item.VariantName @item.Sku</small></td>
                         <td class="text-end small">@item.UnitPrice.ToString("N0") €</td>
                         <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>
                     </tr>
@@ -132,3 +138,14 @@
 </div>
 
 <partial name="_OrderDelivery" model="Model.Order" />
+<section class="card card-body mt-3">
+    <h2 class="h5">История на поръчката</h2>
+    <p class="small text-muted">След потвърждение подгответе артикулите. Потвърждението приспада наличната част. Изпращането приспада само оставащите бройки за изработка. „Доставена“ се отбелязва само при потвърдено получаване.</p>
+    <table class="table table-sm"><thead><tr><th>Дата (UTC)</th><th>Действие</th><th>Статус</th><th>Извършител</th></tr></thead><tbody>
+    @foreach (var entry in Model.History)
+    {
+        var action = entry.Action switch { "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", _ => entry.Action };
+        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
+    }
+    </tbody></table>
+</section>

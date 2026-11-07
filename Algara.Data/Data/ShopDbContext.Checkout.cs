@@ -25,6 +25,7 @@ public partial class ShopDbContext
             b.Property(o => o.ContactEmail).HasMaxLength(256);
             b.Property(o => o.ContactPhone).HasMaxLength(20);
             b.Property(o => o.DeliverySnapshot).HasMaxLength(4000);
+            b.Property(o => o.WaybillNumber).HasMaxLength(100);
             b.Property(o => o.Comment).HasMaxLength(2000);
             b.Property(o => o.InvoiceDetails).HasMaxLength(1000);
             b.Property(o => o.DeliveryAmount).HasColumnType("decimal(18,2)");
@@ -36,6 +37,7 @@ public partial class ShopDbContext
             b.Property(i => i.VariantName).HasMaxLength(500);
             b.Property(i => i.Sku).HasMaxLength(64);
             b.HasIndex(i => new { i.ProductN, i.VariantN });
+            b.ToTable("OrderItems", t => t.HasCheckConstraint("CK_OrderItems_DeductedQuantity", "[DeductedQuantity] >= 0 AND [DeductedQuantity] <= [Quantity]"));
             b.ToTable("OrderItems", t => t.HasCheckConstraint("CK_OrderItems_ReservedQuantity", "[ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]"));
         });
     }

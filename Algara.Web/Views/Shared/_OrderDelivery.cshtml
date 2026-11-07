@@ -22,3 +22,7 @@
         @if (!string.IsNullOrEmpty(Model.InvoiceDetails)) { <p>@C["InvoiceDetails"]: @Model.InvoiceDetails</p> }
     </section>
 }
+@if (!string.IsNullOrEmpty(Model.WaybillNumber))
+{
+    <p class="my-3">Товарителница / Waybill: <strong>@Model.WaybillNumber</strong></p>
+}

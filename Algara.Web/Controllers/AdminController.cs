@@ -556,7 +556,7 @@ namespace Algara.Web.Controllers
 
         [HttpGet("orders/{n}")]
         [RequirePermission("Orders.View")]
-        public async Task<IActionResult> OrderDetail(int n)
+        public async Task<IActionResult> OrderDetail(int n, [FromServices] Algara.Data.Data.ShopDbContext shop)
         {
             var order = await _orderRepo.GetByNAsync(n);
             if (order == null) return NotFound();
@@ -566,18 +566,27 @@ namespace Algara.Web.Controllers
             var vm = new AdminOrderDetailViewModel
             {
                 Order           = order,
+                History = await shop.Set<OrderEvent>().AsNoTracking().Where(e => e.OrderN == n).OrderByDescending(e => e.OccurredAtUtc).ThenByDescending(e => e.N).ToListAsync(),
+                AllStatuses = Enum.GetValues<OrderStatus>().Where(s => s == order.Status || Algara.Web.Services.Checkout.OrderLifecycleService.Allows(order.Status, s)),
                 UserDisplayName = order.ContactName ?? (user != null ? (user.DisplayName ?? user.UserName) : $"#{order.UserN}"),
                 UserEmail       = order.ContactEmail ?? user?.Email ?? string.Empty,
             };
+            var actorIds = vm.History.Select(e => e.ActorId).Distinct().ToArray();
+            var actors = await _identityDb.Users.AsNoTracking().Where(u => actorIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.DisplayName }).ToListAsync();
+            vm.ActorNames = actors.ToDictionary(u => u.Id, u =>
+                !string.IsNullOrWhiteSpace((u.FirstName + " " + u.LastName).Trim())
+                    ? (u.FirstName + " " + u.LastName).Trim()
+                    : u.DisplayName ?? "Потребител без име");
             return View(vm);
         }
 
         [HttpPost("orders/{n}/status")]
         [ValidateAntiForgeryToken]
         [RequirePermission("Orders.View", "Orders.ChangeStatus")]
-        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status, string? version, [FromServices] Algara.Web.Services.Checkout.OrderLifecycleService lifecycle)
+        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status, string? version, string? waybill, [FromServices] Algara.Web.Services.Checkout.OrderLifecycleService lifecycle)
         {
-            if (!await lifecycle.ChangeAsync(n, status, version, User, HttpContext.RequestAborted))
+            if (!await lifecycle.ChangeAsync(n, status, version, User, HttpContext.RequestAborted, waybill))
             {
                 TempData["Error"] = "Промяната не е записана. Проверете статуса, срока и наличностите и презаредете поръчката.";
                 return RedirectToAction(nameof(OrderDetail), new { n });

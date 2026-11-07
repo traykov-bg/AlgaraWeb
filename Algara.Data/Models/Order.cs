@@ -25,6 +25,7 @@
         public string? ContactEmail { get; set; }
         public string? ContactPhone { get; set; }
         public string? DeliverySnapshot { get; set; }
+        public string? WaybillNumber { get; set; }
         public string? Comment { get; set; }
         public string? InvoiceDetails { get; set; }
         public decimal DeliveryAmount { get; set; }

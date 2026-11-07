@@ -17,6 +17,6 @@ public sealed class StockReservationReader(ShopDbContext db, TimeProvider clock)
         return db.OrderItems.Where(i => i.ProductN == productN && i.VariantN == variantN &&
             (i.Order.Status == OrderStatus.Confirmed ||
              (i.Order.Status == OrderStatus.Pending && (i.Order.ExpiresAtUtc == null || i.Order.ExpiresAtUtc > now))))
-            .SumAsync(i => i.ReservedQuantity);
+            .SumAsync(i => i.ReservedQuantity > i.DeductedQuantity ? i.ReservedQuantity - i.DeductedQuantity : 0);
     }
 }

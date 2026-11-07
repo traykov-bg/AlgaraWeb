@@ -14,7 +14,7 @@ public sealed class ReservationExpiryWorker(IServiceScopeFactory scopes, TimePro
             {
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
-                await new OrderExpiryService(db, clock).ExpireAsync(stoppingToken);
+                await new OrderExpiryService(db, clock, scope.ServiceProvider.GetRequiredService<Algara.Web.Services.Email.EmailOutboxFactory>()).ExpireAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception ex) { logger.LogError("Reservation expiry failed ({ErrorType}); retrying next minute.", ex.GetType().Name); }
