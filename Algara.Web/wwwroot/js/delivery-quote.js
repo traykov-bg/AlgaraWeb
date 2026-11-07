@@ -38,6 +38,7 @@
         validateCity();
         closeCities();
         loadOffices();
+        if (form.dataset.quoteUrl) form.dispatchEvent(new Event('delivery-invalidated'));
     }
     async function loadOffices() {
         const version = officeVersion;

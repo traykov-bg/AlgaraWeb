@@ -6,6 +6,12 @@
         public int OrderN { get; set; }
         public int ProductN { get; set; }
         public int Quantity { get; set; }
+        public int? VariantN { get; set; }
+        public string? ProductName { get; set; }
+        public string? VariantName { get; set; }
+        public string? Sku { get; set; }
+        public int ReservedQuantity { get; set; }
+        public bool RequiresManufacturing { get; set; }
 
         /// <summary>
         /// Снимка на цената в момента на поръчката — не се обновява при промяна на Product.Price.

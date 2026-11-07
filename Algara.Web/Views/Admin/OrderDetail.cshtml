@@ -74,6 +74,7 @@
             <div class="card-header bg-white fw-semibold">Промяна на статус</div>
             <div class="card-body">
                 <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post" staff-permission="Orders.View,Orders.ChangeStatus">
+                    <input type="hidden" name="version" value="@Convert.ToBase64String(Model.Order.RowVersion)" />
                     <select name="status" class="form-select form-select-sm mb-2">
                         @foreach (var s in Model.AllStatuses)
                         {
@@ -113,8 +114,8 @@
                 @foreach (var item in Model.Order.OrderItems)
                 {
                     <tr>
-                        <td>@(item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
-                        <td class="text-center">@item.Quantity</td>
+                        <td>@(item.ProductName ?? item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
+                        <td class="text-center">@item.Quantity<br /><small>@item.VariantName @item.Sku</small></td>
                         <td class="text-end small">@item.UnitPrice.ToString("N0") €</td>
                         <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>
                     </tr>
@@ -129,3 +130,5 @@
         </table>
     </div>
 </div>
+
+<partial name="_OrderDelivery" model="Model.Order" />

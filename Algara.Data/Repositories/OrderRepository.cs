@@ -45,6 +45,7 @@ namespace Algara.Data.Repositories
             var order = await _context.Orders.FindAsync(n);
             if (order != null)
             {
+                if (order.SubmissionId != null) throw new InvalidOperationException("Checkout orders require the reservation-aware lifecycle service.");
                 order.Status    = status;
                 order.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();

@@ -1,0 +1,25 @@
+﻿@model Algara.Data.Models.Order
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CheckoutResources> C
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ShippingResources> T
+@{ ViewData["Title"] = C["Received"]; }
+<div class="mx-auto py-4" style="max-width:50rem">
+    <h1 class="h3">@C["Received"] #@Model.N</h1>
+    <p class="fw-bold">@C[Model.Status.ToString()]</p>
+    @if (Model.Status == Algara.Data.Models.OrderStatus.Pending) { <p>@C["PendingHelp"]</p> }
+    <p>@Model.ContactName · @Model.ContactEmail · @Model.ContactPhone</p>
+    @foreach (var item in Model.OrderItems)
+    {
+        <div class="card card-body mb-2"><strong>@item.ProductName</strong><span>@item.VariantName · @item.Sku</span><span>@item.Quantity × @item.UnitPrice.ToString("N2") €</span></div>
+    }
+    <p>@T["Delivery"]: @Model.DeliveryAmount.ToString("N2") €</p>
+    <p class="fs-5">@T["Total"]: <strong>@Model.TotalAmount.ToString("N2") €</strong></p>
+    <partial name="_OrderDelivery" model="Model" />
+    @if (Model.UserN == null)
+    {
+        <p>@C["LinkHelp"]</p>
+        @if (User.Identity?.IsAuthenticated == true)
+        { <form asp-action="Link" asp-route-n="@Model.N" method="post"><button class="btn btn-outline-secondary">@C["LinkOrder"]</button></form> }
+        else
+        { <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Checkout", new { n = Model.N })">@C["Login"]</a> }
+    }
+</div>

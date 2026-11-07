@@ -1,0 +1,123 @@
+﻿@model Algara.Web.ViewModels.CheckoutForm
+@using Algara.Web.Services.Shipping
+@using Algara.Web.Localization
+@inject Microsoft.Extensions.Localization.IStringLocalizer<ShippingResources> T
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CheckoutResources> C
+@{
+    ViewData["Title"] = C["Title"];
+    var courierAllowed = DeliveryQuoteService.AllowsCourier(Model.Cart);
+    var officeErrors = new[] { "InvalidCart", "InvalidMethod", "CourierNotAllowed", "InvalidOfficeCity", "NoOffices", "OfficeLookupUnavailable", "OfficeLookupRejected", "OfficeLookupInvalidResponse", "OfficeLookupFailed" }.ToDictionary(key => key, key => T[key].Value);
+}
+<div class="mx-auto py-3" style="max-width:70rem">
+    <a asp-controller="Order" asp-action="Index">@T["BackToCart"]</a>
+    <h1 class="h3 my-3">@C["Title"]</h1>
+    @if (!Model.Cart.CanQuote) { <div class="alert alert-warning">@T["InvalidCart"]</div> }
+    else
+    {
+        @if (Model.ErrorKey != null) { <div class="alert alert-warning" role="alert">@(C[Model.ErrorKey].ResourceNotFound ? T[Model.ErrorKey] : C[Model.ErrorKey])</div> }
+        <form asp-action="Submit" method="post" id="delivery-quote-form" data-quote-url="@Url.Action("Quote")" data-cities-url="@Url.Action("Cities", "Shipping")" data-offices-url="@Url.Action("Offices", "Shipping")" data-loading="@C["Calculating"]" data-failed="@C["QuoteFailed"]">
+            <input asp-for="SubmissionToken" type="hidden" /><input asp-for="QuoteToken" type="hidden" />
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="row g-4"><div class="col-lg-7">
+                <section class="card card-body mb-3"><h2 class="h5">@C["Contacts"]</h2>
+ <label asp-for="FirstName" class="form-label">@C["FirstName"]</label><input asp-for="FirstName" type="text" autocomplete="given-name" required class="form-control mb-3" />
+ <label asp-for="LastName" class="form-label">@C["LastName"]</label><input asp-for="LastName" type="text" autocomplete="family-name" required class="form-control mb-3" />
+ <label asp-for="Email" class="form-label">@C["Email"]</label><input asp-for="Email" type="email" autocomplete="email" required class="form-control mb-3" />
+ <label asp-for="Phone" class="form-label">@C["Phone"]</label><input asp-for="Phone" type="tel" autocomplete="tel" required class="form-control mb-3" />
+                </section><section class="card card-body mb-3"><h2 class="h5">@T["Delivery"]</h2>
+                <label for="checkout-provider" class="form-label">@T["Method"]</label>
+                <select id="checkout-provider" class="form-select mb-3">
+                    <option value="0">@T["Pickup"]</option>
+                    @if (DeliveryQuoteService.AllowsOwnTransport(Model.Cart))
+                    { <option value="1">@T["OwnTransport"]</option> }
+                    @if (courierAllowed && Model.EnabledCouriers.Contains(1))
+                    { <option value="2">@C["Econt"]</option> }
+                    @if (courierAllowed && Model.EnabledCouriers.Contains(2))
+                    { <option value="4">@C["Speedy"]</option> }
+                </select>
+                <input type="hidden" name="Method" id="delivery-method" value="@((int)Model.Method)" />
+                <fieldset id="checkout-destination-kind" class="mb-3" hidden>
+                    <legend class="fs-6">@C["DestinationKind"]</legend>
+                    <label class="form-check form-check-inline"><input type="radio" name="DestinationKind" value="address" class="form-check-input" /> @C["ToAddress"]</label>
+                    <label class="form-check form-check-inline"><input type="radio" name="DestinationKind" value="office" class="form-check-input" checked /> @C["ToOffice"]</label>
+                </fieldset>
+                <div data-delivery-destination>
+                    <label for="delivery-city" class="form-label">@T["City"]</label>
+                    <div id="delivery-city-picker" class="delivery-city-picker mb-3">
+                        <div class="input-group">
+                            <input asp-for="City" id="delivery-city" class="form-control" maxlength="100" autocomplete="address-level2" aria-describedby="delivery-city-status" />
+                            <button type="button" id="delivery-city-toggle" class="btn btn-outline-secondary" aria-label="@T["ToggleCities"]" aria-controls="delivery-cities" aria-expanded="false" hidden>
+                                <span aria-hidden="true">▾</span>
+                            </button>
+                        </div>
+                        <div id="delivery-city-popup" class="delivery-city-popup" hidden>
+                            <div id="delivery-cities" role="listbox" aria-label="@T["City"]"></div>
+                            <p id="delivery-city-empty" class="small text-muted p-3 mb-0" hidden>@T["NoCitiesFound"]</p>
+                        </div>
+                    </div>
+                    <p id="delivery-city-status" class="small text-muted" role="status" data-loading="@T["CitiesLoading"]" data-error="@T["CitiesFailed"]" data-select="@T["ChooseCity"]"></p>
+                    <div data-delivery-address>
+                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"] <span data-delivery-own>@T["Optional"]</span></label>
+                        <input asp-for="PostalCode" class="form-control mb-3" maxlength="4" inputmode="numeric" autocomplete="postal-code" />
+                        <label asp-for="Address" class="form-label">@T["Address"]</label>
+                        <input asp-for="Address" class="form-control mb-3" maxlength="500" autocomplete="street-address" />
+                        <p class="small text-muted">@T["AddressHelp"]</p>
+                        <label asp-for="AddressDetails" class="form-label">@C["AddressDetails"]</label>
+                        <input asp-for="AddressDetails" maxlength="200" class="form-control mb-3" autocomplete="address-line2" />
+                    </div>
+                    <div data-delivery-office>
+                        <label for="delivery-office" class="form-label d-block">@T["Office"]</label>
+                        <select asp-for="OfficeCode" id="delivery-office" class="form-select mb-3" aria-describedby="delivery-office-status">
+                            <option value="">@T["SelectOffice"]</option>
+                            @foreach (var office in Model.Offices) { <option value="@office.Code">@office.Name — @office.Address</option> }
+                        </select>
+                        <p id="delivery-office-status" class="small text-muted" role="status" data-loading="@T["OfficesLoading"]" data-error="@T["OfficeLookupFailed"]" data-select="@T["SelectOffice"]" data-errors="@System.Text.Json.JsonSerializer.Serialize(officeErrors)"></p>
+                    </div>
+                </div>
+                <p class="small text-muted" data-delivery-own>@T["OwnPolicy"] @T["GeocodingNotice"]</p>
+                <p class="small text-muted" data-delivery-courier>@T["CourierPolicy"]</p>
+                <p class="small text-muted" data-delivery-pickup>@DeliverySettingsService.OriginAddress</p>
+                </section>
+                <section class="card card-body mb-3">
+                    <label asp-for="Comment">@C["Comment"]</label><textarea asp-for="Comment" maxlength="2000" class="form-control mb-3"></textarea>
+                    <p class="small">@C["Extras"]</p>
+                    <label class="form-check"><input asp-for="InvoiceRequested" class="form-check-input" /> @C["InvoiceRequested"]</label>
+                    <div id="invoice-fields" hidden><label asp-for="InvoiceDetails">@C["InvoiceDetails"]</label><textarea asp-for="InvoiceDetails" maxlength="1000" class="form-control"></textarea></div>
+                    @if (User.Identity?.IsAuthenticated != true)
+                    {
+                        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Checkout")" class="my-3">@C["Login"]</a>
+                        <label class="form-check"><input asp-for="CreateAccount" class="form-check-input" /> @C["CreateAccount"]</label>
+                        <div id="account-fields" hidden>
+                            <p class="small">@C["AccountHelp"]</p>
+                            <label for="Password">@C["Password"]</label><input type="password" name="Password" id="Password" autocomplete="new-password" minlength="6" maxlength="1024" class="form-control mb-2" />
+                            <label for="ConfirmPassword">@C["ConfirmPassword"]</label><input type="password" name="ConfirmPassword" id="ConfirmPassword" autocomplete="new-password" minlength="6" maxlength="1024" class="form-control" />
+                        </div>
+                    }
+                </section>
+            </div><aside class="col-lg-5"><div class="card card-body">
+                <h2 class="h5">@C["Summary"]</h2>
+                <div id="checkout-lines">
+                    @foreach (var line in Model.Cart.Lines) { <p>@line.Name <small>@line.VariantName</small><br />@line.Entry.Quantity × @line.UnitPrice?.ToString("N2") €</p> }
+                </div>
+                <div id="checkout-summary" aria-live="polite">
+                    <p>@T["Goods"]: <strong id="quote-goods">@Model.Cart.GoodsSubtotal.ToString("N2")</strong> €</p>
+                    <p>@T["Delivery"]: <strong id="quote-delivery">—</strong> €</p>
+                    <p class="fs-5">@T["Total"]: <strong id="quote-total">—</strong> €</p>
+                    <p id="quote-address" class="small"></p><span id="quote-google" hidden translate="no">Google Maps</span>
+                    <p id="quote-status" role="status"></p>
+                </div>
+                <p>@T["PaymentNotice"]</p>
+                <label class="form-check mb-3"><input asp-for="TermsAccepted" required class="form-check-input" /> @C["TermsAccepted"]</label>
+                <p class="small"><a asp-controller="Home" asp-action="Terms">@C["Terms"]</a> · <a asp-controller="Home" asp-action="Privacy">@C["Privacy"]</a></p>
+                <button id="checkout-submit" type="submit" disabled class="btn algara-btn-primary">@C["Submit"]</button>
+                <noscript><p>@C["JavascriptRequired"]</p></noscript>
+            </div></aside></div>
+        </form>
+    }
+</div>
+@section Scripts {
+    <script src="~/js/checkout-delivery.js" asp-append-version="true"></script>
+    <script src="~/js/delivery-quote.js" asp-append-version="true"></script>
+    <script src="~/js/checkout.js" asp-append-version="true"></script>
+}
+@section Styles { <link rel="stylesheet" href="~/css/delivery-quote.css" asp-append-version="true" /> }

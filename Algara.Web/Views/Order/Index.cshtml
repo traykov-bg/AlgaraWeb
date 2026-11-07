@@ -1,4 +1,5 @@
-﻿@model Algara.Web.Services.Cart.CartSnapshot
+﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CheckoutResources> CheckoutT
+@model Algara.Web.Services.Cart.CartSnapshot
 @using Algara.Web.Services.Cart
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CartResources> T
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CatalogResources> CatalogT
@@ -105,7 +106,7 @@ else
                     <p class="small text-muted">@T["DeliveryNext"]</p>
                     @if (Model.CanQuote)
                     {
-                        <a asp-controller="Shipping" asp-action="Index" class="btn algara-btn-primary w-100">@T["CalculateDelivery"]</a>
+                        <a asp-controller="Checkout" asp-action="Index" class="btn algara-btn-primary w-100">@CheckoutT["Title"]</a>
                     }
                     else
                     {

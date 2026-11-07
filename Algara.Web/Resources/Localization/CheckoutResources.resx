@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Title" xml:space="preserve">
+    <value>Приключване на поръчката</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>Данни за контакт</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>Име</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Фамилия</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Имейл</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>Телефон</value>
+  </data>
+  <data name="Comment" xml:space="preserve">
+    <value>Коментар към поръчката</value>
+  </data>
+  <data name="Extras" xml:space="preserve">
+    <value>Качване и монтаж се договарят и заплащат отделно. Заявете ги в коментара.</value>
+  </data>
+  <data name="InvoiceRequested" xml:space="preserve">
+    <value>Желая фактура</value>
+  </data>
+  <data name="InvoiceDetails" xml:space="preserve">
+    <value>Име/фирма, ЕИК/ДДС номер и адрес за фактура</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Вече имате профил? Вход</value>
+  </data>
+  <data name="CreateAccount" xml:space="preserve">
+    <value>Създай ми профил</value>
+  </data>
+  <data name="AccountHelp" xml:space="preserve">
+    <value>Ще свържем само тази поръчка. Потвърдете имейла си преди първия вход.</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Парола</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Потвърдете паролата</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Вашата поръчка</value>
+  </data>
+  <data name="TermsAccepted" xml:space="preserve">
+    <value>Приемам условията и политиката за поверителност.</value>
+  </data>
+  <data name="Terms" xml:space="preserve">
+    <value>Условия</value>
+  </data>
+  <data name="Privacy" xml:space="preserve">
+    <value>Поверителност</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Поръчвам със задължение за плащане</value>
+  </data>
+  <data name="JavascriptRequired" xml:space="preserve">
+    <value>Включете JavaScript за автоматично изчисляване на доставката.</value>
+  </data>
+  <data name="Calculating" xml:space="preserve">
+    <value>Изчисляваме доставката…</value>
+  </data>
+  <data name="QuoteFailed" xml:space="preserve">
+    <value>Неуспешно изчисление. Променете доставните данни, за да опитате отново.</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>Формата е изтекла. Отворете отново приключването на поръчката.</value>
+  </data>
+  <data name="InvalidDetails" xml:space="preserve">
+    <value>Проверете контактите, фактурните данни и приемането на условията.</value>
+  </data>
+  <data name="InvalidPassword" xml:space="preserve">
+    <value>Паролите трябва да съвпадат и да са поне 6 знака.</value>
+  </data>
+  <data name="EmailUnavailable" xml:space="preserve">
+    <value>Временно не можем да изпратим потвърждение. Опитайте по-късно.</value>
+  </data>
+  <data name="TestNotOrder" xml:space="preserve">
+    <value>Това е тестова куриерска цена и не може да се използва за поръчка.</value>
+  </data>
+  <data name="Changed" xml:space="preserve">
+    <value>Цената, доставката или наличността е променена. Прегледайте обновената сума и потвърдете отново.</value>
+  </data>
+  <data name="AccountExists" xml:space="preserve">
+    <value>Не може да се създаде профил с този имейл. Влезте или изключете отметката за гост поръчка.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Поръчката не е записана. Опитайте отново.</value>
+  </data>
+  <data name="Received" xml:space="preserve">
+    <value>Поръчката е получена</value>
+  </data>
+  <data name="PendingHelp" xml:space="preserve">
+    <value>Очаква служебно потвърждение. Сроковете започват от потвърждаването. Непотвърдените поръчки се анулират след 7 календарни дни.</value>
+  </data>
+  <data name="Access" xml:space="preserve">
+    <value>Отваряне на поръчката</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Отвори поръчката</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Чакаща потвърждение</value>
+  </data>
+  <data name="Confirmed" xml:space="preserve">
+    <value>Потвърдена</value>
+  </data>
+  <data name="Shipped" xml:space="preserve">
+    <value>Изпратена</value>
+  </data>
+  <data name="Delivered" xml:space="preserve">
+    <value>Доставена</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Анулирана</value>
+  </data>
+  <data name="LinkHelp" xml:space="preserve">
+    <value>За да свържете само тази поръчка с профил, влезте с потвърден имейл, съвпадащ с имейла на поръчката, и отворете защитения линк от писмото.</value>
+  </data>
+  <data name="LinkOrder" xml:space="preserve">
+    <value>Свържи тази поръчка с моя профил</value>
+  </data>
+  <data name="AddressDetails" xml:space="preserve">
+    <value>Вход, етаж, апартамент и указания (незадължително)</value>
+  </data>
+  <data name="Econt" xml:space="preserve">
+    <value>Еконт</value>
+  </data>
+  <data name="Speedy" xml:space="preserve">
+    <value>Спиди</value>
+  </data>
+  <data name="DestinationKind" xml:space="preserve">
+    <value>Доставка с куриер</value>
+  </data>
+  <data name="ToAddress" xml:space="preserve">
+    <value>До адрес</value>
+  </data>
+  <data name="ToOffice" xml:space="preserve">
+    <value>До офис</value>
+  </data>
+</root>

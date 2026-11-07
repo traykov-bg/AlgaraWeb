@@ -547,8 +547,8 @@ namespace Algara.Web.Controllers
             var rows = orders.Select(o => new AdminOrderRowViewModel
             {
                 Order           = o,
-                UserDisplayName = userMap.TryGetValue(o.UserN, out var u)  ? (u.DisplayName ?? u.UserName) : $"#{o.UserN}",
-                UserEmail       = userMap.TryGetValue(o.UserN, out var u2) ? u2.Email                       : string.Empty,
+                UserDisplayName = o.ContactName ?? (userMap.TryGetValue(o.UserN ?? 0, out var u) ? (u.DisplayName ?? u.UserName) : $"#{o.UserN}"),
+                UserEmail       = o.ContactEmail ?? (userMap.TryGetValue(o.UserN ?? 0, out var u2) ? u2.Email : string.Empty),
             });
 
             return View(new AdminOrderListViewModel { Rows = rows, StatusFilter = status });
@@ -566,8 +566,8 @@ namespace Algara.Web.Controllers
             var vm = new AdminOrderDetailViewModel
             {
                 Order           = order,
-                UserDisplayName = user != null ? (user.DisplayName ?? user.UserName) : $"#{order.UserN}",
-                UserEmail       = user?.Email ?? string.Empty,
+                UserDisplayName = order.ContactName ?? (user != null ? (user.DisplayName ?? user.UserName) : $"#{order.UserN}"),
+                UserEmail       = order.ContactEmail ?? user?.Email ?? string.Empty,
             };
             return View(vm);
         }
@@ -575,9 +575,13 @@ namespace Algara.Web.Controllers
         [HttpPost("orders/{n}/status")]
         [ValidateAntiForgeryToken]
         [RequirePermission("Orders.View", "Orders.ChangeStatus")]
-        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status)
+        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status, string? version, [FromServices] Algara.Web.Services.Checkout.OrderLifecycleService lifecycle)
         {
-            await _orderRepo.UpdateStatusAsync(n, status);
+            if (!await lifecycle.ChangeAsync(n, status, version, User, HttpContext.RequestAborted))
+            {
+                TempData["Error"] = "Промяната не е записана. Проверете статуса, срока и наличностите и презаредете поръчката.";
+                return RedirectToAction(nameof(OrderDetail), new { n });
+            }
             TempData["Success"] = "Статусът на поръчката е обновен.";
             return RedirectToAction(nameof(OrderDetail), new { n });
         }

@@ -1,0 +1,24 @@
+﻿@model Algara.Data.Models.Order
+@using System.Text.Json
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ShippingResources> T
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CheckoutResources> C
+@if (Model.DeliverySnapshot != null)
+{
+    using var document = JsonDocument.Parse(Model.DeliverySnapshot);
+    var delivery = document.RootElement;
+    var method = (Algara.Web.Services.Shipping.DeliveryMethod)delivery.GetProperty("Method").GetInt32();
+    <section class="card card-body my-3">
+        <h2 class="h5">@T["Delivery"] — @T[method.ToString()]</h2>
+        @foreach (var key in new[] { "City", "PostalCode", "Address", "AddressDetails", "ResolvedAddress" })
+        {
+            if (delivery.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String) { <p class="mb-1">@value.GetString()</p> }
+        }
+        @if (delivery.TryGetProperty("Office", out var office) && office.ValueKind == JsonValueKind.Object)
+        { <p>@office.GetProperty("Name").GetString() — @office.GetProperty("Address").GetString()</p> }
+        <p>@T["PaymentNotice"]</p>
+        <p>@T["Delivery"]: @Model.DeliveryAmount.ToString("N2") €</p>
+        @if (Model.ConfirmedAtUtc.HasValue) { <p>@C["Confirmed"]: @Model.ConfirmedAtUtc.Value.ToString("dd.MM.yyyy HH:mm") UTC</p> }
+        @if (!string.IsNullOrEmpty(Model.Comment)) { <p>@C["Comment"]: @Model.Comment</p> }
+        @if (!string.IsNullOrEmpty(Model.InvoiceDetails)) { <p>@C["InvoiceDetails"]: @Model.InvoiceDetails</p> }
+    </section>
+}

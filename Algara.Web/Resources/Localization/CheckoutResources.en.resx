@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Title" xml:space="preserve">
+    <value>Checkout</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>Contact details</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>First name</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Last name</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="Comment" xml:space="preserve">
+    <value>Order comment</value>
+  </data>
+  <data name="Extras" xml:space="preserve">
+    <value>Carry-in and assembly are agreed and paid separately. Request them in the comment.</value>
+  </data>
+  <data name="InvoiceRequested" xml:space="preserve">
+    <value>Request an invoice</value>
+  </data>
+  <data name="InvoiceDetails" xml:space="preserve">
+    <value>Invoice name/company, registration/VAT number and address</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Already registered? Sign in</value>
+  </data>
+  <data name="CreateAccount" xml:space="preserve">
+    <value>Create an account</value>
+  </data>
+  <data name="AccountHelp" xml:space="preserve">
+    <value>Only this order will be linked. Verify your email before signing in.</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Your order</value>
+  </data>
+  <data name="TermsAccepted" xml:space="preserve">
+    <value>I accept the terms and privacy policy.</value>
+  </data>
+  <data name="Terms" xml:space="preserve">
+    <value>Terms</value>
+  </data>
+  <data name="Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Place order with obligation to pay</value>
+  </data>
+  <data name="JavascriptRequired" xml:space="preserve">
+    <value>Enable JavaScript for automatic delivery calculation.</value>
+  </data>
+  <data name="Calculating" xml:space="preserve">
+    <value>Calculating delivery…</value>
+  </data>
+  <data name="QuoteFailed" xml:space="preserve">
+    <value>Calculation failed. Edit delivery details to retry.</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>This form expired. Open checkout again.</value>
+  </data>
+  <data name="InvalidDetails" xml:space="preserve">
+    <value>Check contact and invoice details and accept the terms.</value>
+  </data>
+  <data name="InvalidPassword" xml:space="preserve">
+    <value>Passwords must match and contain at least 6 characters.</value>
+  </data>
+  <data name="EmailUnavailable" xml:space="preserve">
+    <value>We cannot send confirmation right now. Please try later.</value>
+  </data>
+  <data name="TestNotOrder" xml:space="preserve">
+    <value>This is a test courier quote and cannot be used for an order.</value>
+  </data>
+  <data name="Changed" xml:space="preserve">
+    <value>Price, delivery or availability changed. Review the updated amount and confirm again.</value>
+  </data>
+  <data name="AccountExists" xml:space="preserve">
+    <value>An account cannot be created with this email. Sign in or uncheck account creation to order as a guest.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>The order was not saved. Please retry.</value>
+  </data>
+  <data name="Received" xml:space="preserve">
+    <value>Order received</value>
+  </data>
+  <data name="PendingHelp" xml:space="preserve">
+    <value>Awaiting staff confirmation. Fulfilment times start at confirmation. Unconfirmed orders are cancelled after 7 calendar days.</value>
+  </data>
+  <data name="Access" xml:space="preserve">
+    <value>Open order</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open order</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pending confirmation</value>
+  </data>
+  <data name="Confirmed" xml:space="preserve">
+    <value>Confirmed</value>
+  </data>
+  <data name="Shipped" xml:space="preserve">
+    <value>Shipped</value>
+  </data>
+  <data name="Delivered" xml:space="preserve">
+    <value>Delivered</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="LinkHelp" xml:space="preserve">
+    <value>To link only this order, sign in with the matching verified email and open the protected link from your order email.</value>
+  </data>
+  <data name="LinkOrder" xml:space="preserve">
+    <value>Link this order to my account</value>
+  </data>
+  <data name="AddressDetails" xml:space="preserve">
+    <value>Entrance, floor, apartment and directions (optional)</value>
+  </data>
+  <data name="Econt" xml:space="preserve">
+    <value>Econt</value>
+  </data>
+  <data name="Speedy" xml:space="preserve">
+    <value>Speedy</value>
+  </data>
+  <data name="DestinationKind" xml:space="preserve">
+    <value>Courier destination</value>
+  </data>
+  <data name="ToAddress" xml:space="preserve">
+    <value>To address</value>
+  </data>
+  <data name="ToOffice" xml:space="preserve">
+    <value>To office</value>
+  </data>
+</root>

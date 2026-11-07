@@ -61,13 +61,13 @@
                     {
                         <tr>
                             <td>
-                                <div class="fw-semibold">@(item.Product?.Name ?? $"Продукт #{item.ProductN}")</div>
+                                <div class="fw-semibold">@(item.ProductName ?? item.Product?.Name ?? $"Продукт #{item.ProductN}")</div>
                                 @if (!string.IsNullOrWhiteSpace(item.Product?.ImageUrl))
                                 {
                                     <div class="text-muted small">Каталожен артикул</div>
                                 }
                             </td>
-                            <td class="text-center">@item.Quantity</td>
+                            <td class="text-center">@item.Quantity<br /><small>@item.VariantName @item.Sku</small></td>
                             <td class="text-end">@item.UnitPrice.ToString("N2") €</td>
                             <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N2")) €</td>
                         </tr>
@@ -83,3 +83,5 @@
         </div>
     </section>
 </div>
+
+<partial name="_OrderDelivery" model="Model.Order" />

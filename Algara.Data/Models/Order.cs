@@ -17,7 +17,21 @@
         /// FK към Users.N — без навигационно свойство, за да се избегне циклична референция
         /// между Algara.Data и Algara.Identity. FK constraint-ът се добавя ръчно в миграцията.
         /// </summary>
-        public int UserN { get; set; }
+        public int? UserN { get; set; }
+
+        public Guid? SubmissionId { get; set; }
+        public string? GuestTokenHash { get; set; }
+        public string? ContactName { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? DeliverySnapshot { get; set; }
+        public string? Comment { get; set; }
+        public string? InvoiceDetails { get; set; }
+        public decimal DeliveryAmount { get; set; }
+        public DateTime? ExpiresAtUtc { get; set; }
+        public DateTime? ConfirmedAtUtc { get; set; }
+        public DateTime? TermsAcceptedAtUtc { get; set; }
+        public byte[] RowVersion { get; set; } = [];
 
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public decimal TotalAmount { get; set; }

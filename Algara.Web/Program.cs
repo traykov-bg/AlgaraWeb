@@ -94,6 +94,12 @@ try
     builder.Services.AddHostedService<EmailOutboxWorker>();
     builder.Services.AddScoped<Algara.Web.Services.Cart.ICartStore, Algara.Web.Services.Cart.ProtectedCookieCartStore>();
     builder.Services.AddScoped<Algara.Web.Services.Cart.CartService>();
+    builder.Services.AddScoped<Algara.Web.Services.Cart.IStockReservationReader, Algara.Web.Services.Cart.StockReservationReader>();
+    builder.Services.AddSingleton<Algara.Web.Services.Checkout.CheckoutTokens>();
+    builder.Services.AddScoped<Algara.Web.Services.Checkout.CheckoutService>();
+    builder.Services.AddScoped<Algara.Web.Services.Checkout.OrderLifecycleService>();
+    builder.Services.AddScoped<Algara.Web.Services.Checkout.GuestOrderLinkService>();
+    builder.Services.AddHostedService<Algara.Web.Services.Checkout.ReservationExpiryWorker>();
     builder.Services.AddSingleton<Algara.Web.Services.Shipping.DeliverySecretProtector>();
     builder.Services.AddScoped<Algara.Web.Services.Shipping.DeliverySettingsService>();
     builder.Services.AddScoped<Algara.Web.Services.Shipping.IDeliverySettingsReader>(sp => sp.GetRequiredService<Algara.Web.Services.Shipping.DeliverySettingsService>());

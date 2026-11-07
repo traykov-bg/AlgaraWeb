@@ -21,6 +21,15 @@ public sealed class AccountEmailService(ShopDbContext shop, EmailOutboxFactory o
     private const string RateLimited = "Вече е поискана връзка. Изчакайте поне минута; разрешени са до 5 заявки за час.";
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
 
+    internal async Task<ApplicationUser?> RegisterCheckoutAsync(IdentityDbContext identity, RegistrationData data, string site, CancellationToken ct)
+    {
+        var email = AccountEmailRules.NormalizeEmail(data.Email);
+        if (email == null || !ValidRegistration(data) || await identity.Users.AnyAsync(u => u.Email == email || u.UserName == email, ct)) return null;
+        var user = await CreateUserAsync(identity, email, data, false, ct);
+        await IssueForUserAsync(identity, user, AccountEmailPurpose.EmailConfirmation, site, null, "Checkout registration", ct);
+        return user;
+    }
+
     public async Task<AccountEmailResult> RegisterAsync(RegistrationData data, CancellationToken cancellationToken = default)
     {
         try

@@ -436,11 +436,60 @@ namespace Algara.Web.ShopMigrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<string>("Comment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ConfirmedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(121)
+                        .HasColumnType("nvarchar(121)");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DeliveryAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DeliverySnapshot")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GuestTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("InvoiceDetails")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("TermsAcceptedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
@@ -448,14 +497,54 @@ namespace Algara.Web.ShopMigrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserN")
+                    b.Property<int?>("UserN")
                         .HasColumnType("int");
 
                     b.HasKey("N");
 
+                    b.HasIndex("SubmissionId")
+                        .IsUnique()
+                        .HasFilter("[SubmissionId] IS NOT NULL");
+
+                    b.HasIndex("Status", "ExpiresAtUtc");
+
                     b.HasIndex(new[] { "UserN" }, "IX_Orders_UserN");
 
                     b.ToTable("Orders", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.OrderEvent", b =>
+                {
+                    b.Property<long>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("N"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrderN")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("OrderN", "OccurredAtUtc");
+
+                    b.ToTable("OrderEvents", (string)null);
                 });
 
             modelBuilder.Entity("Algara.Data.Models.OrderItem", b =>
@@ -472,19 +561,43 @@ namespace Algara.Web.ShopMigrations
                     b.Property<int>("ProductN")
                         .HasColumnType("int");
 
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<bool>("RequiresManufacturing")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ReservedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sku")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("VariantN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VariantName")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("N");
 
                     b.HasIndex("OrderN");
 
-                    b.HasIndex("ProductN");
+                    b.HasIndex("ProductN", "VariantN");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderItems_ReservedQuantity", "[ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Partner", b =>
@@ -1225,6 +1338,17 @@ namespace Algara.Web.ShopMigrations
 
                     b.Navigation("CorrespondenceAddress")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.OrderEvent", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.OrderItem", b =>

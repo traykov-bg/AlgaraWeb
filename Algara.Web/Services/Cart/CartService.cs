@@ -3,7 +3,7 @@ using Algara.Data.Repositories;
 
 namespace Algara.Web.Services.Cart;
 
-public sealed class CartService(IProductRepository products, ICartStore store, TimeProvider clock)
+public sealed class CartService(IProductRepository products, ICartStore store, TimeProvider clock, IStockReservationReader? reservations = null)
 {
     public const int MaxLines = 30;
     public const int MaxQuantity = 99;
@@ -22,7 +22,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
                 product = await products.GetByNAsync(entry.ProductN);
                 loaded[entry.ProductN] = product;
             }
-            lines.Add(Evaluate(entry, product, now));
+            lines.Add(Evaluate(entry, product, now, reservations == null ? 0 : await reservations.ReservedAsync(entry.ProductN, entry.VariantN)));
         }
         return new CartSnapshot { Lines = lines };
     }
@@ -36,7 +36,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
         var combinedQuantity = quantity + (existing < 0 ? 0 : entries[existing].Quantity);
         if (combinedQuantity > MaxQuantity) return new(CartLineIssue.InvalidQuantity);
         var entry = new CartEntry(productN, variantN, combinedQuantity);
-        var line = Evaluate(entry, productN > 0 ? await products.GetByNAsync(productN) : null, clock.GetLocalNow().DateTime);
+        var line = Evaluate(entry, productN > 0 ? await products.GetByNAsync(productN) : null, clock.GetLocalNow().DateTime, reservations == null ? 0 : await reservations.ReservedAsync(productN, variantN));
         if (line.Issue != CartLineIssue.None) return new(line.Issue);
         if (existing < 0) entries.Add(entry); else entries[existing] = entry;
         store.Write(entries);
@@ -50,7 +50,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
         var existing = entries.FindIndex(entry => entry.ProductN == productN && entry.VariantN == variantN);
         if (existing < 0) return new(CartLineIssue.MissingLine);
         var entry = new CartEntry(productN, variantN, quantity);
-        var line = Evaluate(entry, await products.GetByNAsync(productN), clock.GetLocalNow().DateTime);
+        var line = Evaluate(entry, await products.GetByNAsync(productN), clock.GetLocalNow().DateTime, reservations == null ? 0 : await reservations.ReservedAsync(productN, variantN));
         if (line.Issue != CartLineIssue.None) return new(line.Issue);
         entries[existing] = entry;
         store.Write(entries);
@@ -62,7 +62,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
 
     public void Clear() => store.Write([]);
 
-    public static CartLine Evaluate(CartEntry entry, Product? product, DateTime now)
+    public static CartLine Evaluate(CartEntry entry, Product? product, DateTime now, int reserved = 0)
     {
         CartLine Invalid(CartLineIssue issue) => new() { Entry = entry, Product = product, Issue = issue };
         if (entry.Quantity is < 1 or > MaxQuantity) return Invalid(CartLineIssue.InvalidQuantity);
@@ -81,6 +81,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
         var price = variant == null ? product.GetDiscountedPrice(now) : product.GetVariantPrice(variant, now);
         if (price <= 0 || price > 99_999_999m) return Invalid(CartLineIssue.InvalidPrice);
         var stock = variant?.StockQuantity ?? (variant == null ? product.StockQuantity : null);
+        if (stock.HasValue) stock = Math.Max(0, stock.Value - reserved);
         var issue = stock switch
         {
             null or < 0 => CartLineIssue.UnknownStock,

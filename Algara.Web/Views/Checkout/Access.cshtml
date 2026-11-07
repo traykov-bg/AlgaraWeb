@@ -1,0 +1,8 @@
+﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CheckoutResources> C
+@{ ViewData["Title"] = C["Access"]; }
+<h1 class="h3">@C["Access"]</h1>
+<form asp-action="Access" method="post" id="order-access">
+    <input type="hidden" name="token" id="order-access-token" />
+    <button type="submit" class="btn algara-btn-primary">@C["Open"]</button>
+</form>
+@section Scripts { <script src="~/js/order-access.js" asp-append-version="true"></script> }
