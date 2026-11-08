@@ -144,8 +144,12 @@
     <table class="table table-sm"><thead><tr><th>Дата (UTC)</th><th>Действие</th><th>Статус</th><th>Извършител</th></tr></thead><tbody>
     @foreach (var entry in Model.History)
     {
-        var action = entry.Action switch { "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", _ => entry.Action };
-        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
+        var action = entry.Action switch { "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", "Split" => "Разделяне на поръчка", _ => entry.Action };
+        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action @if(entry.Action == "Split" && entry.Details != null) { using var splitDoc = System.Text.Json.JsonDocument.Parse(entry.Details); var childN = splitDoc.RootElement.GetProperty("Child").GetInt32(); <a asp-action="OrderDetail" asp-route-n="@childN">#@childN</a><br />@splitDoc.RootElement.GetProperty("Reason").GetString() }</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
     }
     </tbody></table>
 </section>
+@if (Algara.Web.Services.Checkout.OrderSplitService.CanSplit(Model.Order))
+{ <a asp-action="OrderSplit" asp-route-n="@Model.Order.N" class="btn btn-outline-primary mt-3" staff-permission="Orders.View,Orders.Split">Разделяне на поръчката</a> }
+@if (Model.Order.SplitFromN.HasValue)
+{ <p class="mt-3">Отделена от <a asp-action="OrderDetail" asp-route-n="@Model.Order.SplitFromN">поръчка #@Model.Order.SplitFromN</a>.</p> }

@@ -18,6 +18,7 @@
         /// между Algara.Data и Algara.Identity. FK constraint-ът се добавя ръчно в миграцията.
         /// </summary>
         public int? UserN { get; set; }
+        public int? SplitFromN { get; set; }
 
         public Guid? SubmissionId { get; set; }
         public string? GuestTokenHash { get; set; }

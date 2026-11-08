@@ -40,6 +40,8 @@ public sealed class CheckoutService(ShopDbContext db, CartService cart, Delivery
         if (!Validator.TryValidateObject(form, new ValidationContext(form), null, true) || !form.TermsAccepted || AccountEmailRules.NormalizeEmail(form.Email) == null ||
             string.IsNullOrWhiteSpace(form.FirstName) || string.IsNullOrWhiteSpace(form.LastName) || string.IsNullOrWhiteSpace(form.Phone) ||
             (form.InvoiceRequested && string.IsNullOrWhiteSpace(form.InvoiceDetails))) return new(ErrorKey: "InvalidDetails");
+        if (form.Method == DeliveryMethod.OwnTransport && (string.IsNullOrWhiteSpace(form.Address) || form.Address.Any(char.IsControl)))
+            return new(ErrorKey: "InvalidDetails");
         if (form.CreateAccount && (Owner(actor) != "guest" || !AccountEmailRules.ValidPassword(form.Password) || form.Password != form.ConfirmPassword))
             return new(ErrorKey: "InvalidPassword");
         var accepted = await db.Orders.AsNoTracking().Include(o => o.OrderItems).SingleOrDefaultAsync(o => o.SubmissionId == ticket.Id, ct);

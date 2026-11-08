@@ -27,6 +27,16 @@ public class OrderStatusEmailTests
     }
 
     [Fact]
+    public void SandboxSnapshotMarksLaterStatusEmailsAsTest()
+    {
+        var factory = new EmailOutboxFactory(new EphemeralDataProtectionProvider());
+        var order = new Order { N = 42, ContactEmail = "buyer@example.test", Status = OrderStatus.Shipped, DeliverySnapshot = "{\"IsTest\":true}" };
+        var message = OrderStatusEmail.Create(factory, order)!;
+        Assert.StartsWith("[TEST]", message.Subject);
+        Assert.True(factory.TryReadPayload(message, out var payload));Assert.Contains("Test courier quote", payload.Text);
+    }
+
+    [Fact]
     public void ShipmentEmailIncludesPreviouslySavedWaybill()
     {
         var factory = new EmailOutboxFactory(new EphemeralDataProtectionProvider());

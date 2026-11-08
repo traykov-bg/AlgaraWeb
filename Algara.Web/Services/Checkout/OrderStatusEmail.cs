@@ -1,4 +1,5 @@
-﻿using Algara.Data.Models;
+﻿using System.Text.Json;
+using Algara.Data.Models;
 using Algara.Identity.Models;
 using Algara.Web.Services.Email;
 
@@ -19,7 +20,19 @@ public static class OrderStatusEmail
         };
         if (text != null && order.Status == OrderStatus.Shipped && !string.IsNullOrEmpty(order.WaybillNumber))
             text += " Товарителница / Waybill: " + order.WaybillNumber;
-        return text == null ? null : outbox.Create(order.ContactEmail!, "Algara / Алгара — #" + order.N,
+        if (text == null) return null;
+        var test = false;
+        if (order.DeliverySnapshot != null)
+        {
+            try
+            {
+                using var snapshot = JsonDocument.Parse(order.DeliverySnapshot);
+                test = snapshot.RootElement.ValueKind == JsonValueKind.Object && snapshot.RootElement.TryGetProperty("IsTest", out var value) && value.ValueKind == JsonValueKind.True;
+            }
+            catch (JsonException) { /* Legacy snapshots must not prevent a status notification. */ }
+        }
+        if (test && text != null) text = "Тестова куриерска калкулация. / Test courier quote. " + text;
+        return text == null ? null : outbox.Create(order.ContactEmail!, (test ? "[TEST] " : "") + "Algara / Алгара — #" + order.N,
             text, null, null, null);
     }
 }

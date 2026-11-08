@@ -11,7 +11,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
     public async Task<CartSnapshot> GetAsync()
     {
         var entries = store.Read();
-        if (!ProtectedCookieCartStore.IsValid(entries)) return new CartSnapshot();
+        if (!AccountCartStore.ValidIdentities(entries)) return new CartSnapshot();
         var lines = new List<CartLine>(entries.Count);
         var loaded = new Dictionary<int, Product?>();
         var now = clock.GetLocalNow().DateTime;

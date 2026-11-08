@@ -7,17 +7,28 @@ public partial class ShopDbContext
 {
     private static void ConfigureCheckout(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<CustomerCart>(b =>
+        {
+            b.ToTable("CustomerCarts"); b.HasKey(c => c.UserId); b.Property(c => c.UserId).HasMaxLength(128);
+            b.Property(c => c.Contents).IsRequired();
+        });
+        modelBuilder.Entity<GuestCartClaim>(b =>
+        {
+            b.ToTable("GuestCartClaims"); b.HasKey(c => c.Id); b.Property(c => c.UserId).HasMaxLength(128);
+        });
         modelBuilder.Entity<OrderEvent>(b =>
         {
             b.ToTable("OrderEvents");
             b.HasKey(e => e.N);
             b.Property(e => e.Action).HasMaxLength(40);
+            b.Property(e => e.Details).HasMaxLength(4000);
             b.Property(e => e.ActorId).HasMaxLength(128);
             b.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderN).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(e => new { e.OrderN, e.OccurredAtUtc });
         });
         modelBuilder.Entity<Order>(b =>
         {
+            b.HasOne<Order>().WithMany().HasForeignKey(o => o.SplitFromN).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(o => o.SubmissionId).IsUnique().HasFilter("[SubmissionId] IS NOT NULL");
             b.HasIndex(o => new { o.Status, o.ExpiresAtUtc });
             b.Property(o => o.GuestTokenHash).HasMaxLength(64);

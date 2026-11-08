@@ -8,6 +8,10 @@
     var message = TempData["CartMessage"] as string;
 }
 <h1 class="h2 mb-4">@T["Title"]</h1>
+@if (Model.Lines.Count > Algara.Web.Services.Cart.CartService.MaxLines)
+{
+    <div class="alert alert-warning">@T["IssueLineLimit"]</div>
+}
 @if (!string.IsNullOrWhiteSpace(message))
 {
     <div class="alert @(message.StartsWith("Issue", StringComparison.Ordinal) ? "alert-warning" : "alert-success")" role="status">@T[message]</div>

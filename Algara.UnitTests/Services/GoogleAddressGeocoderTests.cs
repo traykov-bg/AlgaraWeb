@@ -12,7 +12,7 @@ public sealed class GoogleAddressGeocoderTests
     private const string Secret = "synthetic-private-key+?&";
 
     [Fact]
-    public async Task ExactRooftopAddressUsesFixedEndpointAndRestrictsCountryAndLocalityWithoutPostalCode()
+    public async Task SettlementLookupUsesOnlyCityAndCountry()
     {
         using var handler = new StubHandler((request, _) =>
         {
@@ -22,8 +22,8 @@ public sealed class GoogleAddressGeocoderTests
             Assert.Equal("maps.googleapis.com", uri.Host);
             Assert.Equal("/maps/api/geocode/json", uri.AbsolutePath);
             var query = QueryHelpers.ParseQuery(uri.Query);
-            Assert.Equal("Example street 1", query["address"]);
-            Assert.Equal("country:BG|locality:Plovdiv", query["components"]);
+            Assert.Equal("Plovdiv", query["address"]);
+            Assert.Equal("country:BG", query["components"]);
             Assert.Equal("bg", query["language"]);
             Assert.Equal(Secret, query["key"]);
             Assert.Null(request.Content);
@@ -34,7 +34,7 @@ public sealed class GoogleAddressGeocoderTests
         Assert.NotNull(result);
         Assert.Equal(42.145m, result.Latitude);
         Assert.Equal(24.749m, result.Longitude);
-        Assert.Equal("Example street 1, 4000 Plovdiv, Bulgaria", result.DisplayAddress);
+        Assert.Equal("Plovdiv, Bulgaria", result.DisplayAddress);
         Assert.DoesNotContain(Secret, result.ToString());
         Assert.Equal(1, handler.RequestCount);
     }
@@ -42,12 +42,11 @@ public sealed class GoogleAddressGeocoderTests
     [Theory]
     [InlineData("partial")]
     [InlineData("partial-null")]
-    [InlineData("centroid")]
-    [InlineData("approximate")]
-    [InlineData("range-interpolated")]
     [InlineData("ambiguous")]
     [InlineData("wrong-country")]
-    [InlineData("missing-number")]
+    [InlineData("missing-locality")]
+    [InlineData("street-result")]
+    [InlineData("missing-result-types")]
     [InlineData("latitude-outside")]
     [InlineData("longitude-outside")]
     [InlineData("string-latitude")]
@@ -72,7 +71,9 @@ public sealed class GoogleAddressGeocoderTests
             case "ambiguous": payload["results"]!.AsArray().Add(result.DeepClone()); break;
             case "wrong-country": components[0]!["short_name"] = "GR"; break;
             case "wrong-postcode": components[1]!["short_name"] = "1000"; break;
-            case "missing-number": components.RemoveAt(2); break;
+            case "missing-locality": components.RemoveAt(2); break;
+            case "street-result": result["types"] = new JsonArray("street_address"); break;
+            case "missing-result-types": result.AsObject().Remove("types"); break;
             case "latitude-outside": result["geometry"]!["location"]!["lat"] = 40.99m; break;
             case "longitude-outside": result["geometry"]!["location"]!["lng"] = 29.01m; break;
             case "string-latitude": result["geometry"]!["location"]!["lat"] = "42.145"; break;
@@ -107,8 +108,8 @@ public sealed class GoogleAddressGeocoderTests
     [InlineData("", "Plovdiv", "4000", "Example street 1")]
     [InlineData("key", "Plovdiv|country:GR", "4000", "Example street 1")]
     [InlineData("key", "Plovdiv:GR", "4000", "Example street 1")]
-    [InlineData("key", "Plovdiv", "4000", "")]
-    [InlineData("key", "Plovdiv", "4000", "Example\nstreet")]
+    [InlineData("key", "", "4000", "Street 1")]
+    [InlineData("key", "Plovdiv\n", "4000", "Street 1")]
     public async Task InvalidInputCannotReachProvider(string key, string city, string postalCode, string address)
     {
         using var handler = new StubHandler((_, _) => throw new InvalidOperationException("HTTP must not be attempted."));
@@ -200,7 +201,7 @@ public sealed class GoogleAddressGeocoderTests
     {
         using var handler = new StubHandler((request, _) => {
             var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
-            Assert.Equal("country:BG|locality:Plovdiv", query["components"]);
+            Assert.Equal("country:BG", query["components"]);
             return Task.FromResult(Json(Success()));
         });
         using var client = new HttpClient(handler);
@@ -225,18 +226,46 @@ public sealed class GoogleAddressGeocoderTests
         Assert.DoesNotContain(Secret, result.ToString());
     }
 
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("4000", "офис на Спиди, Пловдив, бул. Никола Вапцаров 9")]
+    [InlineData("9999", "Unrecognized delivery instructions")]
+    public async Task DeliveryInstructionsNeverAffectSettlementQuery(string postalCode, string address)
+    {
+        using var handler = new StubHandler((request, _) => {
+            var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
+            Assert.Equal("Plovdiv", query["address"]);
+            Assert.Equal("country:BG", query["components"]);
+            return Task.FromResult(Json(Success()));
+        });
+        using var client = new HttpClient(handler);
+        var result = await new GoogleAddressGeocoder(client).ResolveAsync(Secret, "Plovdiv", postalCode, address);
+        Assert.NotNull(result.Address);
+    }
+
+    [Theory]
+    [InlineData("APPROXIMATE")]
+    [InlineData("GEOMETRIC_CENTER")]
+    public void SettlementCoordinatesDoNotRequireRooftopPrecision(string locationType)
+    {
+        var payload = JsonNode.Parse(Success())!;
+        payload["results"]![0]!["geometry"]!["location_type"] = locationType;
+        using var json = JsonDocument.Parse(payload.ToJsonString());
+        Assert.NotNull(GoogleAddressGeocoder.Parse(json.RootElement));
+    }
+
     private static string Success() => """
         {
           "status":"OK",
           "results":[{
-            "formatted_address":"Example street 1, 4000 Plovdiv, Bulgaria",
+            "formatted_address":"Plovdiv, Bulgaria",
+            "types":["locality","political"],
             "address_components":[
               {"short_name":"BG","types":["country","political"]},
               {"short_name":"4000","types":["postal_code"]},
-              {"short_name":"1","types":["street_number"]},
               {"short_name":"Plovdiv","types":["locality","political"]}
             ],
-            "geometry":{"location_type":"ROOFTOP","location":{"lat":42.145,"lng":24.749}}
+            "geometry":{"location_type":"APPROXIMATE","location":{"lat":42.145,"lng":24.749}}
           }]
         }
         """;

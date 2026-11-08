@@ -1,4 +1,4 @@
-const test = require('node:test');
+﻿const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -49,4 +49,11 @@ test('MVC checkboxes reveal required fields; unchecking clears passwords',()=>{
 });
 test('missing quote and duplicate submit are blocked',async()=>{
  const ui=fixture();assert.equal(ui.form.fire('submit').prevented,true);ui.tick();await ui.respond(0,quote());assert.equal(ui.form.fire('submit').prevented,false);assert.equal(ui.form.fire('submit').prevented,true);
+});
+
+test('own transport quotes from city before address is filled but requires address for submission',async()=>{
+ const ui=fixture();ui.fields.Method.value='1';ui.fields.City.value='Plovdiv';ui.fields.Address.value='';
+ ui.form.fire('change',ui.fields.Method);ui.tick();assert.equal(ui.calls.length,1);assert.equal(ui.fields.Address.required,true);
+ await ui.respond(0,quote());assert.equal(ui.nodes['checkout-submit'].disabled,false);
+ ui.fields.Method.value='0';ui.form.fire('change',ui.fields.Method);assert.equal(ui.fields.Address.required,false);
 });

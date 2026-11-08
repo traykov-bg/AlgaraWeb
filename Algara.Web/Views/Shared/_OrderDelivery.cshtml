@@ -8,6 +8,8 @@
     var delivery = document.RootElement;
     var method = (Algara.Web.Services.Shipping.DeliveryMethod)delivery.GetProperty("Method").GetInt32();
     <section class="card card-body my-3">
+        @if (delivery.TryGetProperty("IsTest", out var testQuote) && testQuote.ValueKind == JsonValueKind.True)
+        { <p class="alert alert-warning">Тестова куриерска калкулация / Test courier quote</p> }
         <h2 class="h5">@T["Delivery"] — @T[method.ToString()]</h2>
         @foreach (var key in new[] { "City", "PostalCode", "Address", "AddressDetails", "ResolvedAddress" })
         {

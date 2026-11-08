@@ -271,6 +271,24 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.CustomerCart", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Contents")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("CustomerCarts", (string)null);
+                });
+
             modelBuilder.Entity("Algara.Data.Models.CustomerDossierEvent", b =>
                 {
                     b.Property<long>("N")
@@ -373,6 +391,25 @@ namespace Algara.Web.ShopMigrations
                         {
                             t.HasCheckConstraint("CK_Fabrics_Code", "DATALENGTH([Code]) BETWEEN 2 AND 400 AND LEN(LTRIM(RTRIM([Code]))) > 0");
                         });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.GuestCartClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ClaimedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GuestCartClaims", (string)null);
                 });
 
             modelBuilder.Entity("Algara.Data.Models.HeroSlide", b =>
@@ -482,6 +519,9 @@ namespace Algara.Web.ShopMigrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<int?>("SplitFromN")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -505,6 +545,8 @@ namespace Algara.Web.ShopMigrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("N");
+
+                    b.HasIndex("SplitFromN");
 
                     b.HasIndex("SubmissionId")
                         .IsUnique()
@@ -534,6 +576,10 @@ namespace Algara.Web.ShopMigrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<DateTime>("OccurredAtUtc")
                         .HasColumnType("datetime2");
@@ -1347,6 +1393,14 @@ namespace Algara.Web.ShopMigrations
 
                     b.Navigation("CorrespondenceAddress")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.Order", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Order", null)
+                        .WithMany()
+                        .HasForeignKey("SplitFromN")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Algara.Data.Models.OrderEvent", b =>

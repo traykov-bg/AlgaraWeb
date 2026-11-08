@@ -40,7 +40,7 @@ public sealed class CartSnapshot
 {
     public IReadOnlyList<CartLine> Lines { get; init; } = [];
     public decimal GoodsSubtotal => Lines.Sum(line => line.LineTotal ?? 0m);
-    public bool CanQuote => Lines.Count > 0 && Lines.All(line => line.Issue == CartLineIssue.None);
+    public bool CanQuote => Lines.Count > 0 && Lines.Count <= CartService.MaxLines && Lines.All(line => line.Issue == CartLineIssue.None);
     public int ItemCount => Lines.Sum(line => line.Entry.Quantity);
 }
 

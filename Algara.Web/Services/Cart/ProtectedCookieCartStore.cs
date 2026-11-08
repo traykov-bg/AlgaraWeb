@@ -7,31 +7,36 @@ namespace Algara.Web.Services.Cart;
 /// <summary>Only product identities and quantities are stored; prices are always read from the catalog.</summary>
 public sealed class ProtectedCookieCartStore : ICartStore
 {
-    public const string CookieName = "Algara.Cart.v1";
+    public const string CookieName = "Algara.Cart.v2";
     public const int MaxCookieLength = 3800;
     private static readonly TimeSpan Lifetime = TimeSpan.FromDays(30);
     private readonly IHttpContextAccessor contextAccessor;
     private readonly ITimeLimitedDataProtector protector;
+    private bool discarded;
+    public void DiscardClaimedGuest() { discarded = true; Write([]); }
 
     public ProtectedCookieCartStore(IHttpContextAccessor contextAccessor, IDataProtectionProvider provider)
     {
         this.contextAccessor = contextAccessor;
-        protector = provider.CreateProtector("Algara.Cart", "v1").ToTimeLimitedDataProtector();
+        protector = provider.CreateProtector("Algara.Cart", "v2").ToTimeLimitedDataProtector();
     }
 
-    public IReadOnlyList<CartEntry> Read()
+    public sealed record GuestCart(Guid Id, IReadOnlyList<CartEntry> Entries);
+    public IReadOnlyList<CartEntry> Read() => ReadGuest()?.Entries ?? [];
+    public GuestCart? ReadGuest()
     {
+        if (discarded) return null;
         var value = contextAccessor.HttpContext?.Request.Cookies[CookieName];
         if (string.IsNullOrEmpty(value) || value.Length > MaxCookieLength)
-            return [];
+            return null;
         try
         {
-            var entries = JsonSerializer.Deserialize<List<CartEntry>>(protector.Unprotect(value));
-            return IsValid(entries) ? entries! : [];
+            var cart = JsonSerializer.Deserialize<GuestCart>(protector.Unprotect(value));
+            return cart != null && cart.Id != Guid.Empty && IsValid(cart.Entries) ? cart : null;
         }
         catch (Exception ex) when (ex is CryptographicException or JsonException or FormatException)
         {
-            return [];
+            return null;
         }
     }
 
@@ -53,7 +58,7 @@ public sealed class ProtectedCookieCartStore : ICartStore
             context.Response.Cookies.Delete(CookieName, options);
             return;
         }
-        var value = protector.Protect(JsonSerializer.Serialize(entries), Lifetime);
+        var value = protector.Protect(JsonSerializer.Serialize(new GuestCart(ReadGuest()?.Id ?? Guid.NewGuid(), entries)), Lifetime);
         if (value.Length > MaxCookieLength) throw new ArgumentException("Cart exceeds cookie capacity.", nameof(entries));
         context.Response.Cookies.Append(CookieName, value, options);
     }

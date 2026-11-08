@@ -610,6 +610,19 @@ public class DeliveryQuoteTests
     private static CartLine Line(Product product, int quantity = 1)
         => CartService.Evaluate(new(product.N, null, quantity), product, DateTime.Now);
     private static CartSnapshot Cart(Product product, int quantity = 1) => new() { Lines = [Line(product, quantity)] };
+    [Fact]
+    public async Task OwnTransportCanQuoteCityBeforeDeliveryAddressIsEntered()
+    {
+        var fixture = new Fixture();
+        fixture.Settings.Setup(s => s.GetTransportAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new TransportQuoteSettings(42.15m, 24.75m, "synthetic-key"));
+        fixture.Geocoder.Setup(g => g.ResolveAsync("synthetic-key", "Plovdiv", "", "", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeocodingResult(new GeocodedAddress(42.15m, 24.75m, "Plovdiv, Bulgaria")));
+        var result = await fixture.Service.CalculateAsync(Cart(LargeProduct()), DeliveryMethod.OwnTransport, "Plovdiv", null, null, null);
+        Assert.NotNull(result.Quote);
+        Assert.Equal(0, result.Quote.DeliveryAmount);
+        Assert.False(result.Quote.IsTest);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

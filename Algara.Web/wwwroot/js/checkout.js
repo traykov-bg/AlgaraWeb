@@ -10,6 +10,7 @@
     const deliveryFields = ['Method', 'City', 'PostalCode', 'Address', 'OfficeCode'];
     let version = 0, timer, request, submitting = false;
     function schedule() {
+        field('Address').required = Number(field('Method').value) === 1;
         ++version;
         clearTimeout(timer);
         if (request) request.abort();
@@ -25,7 +26,7 @@
         const current = version;
         const method = Number(field('Method').value);
         if (method !== 0 && (!field('City').value.trim() ||
-            ((method === 2 || method === 4) ? !field('OfficeCode').value : !field('Address').value.trim()))) return;
+            ((method === 2 || method === 4) ? !field('OfficeCode').value : method !== 1 && !field('Address').value.trim()))) return;
         const body = new URLSearchParams();
         [...deliveryFields, 'SubmissionToken', '__RequestVerificationToken'].forEach(name => body.set(name, field(name).value));
         status.textContent = form.dataset.loading;

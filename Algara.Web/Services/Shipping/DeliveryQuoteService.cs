@@ -53,13 +53,13 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         {
             if (string.IsNullOrWhiteSpace(officeCode) || officeCode.Length > 40) return new(ErrorKey: "ChooseOffice");
         }
-        else if ((method != DeliveryMethod.OwnTransport && !GoogleAddressGeocoder.ValidPostalCode(postalCode)) || string.IsNullOrWhiteSpace(address) ||
-            address.Length > 500 || address.Any(char.IsControl)) return new(ErrorKey: "InvalidAddress");
+        else if (method != DeliveryMethod.OwnTransport && (!GoogleAddressGeocoder.ValidPostalCode(postalCode) || string.IsNullOrWhiteSpace(address) ||
+            address.Length > 500 || address.Any(char.IsControl))) return new(ErrorKey: "InvalidAddress");
         if (method == DeliveryMethod.OwnTransport)
         {
             var transport = await settings.GetTransportAsync(ct);
             if (transport == null) return new(ErrorKey: "TransportUnavailable");
-            var resolved = await geocoder.ResolveAsync(transport.ApiKey, city, postalCode ?? string.Empty, address!, ct);
+            var resolved = await geocoder.ResolveAsync(transport.ApiKey, city, postalCode ?? string.Empty, address ?? string.Empty, ct);
             var destination = resolved.Address;
             if (destination == null) return new(ErrorKey: resolved.Error == GeocodingError.ServiceUnavailable ? "GeocodingUnavailable" : "AddressUnresolved");
             var distance = DistanceKm(transport.Latitude, transport.Longitude, destination.Latitude, destination.Longitude);

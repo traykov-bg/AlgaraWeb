@@ -69,9 +69,9 @@ public class ProtectedCookieCartStoreTests
     public void MalformedProtectedPayloadIsRejected(string payload)
     {
         var provider = new EphemeralDataProtectionProvider();
-        var protector = provider.CreateProtector("Algara.Cart", "v1").ToTimeLimitedDataProtector();
+        var protector = provider.CreateProtector("Algara.Cart", "v2").ToTimeLimitedDataProtector();
         var context = new DefaultHttpContext();
-        context.Request.Headers.Cookie = ProtectedCookieCartStore.CookieName + "=" + protector.Protect(payload, TimeSpan.FromHours(1));
+        context.Request.Headers.Cookie = ProtectedCookieCartStore.CookieName + "=" + protector.Protect("{\"Id\":\"" + Guid.NewGuid() + "\",\"Entries\":" + payload + "}", TimeSpan.FromHours(1));
         Assert.Empty(Store(context, provider).Read());
     }
 
@@ -79,10 +79,10 @@ public class ProtectedCookieCartStoreTests
     public void ExpiredCookieIsRejected()
     {
         var provider = new EphemeralDataProtectionProvider();
-        var protector = provider.CreateProtector("Algara.Cart", "v1").ToTimeLimitedDataProtector();
+        var protector = provider.CreateProtector("Algara.Cart", "v2").ToTimeLimitedDataProtector();
         var context = new DefaultHttpContext();
         context.Request.Headers.Cookie = ProtectedCookieCartStore.CookieName + "=" +
-            protector.Protect("[{\"p\":1,\"v\":null,\"q\":1}]", DateTimeOffset.UtcNow.AddSeconds(-1));
+            protector.Protect(System.Text.Json.JsonSerializer.Serialize(new ProtectedCookieCartStore.GuestCart(Guid.NewGuid(), [new(1,null,1)])), DateTimeOffset.UtcNow.AddSeconds(-1));
         Assert.Empty(Store(context, provider).Read());
     }
 

@@ -14,15 +14,15 @@
   <data name="EcontAddress" xml:space="preserve"><value>Еконт до адрес</value></data>
   <data name="SpeedyOffice" xml:space="preserve"><value>Спиди до офис</value></data>
   <data name="SpeedyAddress" xml:space="preserve"><value>Спиди до адрес</value></data>
-  <data name="City" xml:space="preserve"><value>Населено място в България</value></data>
+  <data name="City" xml:space="preserve"><value>Населено място</value></data>
   <data name="PostalCode" xml:space="preserve"><value>Пощенски код</value></data>
   <data name="Address" xml:space="preserve"><value>Улица/булевард и номер</value></data>
-  <data name="AddressHelp" xml:space="preserve"><value>За изчислението въведете точния адрес без имена, телефон, етаж и апартамент.</value></data>
+  <data name="AddressHelp" xml:space="preserve"><value>Въведете адреса за доставка. При собствен транспорт цената се изчислява само по населеното място.</value></data>
   <data name="LoadOffices" xml:space="preserve"><value>Зареди офиси в населеното място</value></data>
   <data name="Office" xml:space="preserve"><value>Офис</value></data>
   <data name="SelectOffice" xml:space="preserve"><value>Изберете офис от списъка</value></data>
-  <data name="OwnPolicy" xml:space="preserve"><value>До 50 км включително от отправната точка в Пловдив: безплатно; извън радиуса: 100 €. Качване и монтаж се уточняват и плащат отделно.</value></data>
-  <data name="GeocodingNotice" xml:space="preserve"><value>При изчисляване адресът се изпраща на Google Maps за намиране на координати.</value></data>
+  <data name="OwnPolicy" xml:space="preserve"><value>Разстоянието се изчислява по права линия от отправната точка в Пловдив до координатите на населеното място, а не до конкретната сграда. До 50 км включително: безплатно; над 50 км: 100 €. Качване и монтаж се уточняват и плащат отделно.</value></data>
+  <data name="GeocodingNotice" xml:space="preserve"><value>За изчислението на Google Maps се изпраща само населеното място, без подробния адрес.</value></data>
   <data name="CourierPolicy" xml:space="preserve"><value>Куриерът е безплатен при стоки над 100 € след отстъпки. При сума до 100 € включително се начислява изчислената куриерска цена.</value></data>
   <data name="Calculate" xml:space="preserve"><value>Изчисли доставката</value></data>
   <data name="QuoteTitle" xml:space="preserve"><value>Предварително изчисление</value></data>
@@ -36,7 +36,7 @@
   <data name="InvalidAddress" xml:space="preserve"><value>Въведете населено място, четирицифрен пощенски код и пълен адрес с номер.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Заредете офисите за населеното място и изберете конкретен офис.</value></data>
   <data name="TransportUnavailable" xml:space="preserve"><value>Автоматичното изчисляване за собствен транспорт още не е настроено. Можете да изберете вземане от магазина или да се свържете с нас.</value></data>
-  <data name="AddressUnresolved" xml:space="preserve"><value>Не успяхме да определим точния адрес. Проверете населеното място, улицата или квартала и номера на сградата, или се свържете с нас. Цена не е изчислена.</value></data>
+  <data name="AddressUnresolved" xml:space="preserve"><value>Не успяхме да разпознаем еднозначно населеното място в България. Проверете полето „Населено място“; при еднакви имена добавете област или община. Цена не е изчислена.</value></data>
   <data name="CourierNotAllowed" xml:space="preserve"><value>Поне един артикул не позволява куриер. За цялата количка изберете собствен транспорт или вземане от магазина.</value></data>
   <data name="IncompleteParcels" xml:space="preserve"><value>Липсват пълни транспортни данни или броят колети надхвърля поддържаната калкулация. Свържете се с нас или изберете друг начин на получаване.</value></data>
   <data name="CourierUnavailable" xml:space="preserve"><value>Избраният куриер още не е настроен за автоматична калкулация. Изберете друг начин на получаване или се свържете с нас.</value></data>
@@ -58,7 +58,7 @@
   <data name="NoCitiesFound" xml:space="preserve"><value>Няма намерени населени места.</value></data>
   <data name="OfficesLoading" xml:space="preserve"><value>Зареждане на офиси…</value></data>
   <data name="Optional" xml:space="preserve"><value>(незадължителен)</value></data>
-  <data name="GeocodingUnavailable" xml:space="preserve"><value>Услугата за намиране на адрес временно не е достъпна. Опитайте по-късно или се свържете с нас. Цена не е изчислена.</value></data>
+  <data name="GeocodingUnavailable" xml:space="preserve"><value>Услугата за намиране на населено място временно не е достъпна. Опитайте по-късно или се свържете с нас. Цена не е изчислена.</value></data>
   <data name="OwnTransportNotAllowed" xml:space="preserve"><value>За количка само с артикули, позволяващи куриер, изберете куриер или вземане от магазина. Собствен транспорт не се предлага.</value></data>
   <data name="CourierOnlyCart" xml:space="preserve"><value>Всички артикули позволяват куриер. Можете да изберете куриерска доставка или вземане от магазина.</value></data>
 </root>

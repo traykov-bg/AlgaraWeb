@@ -18,17 +18,18 @@ public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
 
     public async Task<GeocodingResult> ResolveAsync(string apiKey, string city, string postalCode, string address, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(address) ||
-            city.Length > 100 || address.Length > 500 ||
-            city.Contains('|') || city.Contains(':') || city.Any(char.IsControl) || address.Any(char.IsControl)) return new(Error: GeocodingError.ServiceUnavailable);
-        var uri = "https://maps.googleapis.com/maps/api/geocode/json?address=" + Uri.EscapeDataString(address) +
-            "&components=" + Uri.EscapeDataString($"country:BG|locality:{city}") +
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(city) ||
+            city.Length > 100 ||
+            city.Contains('|') || city.Contains(':') || city.Any(char.IsControl)) return new(Error: GeocodingError.ServiceUnavailable);
+        var uri = "https://maps.googleapis.com/maps/api/geocode/json?address=" + Uri.EscapeDataString(city.Trim()) +
+            "&components=" + Uri.EscapeDataString("country:BG") +
             "&language=bg&key=" + Uri.EscapeDataString(apiKey);
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(12));
-            // The named HttpClient has all logging removed: the query includes a private API key and address.
+            // Resolve the settlement only. Postal code and delivery instructions never enter the Google request.
+            // The named HttpClient has all logging removed: the query includes a private API key.
             using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength > 256 * 1024) return new(Error: GeocodingError.ServiceUnavailable);
             await using var input = await response.Content.ReadAsStreamAsync(timeout.Token);
@@ -62,7 +63,7 @@ public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
             (result.TryGetProperty("partial_match", out var partial) && partial.ValueKind != JsonValueKind.False) ||
             !result.TryGetProperty("address_components", out var components) || components.ValueKind != JsonValueKind.Array ||
             !result.TryGetProperty("geometry", out var geometry) || geometry.ValueKind != JsonValueKind.Object ||
-            Text(geometry, "location_type") != "ROOFTOP" || !geometry.TryGetProperty("location", out var location) ||
+            !geometry.TryGetProperty("location", out var location) ||
             location.ValueKind != JsonValueKind.Object || !location.TryGetProperty("lat", out var lat) ||
             !location.TryGetProperty("lng", out var lon) || lat.ValueKind != JsonValueKind.Number || lon.ValueKind != JsonValueKind.Number ||
             !lat.TryGetDecimal(out var latitude) || !lon.TryGetDecimal(out var longitude) ||
@@ -73,7 +74,9 @@ public sealed class GoogleAddressGeocoder(HttpClient client) : IAddressGeocoder
             types.EnumerateArray().Any(t => t.ValueKind == JsonValueKind.String && t.GetString() == type) &&
             (value == null || Text(p, "short_name") == value));
         var formatted = Text(result, "formatted_address");
-        return Has("country", "BG") && Has("street_number") &&
+        return Has("country", "BG") && Has("locality") &&
+            result.TryGetProperty("types", out var resultTypes) && resultTypes.ValueKind == JsonValueKind.Array &&
+            resultTypes.EnumerateArray().Any(t => t.ValueKind == JsonValueKind.String && t.GetString() == "locality") &&
             !string.IsNullOrWhiteSpace(formatted) && formatted.Length <= 1000
             ? new(latitude, longitude, formatted) : null;
     }

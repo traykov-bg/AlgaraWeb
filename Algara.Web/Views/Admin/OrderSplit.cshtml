@@ -1,0 +1,54 @@
+﻿@model Algara.Web.ViewModels.Admin.OrderSplitForm
+@using Algara.Web.Services.Checkout
+@using Algara.Web.Services.Shipping
+@{
+ Layout="_AdminLayout";
+ ViewData["Title"]=$"Разделяне на поръчка #{Model.Order.N}";
+ string MethodName(DeliveryMethod m)=>m switch { DeliveryMethod.Pickup=>"Вземане от магазина",DeliveryMethod.OwnTransport=>"Собствен транспорт",DeliveryMethod.EcontOffice=>"Еконт до офис",DeliveryMethod.EcontAddress=>"Еконт до адрес",DeliveryMethod.SpeedyOffice=>"Спиди до офис",_=>"Спиди до адрес" };
+}
+<h1 class="h4">Разделяне на поръчка #@Model.Order.N</h1>
+<p>Отделете наличните артикули за по-ранно получаване. Цените на стоките се запазват; доставката се изчислява отделно за всяка поръчка. Първо прегледайте сумите и ги съгласувайте с клиента.</p>
+@if(Model.Error!=null){<div class="alert alert-danger">@Model.Error</div>}
+<form method="post" asp-controller="Admin" asp-action="OrderSplit" asp-route-n="@Model.Order.N">
+ <input asp-for="Version" type="hidden" /><input asp-for="PreviewToken" type="hidden" />
+ <div asp-validation-summary="All" class="text-danger"></div>
+ <table class="table"><thead><tr><th>Артикул</th><th>Поръчани</th><th>Налична част</th><th>Отделяне</th></tr></thead><tbody>
+ @foreach(var item in Model.Order.OrderItems){
+ <tr><td>@item.ProductName @item.VariantName @item.Sku</td><td>@item.Quantity</td><td>@OrderSplitService.ReadyQuantity(item)</td><td><input class="form-control" type="number" min="0" max="@OrderSplitService.ReadyQuantity(item)" name="Quantities[@item.N]" value="@Model.Quantities.GetValueOrDefault(item.N)" /></td></tr>
+ }
+ </tbody></table>
+ <div class="row">
+ @foreach(var prefix in new[]{"Remaining","Separated"}){
+ var dest=prefix=="Remaining"?Model.Remaining:Model.Separated;
+ <section class="col-md-6"><h2 class="h5">@(prefix=="Remaining"?"Оставаща поръчка":"Отделена поръчка")</h2>
+ <label class="form-label" for="@(prefix)-method">Начин на доставка</label>
+ <select id="@(prefix)-method" name="@(prefix).Method" class="form-select mb-2">
+ @foreach(var method in Enum.GetValues<DeliveryMethod>().Where(m => DeliveryQuoteService.Provider(m) == null || Model.EnabledCouriers.Contains((int)DeliveryQuoteService.Provider(m)!.Value))){
+ <option value="@((int)method)" selected="@(method==dest.Method)">@MethodName(method)</option>
+ }
+ </select>
+ <label class="form-label" for="@(prefix)-city">Град</label><input id="@(prefix)-city" name="@(prefix).City" value="@dest.City" maxlength="100" class="form-control mb-2" />
+ <label class="form-label" for="@(prefix)-post">Пощенски код</label><input id="@(prefix)-post" name="@(prefix).PostalCode" value="@dest.PostalCode" maxlength="20" class="form-control mb-2" />
+ <label class="form-label" for="@(prefix)-address">Адрес</label><input id="@(prefix)-address" name="@(prefix).Address" value="@dest.Address" maxlength="500" class="form-control mb-2" />
+ <label class="form-label" for="@(prefix)-details">Уточнение към адреса</label><input id="@(prefix)-details" name="@(prefix).AddressDetails" value="@dest.AddressDetails" maxlength="500" class="form-control mb-2" />
+ <label class="form-label" for="@(prefix)-office">Офис</label><select id="@(prefix)-office" name="@(prefix).OfficeCode" class="form-select mb-2"><option value="">Изберете офис</option>
+ @if(dest.Offices.Count==0 && !string.IsNullOrEmpty(dest.OfficeCode)){<option value="@dest.OfficeCode" selected>Запазен офис @dest.OfficeCode</option>}
+ @foreach(var office in dest.Offices){<option value="@office.Code" selected="@(office.Code==dest.OfficeCode)">@office.Name — @office.Address</option>}
+ </select><p class="small text-muted">За доставка до офис изберете куриер, въведете град и натиснете „Изчисли“, за да заредите офисите.</p>
+ </section>
+ }
+ </div>
+ <label asp-for="Reason" class="form-label">Основание за разделяне</label><input asp-for="Reason" maxlength="500" required class="form-control mb-3" />
+ <button name="command" value="preview" class="btn btn-outline-primary">Изчисли двете доставки</button>
+ @if(Model.RemainingQuote!=null && Model.SeparatedQuote!=null && Model.PreviewToken!=null){
+ @if (Model.RemainingQuote.IsTest || Model.SeparatedQuote.IsTest)
+ { <div class="alert alert-warning mt-3">Тестова куриерска калкулация (Development). Разделянето ще бъде записано в текущата база и ще подготви имейл с обозначение TEST.</div> }
+ <table class="table mt-3"><thead><tr><th>Поръчка</th><th>Стоки</th><th>Доставка</th><th>Общо</th></tr></thead><tbody>
+ <tr><td>Оставаща</td><td>@Model.RemainingQuote.GoodsAmount.ToString("N2") €</td><td>@Model.RemainingQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.RemainingQuote.Total.ToString("N2") €</td></tr>
+ <tr><td>Отделена</td><td>@Model.SeparatedQuote.GoodsAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.Total.ToString("N2") €</td></tr>
+ </tbody></table>
+ <label class="form-check my-3"><input asp-for="CustomerAgreed" class="form-check-input" /> Клиентът прие разделянето и двете нови крайни суми.</label>
+ <button name="command" value="submit" class="btn btn-primary">Потвърди разделянето</button>
+ }
+</form>
+<a asp-controller="Admin" asp-action="OrderDetail" asp-route-n="@Model.Order.N" class="btn btn-link mt-3">Обратно към поръчката</a>

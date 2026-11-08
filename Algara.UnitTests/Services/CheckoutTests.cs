@@ -9,6 +9,19 @@ namespace Algara.UnitTests.Services;
 
 public class CheckoutTests
 {
+    [Fact]
+    public async Task OwnTransportStillRequiresDeliveryAddressWhenSubmittingOrder()
+    {
+        var clock = new Clock();
+        var tokens = new CheckoutTokens(new EphemeralDataProtectionProvider(), clock);
+        var service = new CheckoutService(null!, null!, null!, tokens, null!, null!, clock);
+        var form = new CheckoutForm { FirstName = "Test", LastName = "Buyer", Email = "buyer@example.test", Phone = "0888000000",
+            TermsAccepted = true, Method = DeliveryMethod.OwnTransport, City = "Plovdiv", SubmissionToken = tokens.Issue("guest") };
+        var result = await service.SubmitAsync(form, new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity()), default);
+        Assert.Equal("InvalidDetails", result.ErrorKey);
+        Assert.Null(result.Order);
+    }
+
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);

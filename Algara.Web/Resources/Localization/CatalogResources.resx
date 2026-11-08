@@ -66,7 +66,7 @@
   <data name="DeliveryMethodsTitle" xml:space="preserve"><value>Начини и цени за доставка</value></data>
   <data name="DeliveryOwnTransportTitle" xml:space="preserve"><value>Собствен транспорт</value></data>
   <data name="DeliveryOwnTransportEligibility" xml:space="preserve"><value>Големите мебели доставяме със собствен транспорт. Ако поръчката съдържа голяма мебел и по-малки артикули, цялата доставка е със собствен транспорт.</value></data>
-  <data name="DeliveryOwnTransportPrice" xml:space="preserve"><value>Доставката е безплатна в радиус до 50 км включително от Пловдив. Извън този радиус се доплащат 100 € за доставка.</value></data>
+  <data name="DeliveryOwnTransportPrice" xml:space="preserve"><value>Доставката е безплатна до 50 км включително по права линия от отправната точка в Пловдив до координатите на населеното място. Над този радиус доставката е 100 €. Конкретният адрес на сградата не определя това разстояние.</value></data>
   <data name="DeliveryCourierTitle" xml:space="preserve"><value>Еконт или Спиди</value></data>
   <data name="DeliveryCourierEligibility" xml:space="preserve"><value>За поръчки само с аксесоари и други малки артикули, подходящи за куриер, можете да изберете доставка до адрес или до конкретен офис на Еконт или Спиди. За тези поръчки не се предлага собствен транспорт; възможно е и вземане от магазина.</value></data>
   <data name="DeliveryCourierPrice" xml:space="preserve"><value>Куриерската доставка е за сметка на клиента при стойност на стоките след отстъпки до 100 € включително и е безплатна над 100 €. Доставка и допълнителни услуги не се включват в този праг.</value></data>
