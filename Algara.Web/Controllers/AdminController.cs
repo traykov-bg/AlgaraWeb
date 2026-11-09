@@ -532,13 +532,17 @@ namespace Algara.Web.Controllers
 
         [HttpGet("orders")]
         [RequirePermission("Orders.View")]
-        public async Task<IActionResult> Orders(OrderStatus? status = null)
+        public async Task<IActionResult> Orders(OrderStatus? status = null, string? search = null)
         {
             var allOrders = await _orderRepo.GetAllAsync();
             var orders    = status.HasValue
                 ? allOrders.Where(o => o.Status == status)
                 : allOrders;
 
+            search=search?.Trim();
+            if(!string.IsNullOrEmpty(search)) orders=orders.Where(o=>o.N.ToString()==search.TrimStart('#') ||
+                (o.ContactName?.Contains(search,StringComparison.OrdinalIgnoreCase)??false) ||
+                (o.ContactPhone?.Contains(search,StringComparison.OrdinalIgnoreCase)??false));
             var userNs  = orders.Select(o => o.UserN).Distinct().ToList();
             var userMap = await _identityDb.Users
                 .Where(u => userNs.Contains(u.N))
@@ -551,7 +555,7 @@ namespace Algara.Web.Controllers
                 UserEmail       = o.ContactEmail ?? (userMap.TryGetValue(o.UserN ?? 0, out var u2) ? u2.Email : string.Empty),
             });
 
-            return View(new AdminOrderListViewModel { Rows = rows, StatusFilter = status });
+            return View(new AdminOrderListViewModel { Rows = rows, StatusFilter = status, Search = search });
         }
 
         [HttpGet("orders/{n}")]
@@ -571,7 +575,7 @@ namespace Algara.Web.Controllers
                 UserDisplayName = order.ContactName ?? (user != null ? (user.DisplayName ?? user.UserName) : $"#{order.UserN}"),
                 UserEmail       = order.ContactEmail ?? user?.Email ?? string.Empty,
             };
-            var actorIds = vm.History.Select(e => e.ActorId).Distinct().ToArray();
+            var actorIds = vm.History.Select(e => e.ActorId).Append(order.CreatedByStaffId ?? "").Distinct().ToArray();
             var actors = await _identityDb.Users.AsNoTracking().Where(u => actorIds.Contains(u.Id))
                 .Select(u => new { u.Id, u.FirstName, u.LastName, u.DisplayName }).ToListAsync();
             vm.ActorNames = actors.ToDictionary(u => u.Id, u =>

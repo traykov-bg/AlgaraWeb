@@ -495,6 +495,14 @@ namespace Algara.Web.ShopMigrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CreatedByStaffId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("CreationChannel")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<decimal>("DeliveryAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -512,6 +520,13 @@ namespace Algara.Web.ShopMigrations
                     b.Property<string>("InvoiceDetails")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("PartnerN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PartnerSnapshot")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -545,6 +560,8 @@ namespace Algara.Web.ShopMigrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("N");
+
+                    b.HasIndex("PartnerN");
 
                     b.HasIndex("SplitFromN");
 
@@ -1397,6 +1414,11 @@ namespace Algara.Web.ShopMigrations
 
             modelBuilder.Entity("Algara.Data.Models.Order", b =>
                 {
+                    b.HasOne("Algara.Data.Models.Partner", null)
+                        .WithMany()
+                        .HasForeignKey("PartnerN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Algara.Data.Models.Order", null)
                         .WithMany()
                         .HasForeignKey("SplitFromN")

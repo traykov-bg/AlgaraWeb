@@ -68,6 +68,7 @@ public sealed partial class CourierGateway
                 ["siteName"] = request.Destination.City.Trim(),
                 ["postCode"] = request.Destination.PostalCode.Trim()
             };
+        if(string.IsNullOrWhiteSpace(request.Destination.PostalCode) && recipient["addressLocation"] is JsonObject location) location.Remove("postCode");
         payload["recipient"] = recipient;
         payload["service"] = new JsonObject
         {

@@ -36,8 +36,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
  {
   int? Fail(string text) { form.Error = text; form.PreviewToken = null; return null; }
   if (submit && new[] { form.Remaining, form.Separated }.Any(d => d.Method == DeliveryMethod.OwnTransport && (string.IsNullOrWhiteSpace(d.Address) || d.Address.Any(char.IsControl)))) return Fail("Въведете адрес за всяка доставка със собствен транспорт.");
-  var site = submit ? await readiness.GetPublicSiteUrlAsync(ct) : null;
-  if (submit && site == null) return Fail("Настройте изпращането на имейли преди разделяне.");
+  string? site = null;
   await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
   await db.Database.ExecuteSqlRawAsync("""
    DECLARE @r int;
@@ -54,6 +53,8 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   var order = await db.Orders.Include(o=>o.OrderItems).ThenInclude(i=>i.Product).ThenInclude(p=>p.ShippingParcels).SingleOrDefaultAsync(o=>o.N==n, ct);
   if (order == null) return Fail("Поръчката не е намерена.");
   form.Order = order;
+  var email = AccountEmailRules.NormalizeEmail(order.ContactEmail);
+  if (submit && email != null) { site = await readiness.GetPublicSiteUrlAsync(ct); if (site == null) return Fail("Настройте изпращането на имейли преди разделяне."); }
   if (!CanSplit(order) || Convert.ToBase64String(order.RowVersion)!=form.Version) return Fail("Разделяне е възможно само за непроменена потвърдена поръчка без товарителница.");
   if (string.IsNullOrWhiteSpace(form.Reason) || form.Reason.Length > 500 || form.Reason.Any(char.IsControl)) return Fail("Посочете кратко основание за разделянето.");
   if (form.Quantities.Keys.Any(id=>order.OrderItems.All(i=>i.N!=id))) return Fail("Невалидни артикули.");
@@ -93,7 +94,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   catch(Exception ex) when(ex is CryptographicException or JsonException) { }
   if(!form.CustomerAgreed || ticket?.Fingerprint!=fingerprint || ticket.Expires<=clock.GetUtcNow()) return Fail("Изчислете отново и потвърдете, че клиентът е приел двете нови суми.");
   var guest=AccountEmailRules.Issue();var now=clock.GetUtcNow().UtcDateTime;
-  var child=new Order{SplitFromN=order.N,UserN=order.UserN,SubmissionId=guest.Id,GuestTokenHash=guest.Hash,ContactName=order.ContactName,
+  var child=new Order{SplitFromN=order.N,UserN=order.UserN,PartnerN=order.PartnerN,PartnerSnapshot=order.PartnerSnapshot,CreationChannel=order.CreationChannel,CreatedByStaffId=order.CreatedByStaffId,SubmissionId=guest.Id,GuestTokenHash=guest.Hash,ContactName=order.ContactName,
    ContactEmail=order.ContactEmail,ContactPhone=order.ContactPhone,Comment=order.Comment,InvoiceDetails=order.InvoiceDetails,
    Status=OrderStatus.Confirmed,CreatedAt=now,ConfirmedAtUtc=order.ConfirmedAtUtc,TermsAcceptedAtUtc=order.TermsAcceptedAtUtc,
    DeliverySnapshot=DestinationSnapshot(form.Separated,right.Quote),DeliveryAmount=right.Quote.DeliveryAmount,TotalAmount=right.Quote.Total};
@@ -108,7 +109,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   db.Orders.Add(child);await db.SaveChangesAsync(ct);
   var details=JsonSerializer.Serialize(new { Parent=order.N,Child=child.N,BeforeTotal=beforeTotal,RemainingTotal=order.TotalAmount,SeparatedTotal=child.TotalAmount,IsTest=testQuote,form.Reason });
   foreach(var target in new[]{order,child}) db.Set<OrderEvent>().Add(new OrderEvent{OrderN=target.N,Action="Split",Status=target.Status,ActorId=actor.FindFirstValue(ClaimTypes.NameIdentifier)!,OccurredAtUtc=now,Details=details});
-  identity.EmailOutboxMessages.Add(outbox.Create(order.ContactEmail!,(testQuote ? "[TEST] " : "")+"Algara / Алгара — разделяне на поръчка #"+order.N,
+  if(email != null) identity.EmailOutboxMessages.Add(outbox.Create(email,(testQuote ? "[TEST] " : "")+"Algara / Алгара — разделяне на поръчка #"+order.N,
    (testQuote ? "Тестова куриерска калкулация. / Test courier quote. " : "") + $"По съгласуване с Вас поръчка #{order.N} е разделена. Оставаща поръчка: {order.TotalAmount:N2} EUR. Нова поръчка #{child.N}: {child.TotalAmount:N2} EUR. / Your order was split as agreed. Remaining order: {order.TotalAmount:N2} EUR. New order #{child.N}: {child.TotalAmount:N2} EUR.",site+"/Checkout/Access#"+guest.LinkValue,null,null));
   await db.SaveChangesAsync(ct);await identity.SaveChangesAsync(ct);await tx.CommitAsync(ct);return child.N;
  }

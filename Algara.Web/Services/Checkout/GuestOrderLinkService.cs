@@ -28,6 +28,7 @@ public sealed class GuestOrderLinkService(ShopDbContext db, TimeProvider clock)
         var order = await db.Orders.SingleOrDefaultAsync(o => o.N == n && o.SubmissionId == submission, ct);
         if (order?.GuestTokenHash == null || order.UserN != null || !AccountEmailRules.MatchesHash(secret, order.GuestTokenHash) ||
             !string.Equals(order.ContactEmail, user.Email, StringComparison.OrdinalIgnoreCase)) return false;
+        if (order.PartnerN.HasValue && !await db.PartnerAccountLinks.AnyAsync(l => l.UserN == user.N && l.PartnerN == order.PartnerN, ct)) return false;
         order.UserN = user.N;
         db.Set<OrderEvent>().Add(new OrderEvent { OrderN = n, Action = "ClaimedByVerifiedOwner", ActorId = user.Id, Status = order.Status, OccurredAtUtc = clock.GetUtcNow().UtcDateTime });
         await db.SaveChangesAsync(ct);

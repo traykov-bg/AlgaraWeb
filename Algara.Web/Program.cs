@@ -101,6 +101,7 @@ try
     builder.Services.AddScoped<Algara.Web.Services.Checkout.CheckoutService>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.OrderLifecycleService>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.OrderSplitService>();
+    builder.Services.AddScoped<Algara.Web.Services.Checkout.StaffOrderService>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.GuestOrderLinkService>();
     builder.Services.AddHostedService<Algara.Web.Services.Checkout.ReservationExpiryWorker>();
     builder.Services.AddSingleton<Algara.Web.Services.Shipping.DeliverySecretProtector>();

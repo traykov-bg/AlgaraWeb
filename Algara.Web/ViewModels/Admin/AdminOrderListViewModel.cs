@@ -12,6 +12,7 @@ namespace Algara.Web.ViewModels.Admin
     public class AdminOrderListViewModel
     {
         public IEnumerable<AdminOrderRowViewModel> Rows         { get; set; } = [];
+        public string? Search { get; set; }
         public OrderStatus?                        StatusFilter { get; set; }
     }
 }

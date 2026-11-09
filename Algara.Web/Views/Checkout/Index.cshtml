@@ -10,6 +10,10 @@
 }
 <div class="mx-auto py-3" style="max-width:70rem">
     <a asp-controller="Order" asp-action="Index">@T["BackToCart"]</a>
+    <form asp-controller="Admin" asp-action="StaffCheckout" method="post" staff-permission="Orders.View,Orders.Create,Partners.View" class="my-3">
+        <button class="btn btn-outline-primary">Служебна поръчка за друг контрагент</button>
+        <p class="small text-muted">Отваря артикулите в служебна форма. След успешен запис количката се изпразва.</p>
+    </form>
     <h1 class="h3 my-3">@C["Title"]</h1>
     @if (!Model.Cart.CanQuote) { <div class="alert alert-warning">@T["InvalidCart"]</div> }
     else
@@ -57,7 +61,7 @@
                     </div>
                     <p id="delivery-city-status" class="small text-muted" role="status" data-loading="@T["CitiesLoading"]" data-error="@T["CitiesFailed"]" data-select="@T["ChooseCity"]"></p>
                     <div data-delivery-address>
-                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"] <span data-delivery-own>@T["Optional"]</span></label>
+                        <label asp-for="PostalCode" class="form-label">@T["PostalCode"] <span>@T["Optional"]</span></label>
                         <input asp-for="PostalCode" class="form-control mb-3" maxlength="4" inputmode="numeric" autocomplete="postal-code" />
                         <label asp-for="Address" class="form-label">@T["Address"]</label>
                         <input asp-for="Address" class="form-control mb-3" maxlength="500" autocomplete="street-address" />

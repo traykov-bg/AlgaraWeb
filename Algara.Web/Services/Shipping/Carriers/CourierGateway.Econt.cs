@@ -94,6 +94,7 @@ public sealed partial class CourierGateway
                 ["fullAddress"] = request.Destination.Address!.Trim()
             };
 
+        if(string.IsNullOrWhiteSpace(request.Destination.PostalCode) && label["receiverAddress"]?["city"] is JsonObject receiverCity) receiverCity.Remove("postCode");
         using var document = await PostAsync(EcontEndpoint(connection, false),
             new JsonObject { ["label"] = label, ["mode"] = "calculate" }, connection, cancellationToken);
         if (HasError(document.RootElement)) return CourierQuoteResult.Failure(CourierErrorCode.Rejected);

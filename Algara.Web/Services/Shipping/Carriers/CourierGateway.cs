@@ -157,7 +157,7 @@ public sealed partial class CourierGateway(HttpClient client) : ICourierGateway
     private static bool ValidDestination(CourierDestination destination) =>
         IsText(destination.City, 100) && destination.City.Trim().Length >= 2 &&
         (string.IsNullOrEmpty(destination.OfficeCode)
-            ? IsText(destination.PostalCode, 10) && IsText(destination.Address, 500)
+            ? (string.IsNullOrWhiteSpace(destination.PostalCode) || IsText(destination.PostalCode, 10)) && IsText(destination.Address, 500)
             : IsCode(destination.OfficeCode));
 
     private static bool IsText(string? value, int maximum) => !string.IsNullOrWhiteSpace(value) &&

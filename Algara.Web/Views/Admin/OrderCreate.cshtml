@@ -1,0 +1,79 @@
+﻿@model Algara.Web.ViewModels.Admin.StaffOrderForm
+@using Algara.Data.Models
+@using Algara.Web.Services.Cart
+@using Algara.Web.Services.Shipping
+@{
+    Layout=Model.Storefront?"_Layout":"_AdminLayout"; ViewData["Title"]="Нова служебна поръчка";
+    string MethodName(DeliveryMethod m)=>m switch { DeliveryMethod.Pickup=>"Вземане от магазина",DeliveryMethod.OwnTransport=>"Собствен транспорт",DeliveryMethod.EcontOffice=>"Еконт до офис",DeliveryMethod.EcontAddress=>"Еконт до адрес",DeliveryMethod.SpeedyOffice=>"Спиди до офис",_=>"Спиди до адрес" };
+}
+<h1 class="h4">Нова служебна поръчка</h1>
+@if(Model.CopiedFromOrderN.HasValue){<div class="alert alert-info">Копие на поръчка #@Model.CopiedFromOrderN. Проверете клиента и данните за доставка. Цените и наличностите са актуални; нужен е нов преглед и съгласуване с клиента преди запис.</div>}
+<p>За договорена продажба по телефон или на място. Поръчката се записва като чакаща; потвърждаването е отделно действие. Плащането е при получаване.</p>
+@if(Model.Error!=null){<div class="alert alert-danger" role="alert">@Model.Error</div>}
+<form method="post" asp-action="OrderCreate" id="staff-order-form" data-search-url="@Url.Action("StaffOrderSearch")">
+<input asp-for="Storefront" type="hidden" /><input asp-for="ScrollY" type="hidden" />
+<input asp-for="CopiedFromOrderN" type="hidden" />
+<input asp-for="SubmissionToken" type="hidden"/><input asp-for="PreviewToken" type="hidden"/>
+<div class="row g-3 align-items-start"><div class="col-md-6"><section class="card card-body mb-3">
+<h2 class="h5">Клиент и контакт</h2>
+<input asp-for="PartnerN" type="hidden"/>
+<p>Контрагент: <strong>@(Model.Partner==null?"Не е избран":Model.Partner.Code+" — "+Model.Partner.SiteName)</strong></p>
+<div class="row g-2 align-items-end"><div class="col-sm-8">
+<label asp-for="PartnerSearch" class="form-label mb-1">Търсене на контрагент по код или име</label>
+<input asp-for="PartnerSearch" maxlength="100" autocomplete="off" class="form-control mb-2" data-search="partners" aria-controls="partner-results" />
+</div><div class="col-sm-4"><label asp-for="CustomerUserN" class="form-label mb-1">Клиентски акаунт</label>
+<select asp-for="CustomerUserN" required="@(Model.ActiveAccountCount>0)" class="form-select mb-2">@if(Model.ActiveAccountCount!=1){<option value="">@(Model.ActiveAccountCount>0?"Изберете акаунт":"Без акаунт")</option>}@foreach(var customer in Model.Customers){<option value="@customer.N" data-contact="@customer.ContactName" data-phone="@customer.Phone" data-email="@customer.Email">@customer.Name</option>}</select>
+</div></div>
+<div class="row"><div class="col-sm-8"><div id="partner-results" class="list-group mb-2" aria-live="polite"></div></div></div>
+<p class="small text-muted">Показани са до 20 резултата. При нужда създайте контрагента в картотеката. За общ клиент въведете данните на конкретния получател по-долу.</p>
+@if(Model.ActiveAccountCount>Model.Customers.Count){<p class="text-danger">Нямате достъп до всички активни акаунти на този контрагент. Не може да се използва „Без акаунт“.</p>}
+<p class="small text-muted">При един активен акаунт той се използва автоматично; при няколко изберете един. Само проверени акаунти на избрания контрагент. Съвпадение по имейл не свързва поръчката автоматично.</p>
+<div class="row g-3">
+<div class="col-sm-8"><label asp-for="ContactName">Име на получателя</label><input asp-for="ContactName" required maxlength="121" class="form-control mb-2"/></div>
+<div class="col-sm-4"><label asp-for="Phone">Телефон</label><input asp-for="Phone" required maxlength="20" class="form-control mb-2"/></div>
+</div><div class="row g-2 align-items-end"><div class="col-sm-8"><label asp-for="Email" class="form-label mb-1">Имейл (незадължителен, за уведомления)</label><input asp-for="Email" type="email" maxlength="256" class="form-control mb-2"/></div>
+<div class="col-sm-4"><label asp-for="Channel" class="form-label mb-1">Канал</label><select asp-for="Channel" class="form-select mb-2 w-auto"><option value="Phone">По телефон</option><option value="InStore">На място</option></select>
+</div></div>
+<label asp-for="Reason">Основание / описание на договорката</label><input asp-for="Reason" required maxlength="500" class="form-control mb-2"/>
+</section>
+</div><div class="col-md-6"><section class="card card-body mb-3"><h2 class="h5">Доставка</h2>
+<div class="row g-2"><div class="col-sm-6"><label asp-for="Destination.Method">Начин на доставка</label><select asp-for="Destination.Method" class="form-select mb-2 w-auto">
+@foreach(var method in Enum.GetValues<DeliveryMethod>().Where(m=>DeliveryQuoteService.Provider(m)==null||Model.EnabledCouriers.Contains((int)DeliveryQuoteService.Provider(m)!.Value))){<option value="@((int)method)">@MethodName(method)</option>}
+@if(DeliveryQuoteService.Provider(Model.Destination.Method) is {} unavailableProvider&&!Model.EnabledCouriers.Contains((int)unavailableProvider)){<option value="@((int)Model.Destination.Method)">@MethodName(Model.Destination.Method) — неактивен, изберете друг</option>}
+</select></div><div class="col-sm-6"><label asp-for="Destination.City">Град / село</label><input asp-for="Destination.City" maxlength="100" class="form-control mb-2"/></div></div>
+<div data-staff-office hidden="@(!DeliveryQuoteService.IsOffice(Model.Destination.Method))"><label asp-for="Destination.OfficeCode">Куриерски офис</label><select asp-for="Destination.OfficeCode" class="form-select mb-2"><option value="">Изберете офис</option>
+@foreach(var office in Model.Destination.Offices){<option value="@office.Code">@office.Name — @office.Address</option>}
+@if(Model.Destination.Offices.Count==0&&!string.IsNullOrEmpty(Model.Destination.OfficeCode)){<option value="@Model.Destination.OfficeCode">Избран офис @Model.Destination.OfficeCode</option>}
+</select><button name="command" value="offices" formnovalidate class="btn btn-outline-secondary align-self-start mb-2">Зареди офисите</button><p class="small text-muted">За офис въведете град и натиснете „Зареди офисите“, после изберете от заредения списък. Само дребни куриерски артикули се изпращат с куриер; останалите — със собствен транспорт. Вземане от магазин е възможно и в двата случая.</p>
+</div>
+<div data-staff-address hidden="@(DeliveryQuoteService.IsOffice(Model.Destination.Method)||Model.Destination.Method==DeliveryMethod.Pickup)"><div class="row g-2 align-items-end"><div class="col-sm-9"><label asp-for="Destination.Address">Адрес</label><input asp-for="Destination.Address" maxlength="500" class="form-control mb-2"/></div><div class="col-sm-3"><label asp-for="Destination.PostalCode">Пощенски код</label><input asp-for="Destination.PostalCode" maxlength="20" class="form-control mb-2"/></div></div><label asp-for="Destination.AddressDetails">Уточнение към адреса</label><input asp-for="Destination.AddressDetails" maxlength="500" class="form-control mb-2"/></div>
+<div class="row g-3">
+<div class="col-12"><label asp-for="Comment">Коментар</label><textarea asp-for="Comment" maxlength="2000" class="form-control mb-2"></textarea></div>
+<div class="col-12"><label asp-for="InvoiceDetails">Данни за фактура (незадължителни)</label><textarea asp-for="InvoiceDetails" maxlength="1000" class="form-control mb-2"></textarea></div>
+</div>
+<button name="command" value="preview" class="btn btn-outline-primary">Изчисли и прегледай</button>
+</section>
+</div></div><section class="card card-body mb-3"><h2 class="h5">Артикули</h2>
+<div class="row g-3"><div class="col-lg-4"><label asp-for="ProductSearch">Търсене по име или код</label>
+<div class="position-relative"><input asp-for="ProductSearch" maxlength="100" autocomplete="off" class="form-control mb-2" data-search="products" aria-controls="product-results" aria-expanded="false" />
+<div id="product-results" class="list-group"></div></div>
+<p class="small text-muted">До 20 резултата. Цените и наличностите се проверяват при изчисляване и запис. Максимум 30 реда и 99 броя на ред.</p>
+</div><div class="col-lg-8"><div class="table-responsive"><table class="table"><thead><tr><th>Артикул / вариант</th><th>Количество</th><th>Ед. цена</th><th></th></tr></thead><tbody>
+@for(var i=0;i<Model.Lines.Count;i++){
+ var line=i<Model.Cart.Lines.Count?Model.Cart.Lines[i]:null;
+ <tr><td><input asp-for="Lines[i].ProductN" type="hidden"/><input asp-for="Lines[i].VariantN" type="hidden"/>@line?.Name @line?.VariantName @line?.Sku
+ @if(line!=null&&line.Issue!=CartLineIssue.None){<div class="text-danger">Артикулът не може да се поръча с този вариант и количество. Проверете наличността и каталога.</div>}
+ </td><td><input asp-for="Lines[i].Quantity" type="number" min="1" max="99" class="form-control"/></td><td>@line?.UnitPrice?.ToString("N2") €</td><td><button name="command" value="remove:@i" formnovalidate class="btn btn-outline-danger btn-sm">Премахни</button></td></tr>
+}
+</tbody></table></div></div></div></section>
+@if(Model.Quote!=null&&Model.PreviewToken!=null){
+<section class="card card-body mb-3"><h2 class="h5">Преглед преди запис</h2>
+@if(Model.Quote.IsTest){<div class="alert alert-warning">TEST — Тестова куриерска цена (Development). Записът създава поръчка в текущата база и при имейл подготвя TEST уведомление.</div>}<p>Стоки: @Model.Quote.GoodsAmount.ToString("N2") € · Доставка: @Model.Quote.DeliveryAmount.ToString("N2") € · <strong>Общо: @Model.Quote.Total.ToString("N2") €</strong></p>
+<p>@Model.Quote.ResolvedAddress @Model.Quote.Office?.Name @Model.Quote.Office?.Address</p>
+<label class="form-check mb-3"><input asp-for="CustomerAgreed" class="form-check-input"/> Данните, артикулите, доставката и крайната сума са съгласувани с клиента.</label>
+<button name="command" value="submit" class="btn btn-primary">Запиши служебната поръчка</button></section>
+}
+</form>
+@if(Model.Storefront){<a asp-controller="Order" asp-action="Index">Обратно към количката</a>}else{<a asp-action="Orders" class="btn btn-link">Обратно към поръчките</a>}
+
+@section Scripts { <script src="~/js/staff-order.js" asp-append-version="true"></script> }

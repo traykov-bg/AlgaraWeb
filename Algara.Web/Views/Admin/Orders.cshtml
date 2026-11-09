@@ -25,17 +25,19 @@
     };
 }
 
+<a asp-action="OrderCreate" class="btn btn-primary mb-3" staff-permission="Orders.View,Orders.Create,Partners.View">Нова служебна поръчка</a>
+<form method="get" asp-action="Orders" class="d-flex gap-2 mb-3"><input type="hidden" name="status" value="@((int?)Model.StatusFilter)" /><input name="search" value="@Model.Search" class="form-control" style="max-width:32rem" aria-label="Търсене на поръчки" placeholder="Номер, име или телефон на получателя" /><button class="btn btn-outline-primary">Търси</button></form>
 <!-- Статус табове -->
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
         <a class="nav-link @(Model.StatusFilter == null ? "active" : "")"
-           asp-action="Orders" staff-permission="Orders.View">Всички</a>
+           asp-action="Orders" asp-route-search="@Model.Search" staff-permission="Orders.View">Всички</a>
     </li>
     @foreach (OrderStatus s in Enum.GetValues<OrderStatus>())
     {
         <li class="nav-item">
             <a class="nav-link @(Model.StatusFilter == s ? "active" : "")"
-               asp-action="Orders" asp-route-status="@((int)s)" staff-permission="Orders.View">@StatusLabel(s)</a>
+               asp-action="Orders" asp-route-status="@((int)s)" asp-route-search="@Model.Search" staff-permission="Orders.View">@StatusLabel(s)</a>
         </li>
     }
 </ul>
@@ -46,7 +48,7 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
-                    <th>Потребител</th>
+                    <th>Получател</th>
                     <th class="text-center">Статус</th>
                     <th class="text-end">Сума</th>
                     <th>Дата</th>
@@ -59,7 +61,7 @@
                     <tr>
                         <td class="text-muted small">@row.Order.N</td>
                         <td>
-                            <div class="fw-semibold small">@row.UserDisplayName</div>
+                            <div class="fw-semibold small">@row.UserDisplayName</div><div class="small">@row.Order.ContactPhone</div>
                             <div class="text-muted" style="font-size:.75rem;">@row.UserEmail</div>
                         </td>
                         <td class="text-center">
@@ -72,6 +74,7 @@
                                class="btn btn-xs btn-outline-primary" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Orders.View">
                                 <i class="bi bi-eye"></i> Детайли
                             </a>
+                            <a asp-action="OrderCopy" asp-route-n="@row.Order.N" class="btn btn-xs btn-outline-secondary" style="padding:.2rem .5rem;font-size:.78rem;" staff-permission="Orders.View,Orders.Create,Partners.View">Копирай</a>
                         </td>
                     </tr>
                 }

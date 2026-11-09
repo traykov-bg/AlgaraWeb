@@ -33,7 +33,7 @@
   <data name="QuoteNotice" xml:space="preserve"><value>This estimate is current at the time shown. Recalculate after changing your cart or address. Final order submission will require a fresh check.</value></data>
   <data name="PaymentNotice" xml:space="preserve"><value>Payment is on receipt: at the store, to our delivery team, or cash on delivery with the courier.</value></data>
   <data name="InvalidMethod" xml:space="preserve"><value>Choose a valid delivery method.</value></data>
-  <data name="InvalidAddress" xml:space="preserve"><value>Enter a city, four-digit postal code and complete street address with a building number.</value></data>
+  <data name="InvalidAddress" xml:space="preserve"><value>Enter a city and complete street address with a building number. The postal code is optional; if provided, use four digits.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Load offices for the city and select one.</value></data>
   <data name="TransportUnavailable" xml:space="preserve"><value>Automatic calculation for our transport is not configured yet. Choose store pickup or contact us.</value></data>
   <data name="AddressUnresolved" xml:space="preserve"><value>We could not identify a unique city or village in Bulgaria. Check the city or village field; add the region or municipality if names repeat. No price has been calculated.</value></data>

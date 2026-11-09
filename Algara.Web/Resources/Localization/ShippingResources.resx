@@ -33,7 +33,7 @@
   <data name="QuoteNotice" xml:space="preserve"><value>Цената е към този момент. При промяна на количката или адреса изчислете отново. При бъдещото подаване на поръчка е нужна повторна проверка.</value></data>
   <data name="PaymentNotice" xml:space="preserve"><value>Плащането е при получаване — в магазина, на фирмения екип или с наложен платеж при куриера.</value></data>
   <data name="InvalidMethod" xml:space="preserve"><value>Изберете валиден начин на получаване.</value></data>
-  <data name="InvalidAddress" xml:space="preserve"><value>Въведете населено място, четирицифрен пощенски код и пълен адрес с номер.</value></data>
+  <data name="InvalidAddress" xml:space="preserve"><value>Въведете населено място и пълен адрес с номер. Пощенският код е по избор; ако го попълните, използвайте четири цифри.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Заредете офисите за населеното място и изберете конкретен офис.</value></data>
   <data name="TransportUnavailable" xml:space="preserve"><value>Автоматичното изчисляване за собствен транспорт още не е настроено. Можете да изберете вземане от магазина или да се свържете с нас.</value></data>
   <data name="AddressUnresolved" xml:space="preserve"><value>Не успяхме да разпознаем еднозначно населеното място в България. Проверете полето „Населено място“; при еднакви имена добавете област или община. Цена не е изчислена.</value></data>

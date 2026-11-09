@@ -34,6 +34,13 @@ public sealed class AccountCartStore(IHttpContextAccessor accessor,ProtectedCook
   row.Contents=JsonSerializer.Serialize(entries);row.UpdatedAtUtc=clock.GetUtcNow().UtcDateTime;
   db.SaveChanges();tx.Commit();
  }
+ internal static async Task ClearAsync(ShopDbContext db,string owner,DateTime updatedAtUtc,CancellationToken ct)
+ {
+  if(db.Database.CurrentTransaction==null)throw new InvalidOperationException("Cart clearing requires the order transaction.");
+  await db.Database.ExecuteSqlInterpolatedAsync($"DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource={Resource(owner)},@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=15000; IF @r<0 THROW 51004,'Cart busy.',1;",ct);
+  var row=await db.Set<CustomerCart>().SingleOrDefaultAsync(c=>c.UserId==owner,ct);
+  if(row!=null){row.Contents="[]";row.UpdatedAtUtc=updatedAtUtc;}
+ }
  public async Task<bool> ImportGuestAsync(CancellationToken ct)
  {
   if(Owner is not {} owner || guest.ReadGuest() is not {} cart || cart.Entries.Count==0)return false;

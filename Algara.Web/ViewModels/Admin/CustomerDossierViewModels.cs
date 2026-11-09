@@ -52,6 +52,7 @@ public sealed class CustomerDossierViewModel
     public bool HasMorePartners { get; set; }
     public List<CustomerPartnerViewModel> PartnerChoices { get; set; } = [];
     public CustomerPartnerViewModel? SelectedPartner { get; set; }
+    public int? SelectedPartnerOrderCount { get; set; }
     public CustomerNoteForm NoteForm { get; set; } = new();
     public CustomerLinkForm LinkForm { get; set; } = new();
     public CustomerUnlinkForm UnlinkForm { get; set; } = new();

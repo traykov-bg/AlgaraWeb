@@ -19,6 +19,10 @@
         /// </summary>
         public int? UserN { get; set; }
         public int? SplitFromN { get; set; }
+        public int? PartnerN { get; set; }
+        public string? PartnerSnapshot { get; set; }
+        public string? CreationChannel { get; set; }
+        public string? CreatedByStaffId { get; set; }
 
         public Guid? SubmissionId { get; set; }
         public string? GuestTokenHash { get; set; }

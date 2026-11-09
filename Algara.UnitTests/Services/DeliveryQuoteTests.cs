@@ -654,12 +654,12 @@ public class DeliveryQuoteTests
     [Theory]
     [InlineData(DeliveryMethod.EcontAddress)]
     [InlineData(DeliveryMethod.SpeedyAddress)]
-    public async Task CourierAddressStillRequiresPostalCode(DeliveryMethod method)
+    public async Task CourierAddressAllowsMissingPostalCode(DeliveryMethod method)
     {
-        var fixture = new Fixture();
+        var fixture = new Fixture();fixture.ConfigureCourier();
+        fixture.Couriers.Setup(c=>c.CalculateAsync(It.IsAny<CourierConnection>(),It.Is<CourierQuoteRequest>(r=>r.Destination.PostalCode==""),It.IsAny<CancellationToken>())).ReturnsAsync(new CourierQuoteResult(true,8m));
         var result = await fixture.Service.CalculateAsync(Cart(Product()), method, "Plovdiv", null, "Street 1", null);
-        Assert.Equal("InvalidAddress", result.ErrorKey);
-        fixture.Couriers.VerifyNoOtherCalls();
+        Assert.NotNull(result.Quote);Assert.Equal(8m,result.Quote.DeliveryAmount);
     }
 
     [Theory]

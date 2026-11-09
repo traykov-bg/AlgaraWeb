@@ -31,6 +31,12 @@
     </a>
 </div>
 
+@if (Model.Order.CreationChannel != null)
+{
+    <div class="alert alert-info">Служебна поръчка — @(Model.Order.CreationChannel == "Phone" ? "по телефон" : "на място").
+    @if (Model.Order.PartnerSnapshot != null) { using var partnerDoc = System.Text.Json.JsonDocument.Parse(Model.Order.PartnerSnapshot); <span>Контрагент: @partnerDoc.RootElement.GetProperty("Code").GetString() — @partnerDoc.RootElement.GetProperty("SiteName").GetString().</span> }
+    <span>Извършител: @Model.ActorNames.GetValueOrDefault(Model.Order.CreatedByStaffId ?? "", "Недостъпен потребител").</span></div>
+}
 <div class="row g-3">
     <!-- Информация за поръчката -->
     <div class="col-lg-4">
@@ -144,8 +150,8 @@
     <table class="table table-sm"><thead><tr><th>Дата (UTC)</th><th>Действие</th><th>Статус</th><th>Извършител</th></tr></thead><tbody>
     @foreach (var entry in Model.History)
     {
-        var action = entry.Action switch { "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", "Split" => "Разделяне на поръчка", _ => entry.Action };
-        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action @if(entry.Action == "Split" && entry.Details != null) { using var splitDoc = System.Text.Json.JsonDocument.Parse(entry.Details); var childN = splitDoc.RootElement.GetProperty("Child").GetInt32(); <a asp-action="OrderDetail" asp-route-n="@childN">#@childN</a><br />@splitDoc.RootElement.GetProperty("Reason").GetString() }</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
+        var action = entry.Action switch { "StaffCreated" => "Служебно създадена", "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", "Split" => "Разделяне на поръчка", _ => entry.Action };
+        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action @if(entry.Action == "StaffCreated" && entry.Details != null) { using var staffDoc = System.Text.Json.JsonDocument.Parse(entry.Details); <br />@staffDoc.RootElement.GetProperty("Reason").GetString() } @if(entry.Action == "Split" && entry.Details != null) { using var splitDoc = System.Text.Json.JsonDocument.Parse(entry.Details); var childN = splitDoc.RootElement.GetProperty("Child").GetInt32(); <a asp-action="OrderDetail" asp-route-n="@childN">#@childN</a><br />@splitDoc.RootElement.GetProperty("Reason").GetString() }</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
     }
     </tbody></table>
 </section>

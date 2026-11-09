@@ -28,6 +28,10 @@ public partial class ShopDbContext
         });
         modelBuilder.Entity<Order>(b =>
         {
+            b.HasOne<Partner>().WithMany().HasForeignKey(o => o.PartnerN).OnDelete(DeleteBehavior.Restrict);
+            b.Property(o => o.PartnerSnapshot).HasMaxLength(4000);
+            b.Property(o => o.CreationChannel).HasMaxLength(20);
+            b.Property(o => o.CreatedByStaffId).HasMaxLength(128);
             b.HasOne<Order>().WithMany().HasForeignKey(o => o.SplitFromN).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(o => o.SubmissionId).IsUnique().HasFilter("[SubmissionId] IS NOT NULL");
             b.HasIndex(o => new { o.Status, o.ExpiresAtUtc });

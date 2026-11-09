@@ -467,6 +467,8 @@ public sealed class AdminCustomersController(
                         .Where(p => p.N == selectedPartnerN && p.IsActive).Select(PartnerProjection).SingleOrDefaultAsync(ct);
                     if (vm.SelectedPartner != null)
                     {
+                        if(await staffAccess.HasPermissionAsync(User,PermissionCatalog.Orders.View,ct))
+                            vm.SelectedPartnerOrderCount=await shopDb.Orders.CountAsync(o=>o.PartnerN==vm.SelectedPartner.N,ct);
                         vm.LinkForm.PartnerN = vm.SelectedPartner.N;
                         vm.LinkForm.ExpectedPartnerVersion = vm.SelectedPartner.RowVersion;
                     }

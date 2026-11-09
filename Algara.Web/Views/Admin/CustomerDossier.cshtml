@@ -236,6 +236,10 @@
                     @if (Model.SelectedPartner is { } selected)
                     {
                         <form asp-action="Link" asp-route-n="@customer.N" method="post" id="link-confirmation" class="border rounded p-3 bg-light">
+                            <div class="alert alert-warning">
+                            @if(Model.SelectedPartnerOrderCount>0){<strong>Контрагентът има @Model.SelectedPartnerOrderCount съществуващи поръчки.</strong>}
+                            Свързването на акаунт не предоставя автоматично достъп до стари поръчки. Те трябва да бъдат проверени и свързани поотделно. Общ контрагент за различни купувачи (например клиент на дребно) трябва да остане без акаунт.
+                            </div>
                             <input asp-for="LinkForm.PartnerN" type="hidden" />
                             <input asp-for="LinkForm.ExpectedAccountVersion" type="hidden" />
                             <input asp-for="LinkForm.ExpectedLinkVersion" type="hidden" />

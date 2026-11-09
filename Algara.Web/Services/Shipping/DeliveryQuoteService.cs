@@ -53,7 +53,7 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         {
             if (string.IsNullOrWhiteSpace(officeCode) || officeCode.Length > 40) return new(ErrorKey: "ChooseOffice");
         }
-        else if (method != DeliveryMethod.OwnTransport && (!GoogleAddressGeocoder.ValidPostalCode(postalCode) || string.IsNullOrWhiteSpace(address) ||
+        else if (method != DeliveryMethod.OwnTransport && ((!string.IsNullOrWhiteSpace(postalCode) && !GoogleAddressGeocoder.ValidPostalCode(postalCode)) || string.IsNullOrWhiteSpace(address) ||
             address.Length > 500 || address.Any(char.IsControl))) return new(ErrorKey: "InvalidAddress");
         if (method == DeliveryMethod.OwnTransport)
         {

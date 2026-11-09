@@ -1,0 +1,13 @@
+﻿@model Algara.Data.Models.Order
+@{ Layout="_Layout";ViewData["Title"]="Служебна поръчка #"+Model.N; }
+<section class="container py-4">
+<h1 class="h3">Служебна поръчка #@Model.N е записана</h1>
+<p>Получател: @Model.ContactName · @Model.ContactPhone</p>
+<p>Поръчката очаква потвърждение.</p>
+<table class="table"><thead><tr><th>Артикул</th><th>Количество</th><th>Цена</th></tr></thead><tbody>
+@foreach(var item in Model.OrderItems){<tr><td>@item.ProductName @item.VariantName</td><td>@item.Quantity</td><td>@item.UnitPrice.ToString("N2") €</td></tr>}
+</tbody></table>
+<partial name="_OrderDelivery" model="Model" />
+<p>Общо: @Model.TotalAmount.ToString("N2") €</p>
+<a asp-controller="Order" asp-action="Index">Обратно към количката</a>
+</section>

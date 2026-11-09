@@ -7,6 +7,24 @@ namespace Algara.UnitTests.Services;
 
 public sealed class CourierGatewayTests
 {
+    [Theory]
+    [InlineData(CourierProvider.Econt)]
+    [InlineData(CourierProvider.Speedy)]
+    public async Task MissingPostalCodeIsOmittedFromCarrierRequest(CourierProvider provider)
+    {
+        using var handler=new StubHandler((message,body)=>{
+            Assert.DoesNotContain("postCode",body);
+            return provider==CourierProvider.Econt?Json("{\"label\":{\"totalPrice\":7.92,\"currency\":\"EUR\"}}"):
+                Json("{\"calculations\":[{\"serviceId\":505,\"price\":{\"total\":7.92,\"currency\":\"EUR\"}}]}");
+        });
+        using var client=new HttpClient(handler);
+        var quote=Quote();
+        var result=await new CourierGateway(client).CalculateAsync(Connection(provider),quote with {Destination=quote.Destination with {PostalCode=""}});
+        Assert.Single(handler.Requests);
+        Assert.True(result.Success);
+        Assert.Equal(7.92m,result.AmountEur);
+    }
+
     [Fact]
     public async Task CityDirectoryIncludesOfficesBeyondThePerCityLimit()
     {
