@@ -29,7 +29,13 @@ public sealed class OrderLifecycleService(ShopDbContext db, TimeProvider clock, 
         catch (SqlException ex) when (ex.Number is 1205 or 1222 or 51004) { db.ChangeTracker.Clear(); return false; }
     }
 
-    private async Task<bool> ChangeCoreAsync(int n, OrderStatus status, string? version, ClaimsPrincipal actor, CancellationToken ct, string? waybill = null)
+    public async Task<bool> ReadyAsync(int n,int itemN,int quantity,string version,string? note,ClaimsPrincipal actor,CancellationToken ct)
+    {
+        try { return await ChangeCoreAsync(n,OrderStatus.Confirmed,version,actor,ct,null,itemN,quantity,note); }
+        catch(DbUpdateException) { db.ChangeTracker.Clear();return false; }
+        catch(SqlException ex) when(ex.Number is 1205 or 1222 or 51004) { db.ChangeTracker.Clear();return false; }
+    }
+    private async Task<bool> ChangeCoreAsync(int n, OrderStatus status, string? version, ClaimsPrincipal actor, CancellationToken ct, string? waybill = null,int? readyItem=null,int readyQuantity=0,string? readyNote=null)
     {
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await db.Database.ExecuteSqlRawAsync("""
@@ -47,6 +53,14 @@ public sealed class OrderLifecycleService(ShopDbContext db, TimeProvider clock, 
         db.ChangeTracker.Clear();
         var order = await db.Orders.Include(o => o.OrderItems).SingleOrDefaultAsync(o => o.N == n, ct);
         if (order == null || Convert.ToBase64String(order.RowVersion) != version) return false;
+        if(readyItem.HasValue) {
+            var item=order.OrderItems.SingleOrDefault(i=>i.N==readyItem);
+            if(order.Status!=OrderStatus.Confirmed || !string.IsNullOrEmpty(order.WaybillNumber) || item?.IndividualManufacture!=true || readyQuantity<0 || readyQuantity>item.Quantity || string.IsNullOrWhiteSpace(readyNote) || readyNote.Length>1000) return false;
+            var previous=item.ReadyQuantity; item.ReadyQuantity=readyQuantity; order.UpdatedAt=clock.GetUtcNow().UtcDateTime;
+            db.Add(new OrderEvent { OrderN=n,Action="ManufactureReady",ActorId=actor.FindFirstValue(ClaimTypes.NameIdentifier)!,Status=order.Status,OccurredAtUtc=order.UpdatedAt.Value,
+                Details=System.Text.Json.JsonSerializer.Serialize(new { ItemN=item.N,Previous=previous,Ready=readyQuantity,Note=readyNote }) });
+            await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);return true;
+        }
         waybill = string.IsNullOrWhiteSpace(waybill) ? null : waybill.Trim();
         if (waybill != null && (waybill.Length > 100 || waybill.Any(char.IsControl))) return false;
         var trackingOnly = order.Status == status && status is OrderStatus.Confirmed or OrderStatus.Shipped;
@@ -61,6 +75,10 @@ public sealed class OrderLifecycleService(ShopDbContext db, TimeProvider clock, 
         {
             foreach (var item in order.OrderItems.OrderBy(i => i.ProductN).ThenBy(i => i.VariantN))
             {
+                if(item.IndividualManufacture) {
+                    if(status is OrderStatus.Shipped or OrderStatus.Delivered && item.ReadyQuantity<item.Quantity) return false;
+                    continue;
+                }
                 var remaining = item.Quantity - item.DeductedQuantity;
                 if (status == OrderStatus.Cancelled && item.DeductedQuantity == 0) continue;
                 if (status != OrderStatus.Cancelled && remaining == 0) continue;
@@ -90,6 +108,7 @@ public sealed class OrderLifecycleService(ShopDbContext db, TimeProvider clock, 
                     db.Entry(product).Property(p => p.StockQuantity).IsModified = true;
                 }
                 item.DeductedQuantity += delta;
+                await db.SaveChangesAsync(ct);
             }
         }
         db.Set<OrderEvent>().Add(new OrderEvent { OrderN = order.N, Action = trackingOnly ? "WaybillUpdated" : "StatusChanged", ActorId = actor.FindFirstValue(ClaimTypes.NameIdentifier)!, Status = status, OccurredAtUtc = now });

@@ -23,7 +23,9 @@
     var mainImage = Model.GetVariantImageUrl(selectedVariant);
     var exactVariantImage = selectedVariant?.ProductImageN != null && Model.Images.Any(image => image.N == selectedVariant.ProductImageN);
     var promoNote     = activePromo?.Note;
+    var needsInquiry = Model.GetAvailability(selectedVariant) != ProductAvailability.InStock;
 }
+
 
 @section Styles {
     <link rel="stylesheet" href="~/css/product-variants.css" asp-append-version="true" />
@@ -124,14 +126,14 @@
         <p class="small"><a asp-controller="Home" asp-action="Delivery">@T["DeliveryTerms"]</a></p>
         @if (Model.OptionKind == ProductOptionKind.None || selectedVariant != null)
         {
-            <form asp-controller="Order" asp-action="Add" method="post" class="d-flex align-items-end flex-wrap gap-2 my-4">
+            <form asp-controller="Order" asp-action="Add" method="post" class="d-flex align-items-end flex-wrap gap-2 my-4" data-product-action data-cart-action="@Url.Action("Add", "Order")" data-inquiry-action="@Url.Action("ProductEntry", "Inquiries")" data-cart-label="@CartT["Add"]" data-inquiry-label="@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Make an inquiry" : "Направи запитване")">
                 <input type="hidden" name="productN" value="@Model.N" />
                 <input type="hidden" name="variantN" value="@selectedVariant?.N" data-cart-variant />
                 <label class="small">
                     @CartT["Quantity"]
                     <input type="number" name="quantity" value="1" min="1" max="99" step="1" required class="form-control" style="width: 6rem" />
                 </label>
-                <button type="submit" class="btn algara-btn-primary"><i class="bi bi-cart-plus me-2" aria-hidden="true"></i>@CartT["Add"]</button>
+                <button type="submit" formaction="@(needsInquiry ? Url.Action("ProductEntry", "Inquiries") : Url.Action("Add", "Order"))" class="btn algara-btn-primary" data-product-submit><i class="bi @(needsInquiry ? "bi-chat-square-text" : "bi-cart-plus") me-2" aria-hidden="true" data-product-action-icon></i><span data-product-action-label>@(needsInquiry ? (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Make an inquiry" : "Направи запитване") : CartT["Add"].Value)</span></button>
             </form>
         }
         @if (!string.IsNullOrWhiteSpace(description))

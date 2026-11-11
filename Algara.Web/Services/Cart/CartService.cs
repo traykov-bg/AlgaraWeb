@@ -67,7 +67,7 @@ public sealed class CartService(IProductRepository products, ICartStore store, T
         CartLine Invalid(CartLineIssue issue) => new() { Entry = entry, Product = product, Issue = issue };
         if (entry.Quantity is < 1 or > MaxQuantity) return Invalid(CartLineIssue.InvalidQuantity);
         if (product == null || product.N != entry.ProductN) return Invalid(CartLineIssue.MissingProduct);
-        if (!product.IsActive) return Invalid(CartLineIssue.InactiveProduct);
+        if (!product.IsActive || product.IsStaffOnly) return Invalid(CartLineIssue.InactiveProduct);
         ProductVariant? variant = null;
         if (product.OptionKind == ProductOptionKind.None)
         {

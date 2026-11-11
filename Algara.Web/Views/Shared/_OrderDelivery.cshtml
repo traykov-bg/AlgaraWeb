@@ -1,5 +1,7 @@
 ﻿@model Algara.Data.Models.Order
 @using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@inject Algara.Data.Data.ShopDbContext OfferDb
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ShippingResources> T
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.CheckoutResources> C
 @if (Model.DeliverySnapshot != null)
@@ -27,4 +29,14 @@
 @if (!string.IsNullOrEmpty(Model.WaybillNumber))
 {
     <p class="my-3">Товарителница / Waybill: <strong>@Model.WaybillNumber</strong></p>
+}
+@foreach(var service in Algara.Data.Models.AgreedOffer.Services(Model.ServicesJson)){<p>@service.Name: @service.Amount.ToString("N2") €</p>}
+@if(Model.InquiryN.HasValue){
+<section class="card card-body my-3"><h2 class="h5">Договорена изработка / Agreed specification</h2>
+@foreach(var item in Model.OrderItems){<p><strong>@item.ProductName @item.VariantName @item.Sku</strong> · @item.Quantity × @item.UnitPrice.ToString("N2") €</p><p style="white-space:pre-wrap">@item.ExecutionComment</p>}
+</section>}
+
+@if(Model.InquiryOfferN.HasValue){
+    var offer=await OfferDb.Set<Algara.Data.Models.InquiryOffer>().AsNoTracking().SingleOrDefaultAsync(o=>o.N==Model.InquiryOfferN && o.InquiryN==Model.InquiryN);
+    if(offer!=null){<section class="card card-body my-3"><h2 class="h5">Срок и условия / Timeframe and terms</h2><p style="white-space:pre-wrap">@offer.Terms</p><p style="white-space:pre-wrap">@offer.Description</p></section>}
 }

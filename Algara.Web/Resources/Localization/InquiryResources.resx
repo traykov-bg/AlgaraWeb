@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+<resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+<resheader name="version"><value>2.0</value></resheader>
+<data name="Title" xml:space="preserve"><value>Запитвания за индивидуални мебели</value></data>
+<data name="New" xml:space="preserve"><value>Ново запитване</value></data>
+<data name="Mine" xml:space="preserve"><value>Моите запитвания</value></data>
+<data name="Name" xml:space="preserve"><value>Име</value></data>
+<data name="Phone" xml:space="preserve"><value>Телефон</value></data>
+<data name="Email" xml:space="preserve"><value>Имейл (незадължителен)</value></data>
+<data name="Dimensions" xml:space="preserve"><value>Размери</value></data>
+<data name="Materials" xml:space="preserve"><value>Материали и цветове</value></data>
+<data name="Description" xml:space="preserve"><value>Описание</value></data>
+<data name="Files" xml:space="preserve"><value>До 5 снимки (JPEG/PNG/WebP) или PDF скици, до 5 MB всяка. Проверете формата и съдържанието на файловете.</value></data>
+<data name="Attachments" xml:space="preserve"><value>Приложения</value></data>
+<data name="Consent" xml:space="preserve"><value>Запознах се с политиката за поверителност и предоставям данните за обработка на запитването.</value></data>
+<data name="Submit" xml:space="preserve"><value>Изпрати запитване</value></data>
+<data name="Reason" xml:space="preserve"><value>Основание / вътрешна бележка</value></data>
+<data name="Channel" xml:space="preserve"><value>Канал</value></data>
+<data name="PhoneChannel" xml:space="preserve"><value>По телефон</value></data>
+<data name="InStore" xml:space="preserve"><value>На място</value></data>
+<data name="Notice" xml:space="preserve"><value>Запитването не е поръчка и не резервира наличности.</value></data>
+<data name="Optional" xml:space="preserve"><value>Незадължително</value></data>
+<data name="Product" xml:space="preserve"><value>Продукт</value></data>
+<data name="Invalid" xml:space="preserve"><value>Проверете задължителните полета и въведените стойности.</value></data>
+<data name="Expired" xml:space="preserve"><value>Формата е изтекла. Отворете ново запитване.</value></data>
+<data name="AccessDenied" xml:space="preserve"><value>Нямате достъп до това действие.</value></data>
+<data name="ProductUnavailable" xml:space="preserve"><value>Продуктът вече не е достъпен. Отворете ново запитване без продукт.</value></data>
+<data name="EmailUnavailable" xml:space="preserve"><value>Известията по имейл временно не са достъпни. Опитайте по-късно или подайте без имейл.</value></data>
+<data name="Retry" xml:space="preserve"><value>Неуспешен запис. Опитайте отново.</value></data>
+<data name="Changed" xml:space="preserve"><value>Запитването е променено. Прегледайте актуалните данни преди ново действие.</value></data>
+<data name="Agreement" xml:space="preserve"><value>За приемане потвърдете съгласието с текущата оферта.</value></data>
+<data name="Status" xml:space="preserve"><value>Статус</value></data>
+<data name="NewStatus" xml:space="preserve"><value>Ново</value></data>
+<data name="InProgress" xml:space="preserve"><value>В обработка</value></data>
+<data name="Offered" xml:space="preserve"><value>Оферирано</value></data>
+<data name="Accepted" xml:space="preserve"><value>Прието</value></data>
+<data name="Declined" xml:space="preserve"><value>Отказано</value></data>
+<data name="Closed" xml:space="preserve"><value>Приключено</value></data>
+<data name="Search" xml:space="preserve"><value>Търси по номер, име или телефон</value></data>
+<data name="All" xml:space="preserve"><value>Всички</value></data>
+<data name="Filter" xml:space="preserve"><value>Търси</value></data>
+<data name="Details" xml:space="preserve"><value>Детайли</value></data>
+<data name="Empty" xml:space="preserve"><value>Няма запитвания.</value></data>
+<data name="NextPage" xml:space="preserve"><value>Следващи</value></data>
+<data name="Previous" xml:space="preserve"><value>Предишни</value></data>
+<data name="Offers" xml:space="preserve"><value>Оферти</value></data>
+<data name="Price" xml:space="preserve"><value>Крайна цена с ДДС (EUR)</value></data>
+<data name="Terms" xml:space="preserve"><value>Срок, начало на срока и условия за доставка/монтаж</value></data>
+<data name="OfferNotice" xml:space="preserve"><value>Опишете включените услуги и допълнителните разходи. Нова версия заменя предишната за приемане.</value></data>
+<data name="Current" xml:space="preserve"><value>Текуща оферта</value></data>
+<data name="PreviousOffer" xml:space="preserve"><value>Предишна версия</value></data>
+<data name="Offer" xml:space="preserve"><value>Запиши и изпрати оферта</value></data>
+<data name="Note" xml:space="preserve"><value>Добави бележка</value></data>
+<data name="Assign" xml:space="preserve"><value>Поеми запитването</value></data>
+<data name="Start" xml:space="preserve"><value>Започни обработка</value></data>
+<data name="Accept" xml:space="preserve"><value>Приеми офертата</value></data>
+<data name="Decline" xml:space="preserve"><value>Откажи</value></data>
+<data name="Close" xml:space="preserve"><value>Приключи</value></data>
+<data name="AgreementLabel" xml:space="preserve"><value>Потвърждавам съгласие с показаната текуща оферта. За служебно приемане опишете договорката с клиента в основанието.</value></data>
+<data name="History" xml:space="preserve"><value>Служебна история</value></data>
+<data name="Assigned" xml:space="preserve"><value>Отговорен служител</value></data>
+<data name="AccessLink" xml:space="preserve"><value>Запазете тази лична връзка за достъп до запитването и офертите. Не я споделяйте с други хора.</value></data>
+<data name="Open" xml:space="preserve"><value>Отвори запитването</value></data>
+<data name="Access" xml:space="preserve"><value>Достъп до запитване</value></data>
+<data name="FileRetry" xml:space="preserve"><value>При грешка изберете приложенията отново.</value></data>
+<data name="Created" xml:space="preserve"><value>Създадено</value></data>
+<data name="NoOffer" xml:space="preserve"><value>Все още няма оферта.</value></data>
+<data name="Saved" xml:space="preserve"><value>Запитването е записано.</value></data>
+<data name="StaffNew" xml:space="preserve"><value>Ново служебно запитване</value></data>
+<data name="ForOffer" xml:space="preserve"><value> (при офериране)</value></data>
+<data name="ActionRequirements" xml:space="preserve"><value>Цената, срокът и описанието се изискват само за нова оферта. За останалите действия е нужно основание; за приемане и потвърждение по телефон — и отметка за договорката.</value></data>
+<data name="PhoneClose" xml:space="preserve"><value>Потвърдена по телефон — приключи</value></data>
+<data name="Reload" xml:space="preserve"><value>Презареди актуалната версия преди ново действие</value></data>
+<data name="Complete" xml:space="preserve"><value>Потвърди офертата</value></data>
+<data name="CompleteNewHelp" xml:space="preserve"><value>При първо потвърждение въведете артикулите, цените, срока и описанието.</value></data>
+<data name="CompleteExistingHelp" xml:space="preserve"><value>Потвърждението приема записаната актуална оферта само с бележка и съгласие. За промяна първо запишете нова версия.</value></data>
+<data name="StatusDate" xml:space="preserve"><value>Промяна на статуса / последно действие</value></data>
+<data name="Converted" xml:space="preserve"><value>Преминала в поръчка</value></data>
+<data name="OpenOrder" xml:space="preserve"><value>Отвори поръчката</value></data>
+<data name="CreateOrder" xml:space="preserve"><value>Създай служебна поръчка</value></data>
+<data name="OfferLinesInvalid" xml:space="preserve"><value>Проверете артикулите, количествата, цените и услугите. При променена цена или индивидуална изработка е задължителен коментар по реда.</value></data>
+<data name="DraftOnly" xml:space="preserve"><value>Промените във формата още не са записани като оферта.</value></data>
+<data name="Quantity" xml:space="preserve"><value>Количество</value></data>
+<data name="UnitPrice" xml:space="preserve"><value>Договорена единична цена</value></data>
+<data name="Total" xml:space="preserve"><value>Общо</value></data>
+<data name="IndividualManufacture" xml:space="preserve"><value>Индивидуална изработка — отделна готовност, без стандартна наличност</value></data>
+<data name="Delivery" xml:space="preserve"><value>Доставка</value></data>
+<data name="DeliveryPending" xml:space="preserve"><value>Ще се изчисли и съгласува при поръчката; не е включена в тази сума.</value></data>
+<data name="DeliveryHelp" xml:space="preserve"><value>Договорена сума; 0 за безплатна доставка. Празно означава, че се изчислява и съгласува при създаване на поръчката.</value></data>
+<data name="OfferItems" xml:space="preserve"><value>Артикули в офертата</value></data>
+<data name="SearchProduct" xml:space="preserve"><value>Артикул по име или код (поне 2 знака)</value></data>
+<data name="Add" xml:space="preserve"><value>Добави</value></data>
+<data name="CatalogPrice" xml:space="preserve"><value>Каталожна цена за справка</value></data>
+<data name="ExecutionComment" xml:space="preserve"><value>Описание на изработката / основание за цената</value></data>
+<data name="Remove" xml:space="preserve"><value>Премахни</value></data>
+<data name="Services" xml:space="preserve"><value>Монтаж и допълнителни услуги</value></data>
+<data name="ServiceName" xml:space="preserve"><value>Наименование на услугата</value></data>
+<data name="AddService" xml:space="preserve"><value>Добави услуга</value></data>
+<data name="SearchProductButton" xml:space="preserve"><value>Търси артикул</value></data>
+<data name="EditOffer" xml:space="preserve"><value>Редакция на оферта</value></data>
+<data name="EditorHelp" xml:space="preserve"><value>Добавете артикулите и услугите, след това запишете договорените условия.</value></data>
+<data name="SearchingProducts" xml:space="preserve"><value>Търсене…</value></data>
+<data name="NoProducts" xml:space="preserve"><value>Няма намерени артикули. Опитайте друго име или код.</value></data>
+<data name="ProductSearchFailed" xml:space="preserve"><value>Търсенето не успя. Опитайте отново; въведеното в офертата е запазено на тази страница.</value></data>
+<data name="ItemAdded" xml:space="preserve"><value>Добавен артикул:</value></data>
+<data name="ItemRemoved" xml:space="preserve"><value>Редът е премахнат от черновата.</value></data>
+<data name="EditorLimit" xml:space="preserve"><value>Достигнат е лимитът от 30 артикула или 20 услуги.</value></data>
+<data name="CheckAmounts" xml:space="preserve"><value>Попълнете валидни количества и суми, за да видите общата стойност.</value></data>
+<data name="EmptyOfferLines" xml:space="preserve"><value>Потърсете артикул по име или код и го добавете към офертата.</value></data>
+<data name="GoodsSubtotal" xml:space="preserve"><value>Стойност на артикулите</value></data>
+<data name="DraftTotal" xml:space="preserve"><value>Текуща сума на офертата</value></data>
+<data name="AcceptedDraftChanged" xml:space="preserve"><value>Има незаписани промени. Запишете и потвърдете нова версия или възстановете приетата оферта преди създаване на поръчка.</value></data>
+<data name="RestoreAccepted" xml:space="preserve"><value>Възстанови приетата оферта</value></data>
+<data name="FieldRequired" xml:space="preserve"><value>Полето е задължително.</value></data>
+<data name="FieldInvalid" xml:space="preserve"><value>Въведете валидна стойност.</value></data>
+<data name="FieldQuantity" xml:space="preserve"><value>Въведете цяло количество от 1 до 99.</value></data>
+<data name="FieldPrice" xml:space="preserve"><value>Въведете положителна цена с до два знака след десетичния разделител.</value></data>
+<data name="FieldComment" xml:space="preserve"><value>Опишете изработката или основанието за променената цена.</value></data>
+<data name="FieldItems" xml:space="preserve"><value>Добавете поне един артикул.</value></data>
+</root>

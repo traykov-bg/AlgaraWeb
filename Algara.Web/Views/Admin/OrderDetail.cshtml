@@ -37,6 +37,7 @@
     @if (Model.Order.PartnerSnapshot != null) { using var partnerDoc = System.Text.Json.JsonDocument.Parse(Model.Order.PartnerSnapshot); <span>Контрагент: @partnerDoc.RootElement.GetProperty("Code").GetString() — @partnerDoc.RootElement.GetProperty("SiteName").GetString().</span> }
     <span>Извършител: @Model.ActorNames.GetValueOrDefault(Model.Order.CreatedByStaffId ?? "", "Недостъпен потребител").</span></div>
 }
+@if(Model.Order.InquiryN.HasValue){<p>Запитване <a asp-controller="Inquiries" asp-action="StaffDetails" asp-route-n="@Model.Order.InquiryN" staff-permission="Inquiries.View">#@Model.Order.InquiryN</a> · Оферта #@Model.Order.InquiryOfferN</p>}
 <div class="row g-3">
     <!-- Информация за поръчката -->
     <div class="col-lg-4">
@@ -126,7 +127,16 @@
                 @foreach (var item in Model.Order.OrderItems)
                 {
                     <tr>
-                        <td>@(item.ProductName ?? item.Product?.Name ?? $"Продукт #{item.ProductN}")</td>
+                        <td>@(item.ProductName ?? item.Product?.Name ?? $"Продукт #{item.ProductN}")
+                        <p style="white-space:pre-wrap">@item.ExecutionComment</p>
+                        @if(item.CatalogUnitPrice.HasValue){<small>Каталожна цена при договаряне: @item.CatalogUnitPrice.Value.ToString("N2") €</small>}
+                        @if(item.IndividualManufacture){<p>Индивидуална изработка · Готови: @item.ReadyQuantity / @item.Quantity</p>
+                            @if(Model.Order.Status==OrderStatus.Confirmed && string.IsNullOrEmpty(Model.Order.WaybillNumber)){
+                            <form asp-action="OrderReady" asp-route-n="@Model.Order.N" method="post" staff-permission="Orders.View,Orders.ChangeStatus">
+                            <input type="hidden" name="version" value="@Convert.ToBase64String(Model.Order.RowVersion)" /><input type="hidden" name="itemN" value="@item.N" />
+                            <label>Готово количество <input name="quantity" type="number" min="0" max="@item.Quantity" value="@item.ReadyQuantity" required /></label>
+                            <label>Бележка <input name="note" maxlength="1000" required /></label><button class="btn btn-sm btn-outline-primary">Запиши готовността</button></form>}
+                        }</td>
                         <td class="text-center">@item.Quantity<br /><small>Резервирани при подаване: @item.ReservedQuantity · Приспаднати: @item.DeductedQuantity · За изработка при поръчване: @(item.RequiresManufacturing ? "Да" : "Не")</small><br /><small>@item.VariantName @item.Sku</small></td>
                         <td class="text-end small">@item.UnitPrice.ToString("N0") €</td>
                         <td class="text-end fw-semibold">@((item.UnitPrice * item.Quantity).ToString("N0")) €</td>

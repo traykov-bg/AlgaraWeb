@@ -34,6 +34,15 @@
             text('[data-variant-status]', choice.getAttribute('data-status'));
             var cartVariant = detail.querySelector('[data-cart-variant]');
             if (cartVariant) cartVariant.value = choice.getAttribute('data-variant-id');
+            var action = detail.querySelector('[data-product-action]');
+            var submit = detail.querySelector('[data-product-submit]');
+            if (action && submit) {
+                var inquiry = choice.getAttribute('data-inquiry') === 'true';
+                submit.setAttribute('formaction', action.getAttribute(inquiry ? 'data-inquiry-action' : 'data-cart-action'));
+                text('[data-product-action-label]', action.getAttribute(inquiry ? 'data-inquiry-label' : 'data-cart-label'));
+                var icon = detail.querySelector('[data-product-action-icon]');
+                if (icon) icon.className = 'bi ' + (inquiry ? 'bi-chat-square-text' : 'bi-cart-plus') + ' me-2';
+            }
 
             var source = choice.getAttribute('data-image');
             if (main) {

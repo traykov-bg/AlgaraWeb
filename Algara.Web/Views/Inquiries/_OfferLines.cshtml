@@ -1,0 +1,12 @@
+﻿@model Algara.Data.Models.InquiryOffer
+@using Algara.Data.Models
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+@if (Model.LinesJson != null) {
+<table class="table"><thead><tr><th>@T["Product"]</th><th>@T["Quantity"]</th><th>@T["UnitPrice"]</th><th>@T["Total"]</th></tr></thead><tbody>
+@foreach (var line in AgreedOffer.Lines(Model.LinesJson)) {
+<tr><td>@line.Name @line.VariantName @line.Sku <div style="white-space:pre-wrap">@line.Comment</div>@if(line.IndividualManufacture){<small>@T["IndividualManufacture"]</small>}</td><td>@line.Quantity</td><td>@line.UnitPrice.ToString("N2") €</td><td>@((line.UnitPrice * line.Quantity).ToString("N2")) €</td></tr>
+}
+</tbody></table>
+@foreach (var service in AgreedOffer.Services(Model.ServicesJson)) { <p>@service.Name: @service.Amount.ToString("N2") €</p> }
+<p>@T["Delivery"]: @(Model.DeliveryAmount.HasValue ? Model.DeliveryAmount.Value.ToString("N2") + " €" : T["DeliveryPending"].Value)</p>
+}

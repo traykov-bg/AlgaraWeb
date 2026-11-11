@@ -41,7 +41,7 @@ public partial class AdminController
             EnglishMaterials = english?.Materials,
             WidthCm = product.WidthCm, HeightCm = product.HeightCm, DepthCm = product.DepthCm,
             Price = product.Price, IsCustomizable = product.IsCustomizable,
-            IsFeatured = product.IsFeatured, IsActive = product.IsActive, CategoryN = product.CategoryN,
+            IsFeatured = product.IsFeatured, IsActive = product.IsActive, IsStaffOnly = product.IsStaffOnly, CategoryN = product.CategoryN,
             SelectedSubCategoryNs = product.ProductSubCategories.Select(s => s.SubCategoryN).ToList(),
             Images = ImageRows(product)
         };
@@ -172,7 +172,7 @@ public partial class AdminController
             vm.Variants.Any(v => v.StockQuantity != previousVariants.GetValueOrDefault(v.N)?.StockQuantity);
         if (stockChanged && !await CanAsync("Products.ChangeStock")) return false;
 
-        var activityChanged = vm.IsActive != (existing?.IsActive ?? true) || existing != null &&
+        var activityChanged = (vm.IsActive != (existing?.IsActive ?? true) || vm.IsStaffOnly != (existing?.IsStaffOnly ?? false)) || existing != null &&
             (vm.Variants.Any(v => v.IsActive != (previousVariants.GetValueOrDefault(v.N)?.IsActive ?? false)) ||
              existing.Variants.Any(v => v.IsActive && !vm.Variants.Any(row => row.N == v.N && row.IsActive)));
         return !activityChanged || await CanAsync("Products.Deactivate");
@@ -231,6 +231,7 @@ public partial class AdminController
         product.IsCustomizable = vm.IsCustomizable;
         product.IsFeatured = vm.IsFeatured;
         product.IsActive = vm.IsActive;
+        product.IsStaffOnly = vm.IsStaffOnly;
         product.CategoryN = vm.CategoryN;
         var english = product.Translations.FirstOrDefault(t => t.Language == "en");
         var name = EmptyToNull(vm.EnglishName);

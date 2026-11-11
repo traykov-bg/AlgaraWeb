@@ -81,6 +81,7 @@ namespace Algara.Web.ViewModels.Admin
         public bool IsFeatured { get; set; }
 
         [Display(Name = "Активен")]
+        public bool IsStaffOnly { get; set; }
         public bool IsActive { get; set; } = true;
 
         [Display(Name = "Категория")]

@@ -25,7 +25,7 @@ function fixture(options = {}) {
     const cards = [node(), node(), node()];
     const choices = [
         node({ 'data-variant-id': '1', 'data-fabric': '10', 'data-name': 'Linen / Beige', 'data-price': '900.00 €', 'data-original': '1000.00 €', 'data-status': 'In stock', 'data-image': '/exact.jpg', 'data-exact-image': 'true' }),
-        node({ 'data-variant-id': '2', 'data-fabric': '10', 'data-name': 'Linen / Blue', 'data-price': '900.00 €', 'data-original': '1000.00 €', 'data-status': 'Made to order', 'data-image': '/base.jpg', 'data-exact-image': 'false' }),
+        node({ 'data-variant-id': '2', 'data-fabric': '10', 'data-name': 'Linen / Blue', 'data-price': '900.00 €', 'data-original': '1000.00 €', 'data-inquiry': 'true', 'data-status': 'Made to order', 'data-image': '/base.jpg', 'data-exact-image': 'false' }),
         node({ 'data-variant-id': '3', 'data-fabric': '11', 'data-name': 'Velvet / Rose', 'data-price': '980.13 €', 'data-original': '1080.13 €', 'data-status': 'Availability not specified', 'data-image': '/base.jpg', 'data-exact-image': 'false' })
     ];
     for (let index = 3; index < (options.count || 3); index++) {
@@ -37,6 +37,10 @@ function fixture(options = {}) {
     const filters = node(); filters.hidden = true;
     const output = Object.fromEntries(['price', 'original', 'name', 'status', 'photo-note'].map(name => ['[data-variant-' + name + ']', node()]));
     output['[data-cart-variant]'] = node();
+    output['[data-product-action]'] = node({ 'data-cart-action': '/Order/Add', 'data-inquiry-action': '/inquiries/product', 'data-cart-label': 'Add', 'data-inquiry-label': 'Inquire' });
+    output['[data-product-submit]'] = node();
+    output['[data-product-action-label]'] = node();
+    output['[data-product-action-icon]'] = node();
     const main = node();
     const thumbnails = ['/base.jpg', '/exact.jpg', '/side.jpg'].map(src => node({ 'data-gallery-src': src }));
     const pickerNodes = {
@@ -140,4 +144,17 @@ test('deep-linked choice selects its fabric and modified clicks keep normal link
     assert.equal(ui.choices[2].attrs['aria-pressed'], 'true');
     assert.equal(ui.choices[0].fire('click', { ctrlKey: true }), false);
     assert.equal(ui.choices[2].attrs['aria-pressed'], 'true');
+});
+
+
+test('stock-dependent action changes with exact variant and returns to cart for stocked selection', () => {
+    const ui = fixture();
+    assert.equal(ui.output['[data-product-submit]'].attrs.formaction, '/Order/Add');
+    ui.choices[1].fire('click');
+    assert.equal(ui.output['[data-product-submit]'].attrs.formaction, '/inquiries/product');
+    assert.equal(ui.output['[data-product-action-label]'].textContent, 'Inquire');
+    assert.equal(ui.output['[data-cart-variant]'].value, '2');
+    ui.choices[0].fire('click');
+    assert.equal(ui.output['[data-product-submit]'].attrs.formaction, '/Order/Add');
+    assert.equal(ui.output['[data-product-action-label]'].textContent, 'Add');
 });

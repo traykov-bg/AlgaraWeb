@@ -14,9 +14,16 @@
  <div asp-validation-summary="All" class="text-danger"></div>
  <table class="table"><thead><tr><th>Артикул</th><th>Поръчани</th><th>Налична част</th><th>Отделяне</th></tr></thead><tbody>
  @foreach(var item in Model.Order.OrderItems){
- <tr><td>@item.ProductName @item.VariantName @item.Sku</td><td>@item.Quantity</td><td>@OrderSplitService.ReadyQuantity(item)</td><td><input class="form-control" type="number" min="0" max="@OrderSplitService.ReadyQuantity(item)" name="Quantities[@item.N]" value="@Model.Quantities.GetValueOrDefault(item.N)" /></td></tr>
+ <tr><td>@item.ProductName @item.VariantName @item.Sku <p>@item.ExecutionComment</p></td><td>@item.Quantity</td><td>@OrderSplitService.ReadyQuantity(item)</td><td><input class="form-control" type="number" min="0" max="@OrderSplitService.ReadyQuantity(item)" name="Quantities[@item.N]" value="@Model.Quantities.GetValueOrDefault(item.N)" /></td></tr>
  }
  </tbody></table>
+ <h2 class="h5">Разпределение на услугите</h2>
+ @{ var services=Algara.Data.Models.AgreedOffer.Services(Model.Order.ServicesJson); }
+ @for(var i=0;i<services.Count;i++){
+ <div class="mb-2"><label>@services[i].Name — общо @services[i].Amount.ToString("N2") €; сума за отделената поръчка</label>
+ @Html.TextBox($"ServiceAmounts[{i}]",Model.ServiceAmounts.GetValueOrDefault(i),new { inputmode="decimal", @class="form-control" })</div>
+ }
+ <p class="small text-muted">Остатъкът остава в първоначалната поръчка. Общата стойност на услугите не се променя.</p>
  <div class="row">
  @foreach(var prefix in new[]{"Remaining","Separated"}){
  var dest=prefix=="Remaining"?Model.Remaining:Model.Separated;
@@ -43,9 +50,9 @@
  @if(Model.RemainingQuote!=null && Model.SeparatedQuote!=null && Model.PreviewToken!=null){
  @if (Model.RemainingQuote.IsTest || Model.SeparatedQuote.IsTest)
  { <div class="alert alert-warning mt-3">Тестова куриерска калкулация (Development). Разделянето ще бъде записано в текущата база и ще подготви имейл с обозначение TEST.</div> }
- <table class="table mt-3"><thead><tr><th>Поръчка</th><th>Стоки</th><th>Доставка</th><th>Общо</th></tr></thead><tbody>
- <tr><td>Оставаща</td><td>@Model.RemainingQuote.GoodsAmount.ToString("N2") €</td><td>@Model.RemainingQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.RemainingQuote.Total.ToString("N2") €</td></tr>
- <tr><td>Отделена</td><td>@Model.SeparatedQuote.GoodsAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.Total.ToString("N2") €</td></tr>
+ <table class="table mt-3"><thead><tr><th>Поръчка</th><th>Стоки</th><th>Доставка</th><th>Услуги</th><th>Общо</th></tr></thead><tbody>
+ <tr><td>Оставаща</td><td>@Model.RemainingQuote.GoodsAmount.ToString("N2") €</td><td>@Model.RemainingQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.RemainingQuote.ServicesAmount.ToString("N2") €</td><td>@Model.RemainingQuote.Total.ToString("N2") €</td></tr>
+ <tr><td>Отделена</td><td>@Model.SeparatedQuote.GoodsAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.DeliveryAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.ServicesAmount.ToString("N2") €</td><td>@Model.SeparatedQuote.Total.ToString("N2") €</td></tr>
  </tbody></table>
  <label class="form-check my-3"><input asp-for="CustomerAgreed" class="form-check-input" /> Клиентът прие разделянето и двете нови крайни суми.</label>
  <button name="command" value="submit" class="btn btn-primary">Потвърди разделянето</button>

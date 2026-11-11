@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+<resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+<resheader name="version"><value>2.0</value></resheader>
+<data name="Title" xml:space="preserve"><value>Custom furniture inquiries</value></data>
+<data name="New" xml:space="preserve"><value>New inquiry</value></data>
+<data name="Mine" xml:space="preserve"><value>My inquiries</value></data>
+<data name="Name" xml:space="preserve"><value>Name</value></data>
+<data name="Phone" xml:space="preserve"><value>Phone</value></data>
+<data name="Email" xml:space="preserve"><value>Email (optional)</value></data>
+<data name="Dimensions" xml:space="preserve"><value>Dimensions</value></data>
+<data name="Materials" xml:space="preserve"><value>Materials and colours</value></data>
+<data name="Description" xml:space="preserve"><value>Description</value></data>
+<data name="Files" xml:space="preserve"><value>Up to 5 photos (JPEG/PNG/WebP) or PDF sketches, up to 5 MB each. Check file format and contents.</value></data>
+<data name="Attachments" xml:space="preserve"><value>Attachments</value></data>
+<data name="Consent" xml:space="preserve"><value>I have read the privacy policy and provide these details to handle my inquiry.</value></data>
+<data name="Submit" xml:space="preserve"><value>Submit inquiry</value></data>
+<data name="Reason" xml:space="preserve"><value>Reason / internal note</value></data>
+<data name="Channel" xml:space="preserve"><value>Channel</value></data>
+<data name="PhoneChannel" xml:space="preserve"><value>By phone</value></data>
+<data name="InStore" xml:space="preserve"><value>In store</value></data>
+<data name="Notice" xml:space="preserve"><value>An inquiry is not an order and does not reserve stock.</value></data>
+<data name="Optional" xml:space="preserve"><value>Optional</value></data>
+<data name="Product" xml:space="preserve"><value>Product</value></data>
+<data name="Invalid" xml:space="preserve"><value>Check the required fields and entered values.</value></data>
+<data name="Expired" xml:space="preserve"><value>The form has expired. Open a new inquiry.</value></data>
+<data name="AccessDenied" xml:space="preserve"><value>You do not have access to this action.</value></data>
+<data name="ProductUnavailable" xml:space="preserve"><value>The product is no longer available. Open a new inquiry without a product.</value></data>
+<data name="EmailUnavailable" xml:space="preserve"><value>Email notifications are temporarily unavailable. Retry later or submit without email.</value></data>
+<data name="Retry" xml:space="preserve"><value>Could not save. Please retry.</value></data>
+<data name="Changed" xml:space="preserve"><value>The inquiry has changed. Review the current details before taking another action.</value></data>
+<data name="Agreement" xml:space="preserve"><value>Confirm agreement with the current offer before accepting.</value></data>
+<data name="Status" xml:space="preserve"><value>Status</value></data>
+<data name="NewStatus" xml:space="preserve"><value>New</value></data>
+<data name="InProgress" xml:space="preserve"><value>In progress</value></data>
+<data name="Offered" xml:space="preserve"><value>Offered</value></data>
+<data name="Accepted" xml:space="preserve"><value>Accepted</value></data>
+<data name="Declined" xml:space="preserve"><value>Declined</value></data>
+<data name="Closed" xml:space="preserve"><value>Closed</value></data>
+<data name="Search" xml:space="preserve"><value>Search by number, name or phone</value></data>
+<data name="All" xml:space="preserve"><value>All</value></data>
+<data name="Filter" xml:space="preserve"><value>Search</value></data>
+<data name="Details" xml:space="preserve"><value>Details</value></data>
+<data name="Empty" xml:space="preserve"><value>No inquiries.</value></data>
+<data name="NextPage" xml:space="preserve"><value>Next</value></data>
+<data name="Previous" xml:space="preserve"><value>Previous</value></data>
+<data name="Offers" xml:space="preserve"><value>Offers</value></data>
+<data name="Price" xml:space="preserve"><value>Total price including VAT (EUR)</value></data>
+<data name="Terms" xml:space="preserve"><value>Timeframe, its starting point and delivery/assembly terms</value></data>
+<data name="OfferNotice" xml:space="preserve"><value>Describe included services and additional costs. A new version replaces the previous version for acceptance.</value></data>
+<data name="Current" xml:space="preserve"><value>Current offer</value></data>
+<data name="PreviousOffer" xml:space="preserve"><value>Previous version</value></data>
+<data name="Offer" xml:space="preserve"><value>Save and notify of offer</value></data>
+<data name="Note" xml:space="preserve"><value>Add note</value></data>
+<data name="Assign" xml:space="preserve"><value>Take ownership</value></data>
+<data name="Start" xml:space="preserve"><value>Start processing</value></data>
+<data name="Accept" xml:space="preserve"><value>Accept offer</value></data>
+<data name="Decline" xml:space="preserve"><value>Decline</value></data>
+<data name="Close" xml:space="preserve"><value>Close</value></data>
+<data name="AgreementLabel" xml:space="preserve"><value>I confirm agreement with the current offer shown. For staff acceptance, record the customer agreement in the reason.</value></data>
+<data name="History" xml:space="preserve"><value>Staff history</value></data>
+<data name="Assigned" xml:space="preserve"><value>Assigned staff member</value></data>
+<data name="AccessLink" xml:space="preserve"><value>Save this private link to access your inquiry and offers. Do not share it with others.</value></data>
+<data name="Open" xml:space="preserve"><value>Open inquiry</value></data>
+<data name="Access" xml:space="preserve"><value>Inquiry access</value></data>
+<data name="FileRetry" xml:space="preserve"><value>After an error, select your attachments again.</value></data>
+<data name="Created" xml:space="preserve"><value>Created</value></data>
+<data name="NoOffer" xml:space="preserve"><value>No offer yet.</value></data>
+<data name="Saved" xml:space="preserve"><value>The inquiry has been saved.</value></data>
+<data name="StaffNew" xml:space="preserve"><value>New staff inquiry</value></data>
+<data name="ForOffer" xml:space="preserve"><value> (when issuing an offer)</value></data>
+<data name="ActionRequirements" xml:space="preserve"><value>Price, timeframe and description are required only for a new offer. Other actions need a reason; acceptance and phone confirmation also need the agreement checkbox.</value></data>
+<data name="PhoneClose" xml:space="preserve"><value>Confirmed by phone — close</value></data>
+<data name="Reload" xml:space="preserve"><value>Reload the current version before another action</value></data>
+<data name="Complete" xml:space="preserve"><value>Confirm offer</value></data>
+<data name="CompleteNewHelp" xml:space="preserve"><value>For the first confirmation enter items, prices, timeframe and description.</value></data>
+<data name="CompleteExistingHelp" xml:space="preserve"><value>Confirm the saved current offer with a note and agreement. Save a new version first to change its terms.</value></data>
+<data name="StatusDate" xml:space="preserve"><value>Status change / latest activity</value></data>
+<data name="Converted" xml:space="preserve"><value>Converted to order</value></data>
+<data name="OpenOrder" xml:space="preserve"><value>Open order</value></data>
+<data name="CreateOrder" xml:space="preserve"><value>Create staff order</value></data>
+<data name="OfferLinesInvalid" xml:space="preserve"><value>Check items, quantities, prices and services. A line comment is required for changed prices or individual manufacture.</value></data>
+<data name="DraftOnly" xml:space="preserve"><value>Form changes have not been saved as an offer.</value></data>
+<data name="Quantity" xml:space="preserve"><value>Quantity</value></data>
+<data name="UnitPrice" xml:space="preserve"><value>Agreed unit price</value></data>
+<data name="Total" xml:space="preserve"><value>Total</value></data>
+<data name="IndividualManufacture" xml:space="preserve"><value>Individual manufacture — separate readiness, no standard stock</value></data>
+<data name="Delivery" xml:space="preserve"><value>Delivery</value></data>
+<data name="DeliveryPending" xml:space="preserve"><value>To be calculated and agreed at order creation; excluded from this total.</value></data>
+<data name="DeliveryHelp" xml:space="preserve"><value>Agreed amount; 0 for free delivery. Leave blank to calculate and agree at order creation.</value></data>
+<data name="OfferItems" xml:space="preserve"><value>Offer items</value></data>
+<data name="SearchProduct" xml:space="preserve"><value>Product name or code (at least 2 characters)</value></data>
+<data name="Add" xml:space="preserve"><value>Add</value></data>
+<data name="CatalogPrice" xml:space="preserve"><value>Reference catalog price</value></data>
+<data name="ExecutionComment" xml:space="preserve"><value>Manufacture specification / reason for price</value></data>
+<data name="Remove" xml:space="preserve"><value>Remove</value></data>
+<data name="Services" xml:space="preserve"><value>Assembly and additional services</value></data>
+<data name="ServiceName" xml:space="preserve"><value>Service name</value></data>
+<data name="AddService" xml:space="preserve"><value>Add service</value></data>
+<data name="SearchProductButton" xml:space="preserve"><value>Search products</value></data>
+<data name="EditOffer" xml:space="preserve"><value>Edit offer</value></data>
+<data name="EditorHelp" xml:space="preserve"><value>Add items and services, then save the agreed terms.</value></data>
+<data name="SearchingProducts" xml:space="preserve"><value>Searching…</value></data>
+<data name="NoProducts" xml:space="preserve"><value>No products found. Try another name or code.</value></data>
+<data name="ProductSearchFailed" xml:space="preserve"><value>Search failed. Try again; your offer entries remain on this page.</value></data>
+<data name="ItemAdded" xml:space="preserve"><value>Added item:</value></data>
+<data name="ItemRemoved" xml:space="preserve"><value>The line was removed from the draft.</value></data>
+<data name="EditorLimit" xml:space="preserve"><value>The limit of 30 items or 20 services has been reached.</value></data>
+<data name="CheckAmounts" xml:space="preserve"><value>Enter valid quantities and amounts to see the total.</value></data>
+<data name="EmptyOfferLines" xml:space="preserve"><value>Search for a product by name or code and add it to the offer.</value></data>
+<data name="GoodsSubtotal" xml:space="preserve"><value>Items subtotal</value></data>
+<data name="DraftTotal" xml:space="preserve"><value>Current offer total</value></data>
+<data name="AcceptedDraftChanged" xml:space="preserve"><value>Save and accept a new version or restore the accepted offer before creating an order.</value></data>
+<data name="RestoreAccepted" xml:space="preserve"><value>Restore accepted offer</value></data>
+<data name="FieldRequired" xml:space="preserve"><value>This field is required.</value></data>
+<data name="FieldInvalid" xml:space="preserve"><value>Enter a valid value.</value></data>
+<data name="FieldQuantity" xml:space="preserve"><value>Enter a whole quantity from 1 to 99.</value></data>
+<data name="FieldPrice" xml:space="preserve"><value>Enter a positive price with up to two decimal places.</value></data>
+<data name="FieldComment" xml:space="preserve"><value>Describe the custom work or reason for the changed price.</value></data>
+<data name="FieldItems" xml:space="preserve"><value>Add at least one item.</value></data>
+</root>

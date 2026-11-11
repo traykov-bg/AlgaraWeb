@@ -128,7 +128,7 @@ namespace Algara.Web.Controllers
         public async Task<IActionResult> Detail(int n, int? variant = null)
         {
             var product = await _productRepository.GetByNAsync(n);
-            if (product == null || !product.IsActive) return NotFound();
+            if (product == null || !product.IsActive || product.IsStaffOnly) return NotFound();
             ViewData["SelectedVariantN"] = product.GetSelectableVariants()
                 .FirstOrDefault(candidate => candidate.N == variant)?.N ?? product.GetDefaultVariant()?.N;
             return View(product);

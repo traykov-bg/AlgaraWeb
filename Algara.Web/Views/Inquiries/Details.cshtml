@@ -1,0 +1,92 @@
+﻿@model Algara.Web.ViewModels.InquiryDetails
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+@{
+    Layout = Model.Staff ? "_AdminLayout" : "_Layout";
+    var inquiry = Model.Inquiry;
+    ViewData["Title"] = T["Title"] + " #" + inquiry.N;
+    var version = Model.Error == null ? Convert.ToBase64String(inquiry.RowVersion) : Model.Draft.Version;
+    var currentOffer = inquiry.Offers.OrderByDescending(x => x.N).FirstOrDefault();
+}
+<div class="container py-4 inquiry-detail" style="max-width:1100px">
+    <h1 class="h3">@T["Title"] #@inquiry.N</h1>
+    <p><strong class="inquiry-status">@T[inquiry.Status == InquiryStatus.New ? "NewStatus" : inquiry.Status.ToString()]</strong> · <client-time utc="@inquiry.UpdatedAtUtc"></client-time></p>
+    <p class="text-muted">@T["Notice"]</p>
+    @if (Model.Error != null && ViewData.ModelState.IsValid) { <div role="alert" class="alert @(Model.Error == "DraftOnly" ? "alert-info" : "alert-danger")">@T[Model.Error]</div> }
+    @if (Model.Error == "Changed") { <a asp-action="@(Model.Staff ? "StaffDetails" : "Details")" asp-route-n="@inquiry.N">@T["Reload"]</a> }
+    @if (Model.AccessLink != null) { <div class="alert alert-info">@T["AccessLink"] <a href="@Model.AccessLink">@T["Open"]</a></div> }
+    <div class="row g-3">
+        <div class="col-md-6"><h2 class="h5">@T["Name"]</h2><p>@inquiry.ContactName<br />@inquiry.Phone<br />@inquiry.Email</p></div>
+        <div class="col-md-6"><h2 class="h5">@T["Dimensions"] / @T["Materials"]</h2><p style="white-space:pre-wrap">@inquiry.Dimensions<br />@inquiry.Materials</p></div>
+    </div>
+    @if (inquiry.ProductN.HasValue) { <p>@T["Product"]: @inquiry.ProductName (#@inquiry.ProductN)</p> }
+    <h2 class="h5">@T["Description"]</h2><p style="white-space:pre-wrap">@inquiry.Description</p>
+    <h2 class="h5">@T["Attachments"]</h2>
+    <ul>@foreach (var file in Model.Attachments) { <li><a asp-action="@(Model.Staff ? "StaffDownload" : "Download")" asp-route-n="@inquiry.N" asp-route-id="@file.N">@file.FileName</a></li> }</ul>
+    @if (inquiry.OrderN.HasValue) { <p>@T["Converted"]: #@inquiry.OrderN · @Model.LinkedOrderStatus
+        @if (Model.Staff) { <a asp-controller="Admin" asp-action="OrderDetail" asp-route-n="@inquiry.OrderN" staff-permission="Orders.View">@T["OpenOrder"]</a> }</p> }
+    <h2 class="h4 mt-4">@T["Offers"]</h2>
+    @if (currentOffer == null) { <p>@T["NoOffer"]</p> }
+    @foreach (var offer in inquiry.Offers.OrderByDescending(x => x.N))
+    {
+        <section class="card mb-3"><div class="card-body">
+            <h3 class="h5">@T[offer.N == currentOffer?.N ? "Current" : "PreviousOffer"] #@offer.N · @offer.Price.ToString("N2") EUR</h3>
+            <p class="small text-muted"><client-time utc="@offer.AtUtc"></client-time> · @T["Price"]</p>
+            <partial name="_OfferLines" model="offer" />
+            <p style="white-space:pre-wrap">@offer.Description</p><strong>@T["Terms"]</strong><p style="white-space:pre-wrap">@offer.Terms</p>
+        </div></section>
+    }
+    @if (!Model.Staff && inquiry.Status is InquiryStatus.New or InquiryStatus.InProgress or InquiryStatus.Offered)
+    {
+        <form asp-action="Reply" asp-route-n="@inquiry.N" method="post" class="mb-4">
+            <input type="hidden" name="Version" value="@version" />
+            @if (inquiry.Status == InquiryStatus.Offered)
+            {
+                <div class="form-check mb-3">@Html.CheckBox("Agreement", Model.Draft.Agreement, new { id = "agreement", @class = "form-check-input" })<label for="agreement" class="form-check-label">@T["AgreementLabel"]</label></div>
+                <button name="Command" value="Accept" class="btn btn-primary">@T["Accept"]</button>
+            }
+            <button name="Command" value="Decline" class="btn btn-outline-secondary">@T["Decline"]</button>
+        </form>
+    }
+    @if (Model.CanManage)
+    {
+        <section class="card my-4 inquiry-workspace"><div class="card-header"><h2 class="h5 mb-1">@T["EditOffer"]</h2><p class="small mb-0">@T["EditorHelp"]</p></div><div class="card-body">
+        <form asp-action="Update" asp-route-n="@inquiry.N" method="post" novalidate data-offer-form data-existing-offer="@(currentOffer != null)" data-field-messages="@System.Text.Json.JsonSerializer.Serialize(new { required = T["FieldRequired"].Value, invalid = T["FieldInvalid"].Value, quantity = T["FieldQuantity"].Value, price = T["FieldPrice"].Value, comment = T["FieldComment"].Value, items = T["FieldItems"].Value, agreement = T["Agreement"].Value })" data-field-errors="@System.Text.Json.JsonSerializer.Serialize(ViewData.ModelState.Where(x => x.Value!.Errors.Count > 0).ToDictionary(x => x.Key, x => T[x.Value!.Errors[0].ErrorMessage.StartsWith("Field") || x.Value.Errors[0].ErrorMessage == "Agreement" ? x.Value.Errors[0].ErrorMessage : "FieldInvalid"].Value))" data-draft-error="@(Model.Error != null)" data-restore-scroll="@(Model.Error == null ? 0 : Model.Draft.ScrollY)">
+            <input type="hidden" name="ScrollY" value="@Model.Draft.ScrollY" />
+            <input type="hidden" name="Version" value="@version" />
+            <label for="note" class="form-label">@T["Reason"] *</label>@Html.TextArea("Note", Model.Draft.Note, new { id = "note", @class = "form-control mb-3", maxlength = "2000", required = "required" })
+            @if (Model.CanConvert && inquiry.Status is InquiryStatus.New or InquiryStatus.InProgress or InquiryStatus.Offered or InquiryStatus.Accepted)
+            {
+                <partial name="_OfferEditor" model="Model" />
+                <div class="row g-3 mb-3">
+                <div class="col-md-8"><label for="terms" class="form-label">@T["Terms"] *@T["ForOffer"]</label>@Html.TextArea("Terms", Model.Draft.Terms, new { id = "terms", maxlength = "1000", @class = "form-control" })</div></div>
+                <label for="offer-description" class="form-label">@T["Description"] *@T["ForOffer"]</label>@Html.TextArea("Description", Model.Draft.Description, new { id = "offer-description", maxlength = "4000", @class = "form-control mb-2", rows = "3" })
+                <p class="form-text">@T["OfferNotice"] @T[currentOffer == null ? "CompleteNewHelp" : "CompleteExistingHelp"]</p><button name="Command" value="Offer" class="btn btn-primary mb-2">@T["Offer"]</button>
+                @if (inquiry.Status != InquiryStatus.Accepted) { <button name="Command" value="Complete" formnovalidate="@(currentOffer != null)" formaction="@(currentOffer == null ? Url.Action("Update", new { n = inquiry.N }) : Url.Action("Complete", new { n = inquiry.N }))" class="btn btn-success mb-2">@T["Complete"]</button> }
+            }
+            @if (Model.Error != null && Model.Error != "DraftOnly" && ViewData.ModelState.IsValid) { <div class="alert alert-danger mt-3" role="alert" tabindex="-1" data-form-error>@T[Model.Error]</div> }
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button name="Command" value="Note" formnovalidate class="btn btn-outline-primary">@T["Note"]</button>
+                <button name="Command" value="Assign" formnovalidate class="btn btn-outline-primary">@T["Assign"]</button>
+                @if (inquiry.Status is InquiryStatus.New or InquiryStatus.InProgress or InquiryStatus.Offered) { <button name="Command" value="Decline" class="btn btn-outline-secondary">@T["Decline"]</button> }
+                @if (Model.CanConvert && inquiry.Status == InquiryStatus.Accepted) { <a asp-controller="Admin" asp-action="OrderFromInquiry" asp-route-n="@inquiry.N" class="btn btn-success" data-create-order>@T["CreateOrder"]</a> }
+                @if (inquiry.Status == InquiryStatus.Declined) { <button name="Command" value="Close" formnovalidate class="btn btn-outline-secondary">@T["Close"]</button> }
+            </div>
+            @if (inquiry.Status is InquiryStatus.New or InquiryStatus.InProgress or InquiryStatus.Offered or InquiryStatus.Accepted) { <div class="form-check mt-3">@Html.CheckBox("Agreement", Model.Draft.Agreement, new { id = "staff-agreement", @class = "form-check-input" })<label for="staff-agreement" class="form-check-label">@T["AgreementLabel"]</label></div> }
+            @if (Model.CanConvert && inquiry.Status == InquiryStatus.Accepted) { <div data-accepted-warning hidden class="alert alert-warning mt-2">@T["AcceptedDraftChanged"] <a asp-action="StaffDetails" asp-route-n="@inquiry.N">@T["RestoreAccepted"]</a></div> }
+            <span id="agreement-error" class="text-danger d-block" data-agreement-error hidden="@(Model.Error != "Agreement")">@T["Agreement"]</span>
+        </form></div></section>
+    }
+    @if (Model.Staff)
+    {
+        <p>@T["Channel"]: @inquiry.Channel</p>
+        @if (inquiry.AssignedStaffId != null) { <p>@T["Assigned"]: @inquiry.Events.OrderByDescending(x => x.N).FirstOrDefault(x => x.ActorId == inquiry.AssignedStaffId)?.ActorName</p> }
+        <h2 class="h4">@T["History"]</h2>
+        @foreach (var item in inquiry.Events.OrderByDescending(x => x.N))
+        {
+            <div class="border-bottom py-2"><strong><client-time utc="@item.AtUtc"></client-time> · @item.ActorName · @T[item.Action]</strong><p style="white-space:pre-wrap" class="mb-1">@item.Note</p></div>
+        }
+    }
+</div>
+
+@section Styles { <link rel="stylesheet" href="~/css/inquiry-editor.css" asp-append-version="true" /> }
+@section Scripts { <script src="~/js/client-time.js" asp-append-version="true"></script><script src="~/js/inquiry-editor.js" asp-append-version="true"></script> }

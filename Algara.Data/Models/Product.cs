@@ -21,6 +21,7 @@
         public int? StockQuantity { get; set; }
         public byte[] RowVersion { get; set; } = [];
         public bool IsFeatured { get; set; } = false;
+        public bool IsStaffOnly { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

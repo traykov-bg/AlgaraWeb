@@ -1,0 +1,52 @@
+﻿@model Algara.Web.ViewModels.InquiryDetails
+@using Algara.Data.Models
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+<div class="offer-editor" data-offer-editor data-search-url="@Url.Action("Products", "Inquiries")"
+     data-searching="@T["SearchingProducts"]" data-empty="@T["NoProducts"]" data-search-error="@T["ProductSearchFailed"]"
+     data-search-hint="@T["SearchProduct"]" data-add-label="@T["Add"]" data-added="@T["ItemAdded"]"
+     data-removed="@T["ItemRemoved"]" data-limit="@T["EditorLimit"]" data-invalid="@T["CheckAmounts"]"
+     data-pending="@T["DeliveryPending"]" data-services-label="@T["Services"]">
+<section class="offer-section offer-products">
+    <div class="offer-section-title"><span class="offer-step" aria-hidden="true">1</span><h3 class="h5 mb-0">@T["OfferItems"]</h3></div>
+    <label for="product-search" class="form-label">@T["SearchProduct"]</label>
+    <div class="offer-search-bar">
+    @Html.TextBox("ProductSearch", Model.Draft.ProductSearch, new { id="product-search", maxlength="100", @class="form-control", autocomplete="off", aria_controls="offer-product-results" })
+    <button name="Command" value="Search" formnovalidate data-offer-action="search" class="btn btn-primary">@T["SearchProductButton"]</button>
+    </div>
+    <p class="offer-search-status small mt-2 mb-0" role="status" aria-live="polite" data-search-status></p>
+    <div id="offer-product-results" class="offer-search-results" data-search-results>
+    @foreach(var choice in Model.Choices) {
+        <div class="offer-search-result" data-search-choice>
+            <button name="Command" value="Add:@choice.ProductN:@(choice.VariantN ?? 0)" formnovalidate data-offer-action="add-choice" data-choice="@System.Text.Json.JsonSerializer.Serialize(choice, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })" class="btn btn-outline-primary btn-sm">@T["Add"]</button>
+            <span>@choice.Name @choice.VariantName @choice.Sku · @choice.CatalogUnitPrice.ToString("N2") €</span>
+        </div>
+    }
+    </div>
+    <p class="offer-empty" data-empty-lines hidden="@(Model.Draft.Lines.Count > 0)">@T["EmptyOfferLines"]</p>
+    <div data-offer-lines>
+    @for(var i=0;i<Model.Draft.Lines.Count;i++) {
+        <partial name="_OfferLineEditor" model="@((i.ToString(), Model.Draft.Lines[i]))" />
+    }
+    </div>
+</section>
+<section class="offer-section offer-services">
+    <div class="offer-section-title"><span class="offer-step" aria-hidden="true">2</span><h3 class="h5 mb-0">@T["Services"]</h3></div>
+    <div data-offer-services>
+    @for(var i=0;i<Model.Draft.Services.Count;i++) {
+        <partial name="_OfferServiceEditor" model="@((i.ToString(), Model.Draft.Services[i]))" />
+    }
+    </div>
+    <button name="Command" value="AddService" formnovalidate data-offer-action="add-service" class="btn btn-outline-primary">+ @T["AddService"]</button>
+    <div class="offer-delivery mt-3"><label for="offer-delivery" class="form-label">@T["Delivery"]</label>@Html.TextBox("DeliveryAmount", Model.Draft.DeliveryAmount, new { id="offer-delivery", inputmode="decimal", @class="form-control" })<p class="form-text mb-0">@T["DeliveryHelp"]</p></div>
+</section>
+<aside class="offer-summary" data-offer-summary hidden>
+    <div><span>@T["GoodsSubtotal"]</span><strong data-goods-total>—</strong></div>
+    <div><span>@T["Services"]</span><strong data-services-total>—</strong></div>
+    <div><span>@T["Delivery"]</span><strong data-delivery-total>—</strong></div>
+    <div class="offer-grand-total"><span>@T["DraftTotal"]</span><strong data-grand-total>—</strong></div>
+    <p class="small mb-0" data-total-note></p>
+</aside>
+<p class="small text-muted" role="status" aria-live="polite" data-editor-status></p>
+<template data-line-template><partial name="_OfferLineEditor" model="@(("__index__", new AgreedOfferLine()))" /></template>
+<template data-service-template><partial name="_OfferServiceEditor" model="@(("__index__", new AgreedService("", 0)))" /></template>
+</div>

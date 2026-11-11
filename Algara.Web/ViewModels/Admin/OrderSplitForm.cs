@@ -18,6 +18,8 @@ public sealed class SplitDestination
 public sealed class OrderSplitForm
 {
  public string Version { get; set; } = "";
+ [Microsoft.AspNetCore.Mvc.ModelBinder(BinderType=typeof(Algara.Web.Services.Inquiries.ServiceAmountsBinder))]
+ public Dictionary<int,decimal> ServiceAmounts { get; set; } = [];
  public Dictionary<int,int> Quantities { get; set; } = [];
  public SplitDestination Remaining { get; set; } = new();
  public SplitDestination Separated { get; set; } = new();

@@ -56,6 +56,7 @@ else
                        data-price="@Money(Model.GetVariantPrice(variant, pricingAt))"
                        data-original="@Money(Model.GetVariantOriginalPrice(variant, pricingAt))"
                        data-status="@T["Availability" + Model.GetAvailability(variant)]"
+                       data-inquiry="@(Model.GetAvailability(variant) != ProductAvailability.InStock ? "true" : "false")"
                        data-image="@(string.IsNullOrWhiteSpace(variantImage) ? "" : Url.Content(variantImage))"
                        data-exact-image="@(exactImage ? "true" : "false")">
                         <span class="algara-variant-picker__swatch" style="background-color:@swatchHex">

@@ -1,0 +1,8 @@
+﻿@model (string Index, Algara.Data.Models.AgreedService Service)
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+@{ var i=Model.Index; var prefix=$"Services[{i}]"; }
+<div class="offer-service" data-offer-service>
+    <div><label for="service-@i-Name" data-label-field="Name">@T["ServiceName"]</label>@Html.TextBox(prefix+".Name", Model.Service.Name, new { id=$"service-{i}-Name", data_field="Name", maxlength="100", @class="form-control" })</div>
+    <div><label for="service-@i-Amount" data-label-field="Amount">@T["Price"]</label>@Html.TextBox(prefix+".Amount", Model.Service.Amount, new { id=$"service-{i}-Amount", data_field="Amount", inputmode="decimal", @class="form-control" })</div>
+    <button name="Command" value="RemoveService:@i" formnovalidate data-offer-action="remove-service" class="btn btn-outline-danger">@T["Remove"]</button>
+</div>

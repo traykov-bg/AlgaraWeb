@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
     <style>
         :root { --admin-sidebar: 230px; }
 
@@ -86,6 +87,7 @@
 
         <div class="flex-grow-1 pt-2">
             <div class="nav-section">Управление</div>
+            <a class="nav-link" asp-controller="Inquiries" asp-action="Index" staff-permission="Inquiries.View"><i class="bi bi-chat-square-text"></i> Запитвания</a>
             <ul class="nav flex-column">
                 <li>
                     <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"

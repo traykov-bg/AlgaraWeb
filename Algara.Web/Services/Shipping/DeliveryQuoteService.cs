@@ -8,7 +8,8 @@ public enum DeliveryMethod { Pickup = 0, OwnTransport = 1, EcontOffice = 2, Econ
 public sealed record DeliveryQuote(decimal GoodsAmount, decimal DeliveryAmount, DateTimeOffset CalculatedAt,
     double? DistanceKm = null, string? ResolvedAddress = null, bool IsTest = false, CourierOffice? Office = null)
 {
-    public decimal Total => GoodsAmount + DeliveryAmount;
+    public decimal ServicesAmount { get; init; }
+    public decimal Total => GoodsAmount + DeliveryAmount + ServicesAmount;
 }
 public sealed record DeliveryQuoteResult(DeliveryQuote? Quote = null, string? ErrorKey = null);
 
@@ -22,8 +23,8 @@ public sealed class DeliveryQuoteService(IDeliverySettingsReader settings, ICour
         DeliveryMethod.SpeedyOffice or DeliveryMethod.SpeedyAddress => CourierProvider.Speedy,
         _ => null
     };
-    public static bool AllowsCourier(CartSnapshot cart) => cart.CanQuote && cart.Lines.All(x => x.Product is { AllowsCourier: true });
-    public static bool AllowsOwnTransport(CartSnapshot cart) => cart.CanQuote && cart.Lines.Any(x => x.Product is { AllowsCourier: false });
+    public static bool AllowsCourier(CartSnapshot cart) => cart.CanQuote && cart.Lines.All(x => !x.IndividualManufacture && x.Product is { AllowsCourier: true });
+    public static bool AllowsOwnTransport(CartSnapshot cart) => cart.CanQuote && cart.Lines.Any(x => x.IndividualManufacture || x.Product is { AllowsCourier: false });
     public static bool TryBuildParcels(CartSnapshot cart, out IReadOnlyList<CourierParcel> parcels)
     {
         var result = new List<CourierParcel>();

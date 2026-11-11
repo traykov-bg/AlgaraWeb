@@ -25,6 +25,7 @@ public sealed class CartLine
     public required CartEntry Entry { get; init; }
     public Product? Product { get; init; }
     public ProductVariant? Variant { get; init; }
+    public bool IndividualManufacture { get; init; }
     public decimal? UnitPrice { get; init; }
     public decimal? LineTotal => UnitPrice * Entry.Quantity;
     public ProductAvailability Availability { get; init; }

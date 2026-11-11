@@ -10,6 +10,11 @@ public sealed class StaffOrderForm
 {
     [Required, StringLength(20)] public string Channel { get; set; } = "Phone";
     [Range(1, int.MaxValue)] public int PartnerN { get; set; }
+    public int? InquiryN { get; set; }
+    public int? InquiryOfferN { get; set; }
+    public string? InquiryVersion { get; set; }
+    [BindNever, ValidateNever] public List<AgreedOfferLine> AgreedLines { get; set; } = [];
+    [BindNever, ValidateNever] public List<AgreedService> AgreedServices { get; set; } = [];
     public bool Storefront { get; set; }
     [Range(1, int.MaxValue)] public int? CopiedFromOrderN { get; set; }
     public int? CustomerUserN { get; set; }

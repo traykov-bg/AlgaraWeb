@@ -24,7 +24,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
  private sealed record Ticket(string Fingerprint, DateTimeOffset Expires);
  public static bool AllowsSandbox(string? environmentName) => string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase);
  public static bool CanSplit(Order order) => order.SubmissionId != null && order.Status == OrderStatus.Confirmed && string.IsNullOrEmpty(order.WaybillNumber);
- public static int ReadyQuantity(OrderItem item) => Math.Max(item.ReservedQuantity, item.DeductedQuantity);
+ public static int ReadyQuantity(OrderItem item) => item.IndividualManufacture ? item.ReadyQuantity : Math.Max(item.ReservedQuantity, item.DeductedQuantity);
  public async Task<int?> RunAsync(int n, OrderSplitForm form, ClaimsPrincipal actor, bool submit, CancellationToken ct)
  {
   form.Error = null;
@@ -58,12 +58,14 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   if (!CanSplit(order) || Convert.ToBase64String(order.RowVersion)!=form.Version) return Fail("Разделяне е възможно само за непроменена потвърдена поръчка без товарителница.");
   if (string.IsNullOrWhiteSpace(form.Reason) || form.Reason.Length > 500 || form.Reason.Any(char.IsControl)) return Fail("Посочете кратко основание за разделянето.");
   if (form.Quantities.Keys.Any(id=>order.OrderItems.All(i=>i.N!=id))) return Fail("Невалидни артикули.");
+  var allocation=AgreedOffer.SplitServices(AgreedOffer.Services(order.ServicesJson),form.ServiceAmounts);
+  if(allocation==null)return Fail("Проверете разпределението на услугите; общата стойност трябва да се запази.");
   var moved = new List<CartLine>(); var retained = new List<CartLine>();
   foreach(var item in order.OrderItems.OrderBy(i=>i.N))
   {
    var quantity=form.Quantities.GetValueOrDefault(item.N);
    if(quantity<0 || quantity>item.Quantity || quantity>ReadyQuantity(item)) return Fail("Изберете само наличната част за отделяне и оставете артикули в първоначалната поръчка.");
-   if(quantity>0) moved.Add(new CartLine{Entry=new(item.ProductN,item.VariantN,quantity),Product=item.Product,UnitPrice=item.UnitPrice});
+   if(quantity>0) moved.Add(new CartLine{Entry=new(item.ProductN,item.VariantN,quantity),Product=item.Product,UnitPrice=item.UnitPrice,IndividualManufacture=item.IndividualManufacture});
    if(quantity<item.Quantity) retained.Add(new CartLine{Entry=new(item.ProductN,item.VariantN,item.Quantity-quantity),Product=item.Product,UnitPrice=item.UnitPrice});
   }
   if(moved.Count==0 || retained.Count==0) return Fail("И двете поръчки трябва да съдържат поне един артикул.");
@@ -79,14 +81,16 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   }
   var left=await Quote(leftCart,form.Remaining); var right=await Quote(rightCart,form.Separated);
   if(left.Quote==null || right.Quote==null) return Fail("Доставката не може да бъде изчислена. Проверете допустимия транспорт, адресите и избраните офиси. ");
-  var testQuote = left.Quote.IsTest || right.Quote.IsTest;
+  left=new(left.Quote with { ServicesAmount=allocation.Value.Remaining.Sum(s=>s.Amount) });
+  right=new(right.Quote with { ServicesAmount=allocation.Value.Separated.Sum(s=>s.Amount) });
+  var testQuote = left.Quote!.IsTest || right.Quote!.IsTest;
   if(testQuote && !AllowsSandbox(environment?.EnvironmentName)) return Fail("Тестова куриерска калкулация може да се използва за разделяне само в среда Development.");
   form.RemainingQuote=left.Quote;form.SeparatedQuote=right.Quote;
   var fingerprint=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
    n,form.Version,Actor=actor.FindFirstValue(ClaimTypes.NameIdentifier),Session=actor.FindFirstValue("SessionId"),Stamp=actor.FindFirstValue("SecurityStamp"),form.Reason,
-   Quantities=form.Quantities.OrderBy(p=>p.Key),
-   Left=DestinationSnapshot(form.Remaining,left.Quote),Right=DestinationSnapshot(form.Separated,right.Quote),
-   LeftTotal=left.Quote.Total,RightTotal=right.Quote.Total
+   Quantities=form.Quantities.OrderBy(p=>p.Key),Services=form.ServiceAmounts.OrderBy(p=>p.Key),
+   Left=DestinationSnapshot(form.Remaining,left.Quote),Right=DestinationSnapshot(form.Separated,right.Quote!),
+   LeftTotal=left.Quote.Total,RightTotal=right.Quote!.Total
   }))));
   if(!submit){form.PreviewToken=protector.Protect(JsonSerializer.Serialize(new Ticket(fingerprint,clock.GetUtcNow().AddMinutes(15))));return null;}
   Ticket? ticket=null;
@@ -94,7 +98,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   catch(Exception ex) when(ex is CryptographicException or JsonException) { }
   if(!form.CustomerAgreed || ticket?.Fingerprint!=fingerprint || ticket.Expires<=clock.GetUtcNow()) return Fail("Изчислете отново и потвърдете, че клиентът е приел двете нови суми.");
   var guest=AccountEmailRules.Issue();var now=clock.GetUtcNow().UtcDateTime;
-  var child=new Order{SplitFromN=order.N,UserN=order.UserN,PartnerN=order.PartnerN,PartnerSnapshot=order.PartnerSnapshot,CreationChannel=order.CreationChannel,CreatedByStaffId=order.CreatedByStaffId,SubmissionId=guest.Id,GuestTokenHash=guest.Hash,ContactName=order.ContactName,
+  var child=new Order{InquiryN=order.InquiryN,InquiryOfferN=order.InquiryOfferN,ServicesJson=JsonSerializer.Serialize(allocation.Value.Separated),SplitFromN=order.N,UserN=order.UserN,PartnerN=order.PartnerN,PartnerSnapshot=order.PartnerSnapshot,CreationChannel=order.CreationChannel,CreatedByStaffId=order.CreatedByStaffId,SubmissionId=guest.Id,GuestTokenHash=guest.Hash,ContactName=order.ContactName,
    ContactEmail=order.ContactEmail,ContactPhone=order.ContactPhone,Comment=order.Comment,InvoiceDetails=order.InvoiceDetails,
    Status=OrderStatus.Confirmed,CreatedAt=now,ConfirmedAtUtc=order.ConfirmedAtUtc,TermsAcceptedAtUtc=order.TermsAcceptedAtUtc,
    DeliverySnapshot=DestinationSnapshot(form.Separated,right.Quote),DeliveryAmount=right.Quote.DeliveryAmount,TotalAmount=right.Quote.Total};
@@ -105,9 +109,10 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
    child.OrderItems.Add(OrderSplitQuantities.Transfer(item,quantity));
    if(item.Quantity==0){db.OrderItems.Remove(item);order.OrderItems.Remove(item);}
   }
+  order.ServicesJson=JsonSerializer.Serialize(allocation.Value.Remaining);
   order.DeliverySnapshot=DestinationSnapshot(form.Remaining,left.Quote);order.DeliveryAmount=left.Quote.DeliveryAmount;order.TotalAmount=left.Quote.Total;order.UpdatedAt=now;
   db.Orders.Add(child);await db.SaveChangesAsync(ct);
-  var details=JsonSerializer.Serialize(new { Parent=order.N,Child=child.N,BeforeTotal=beforeTotal,RemainingTotal=order.TotalAmount,SeparatedTotal=child.TotalAmount,IsTest=testQuote,form.Reason });
+  var details=JsonSerializer.Serialize(new { Parent=order.N,Child=child.N,BeforeTotal=beforeTotal,RemainingTotal=order.TotalAmount,SeparatedTotal=child.TotalAmount,IsTest=testQuote,Services=form.ServiceAmounts,form.Reason });
   foreach(var target in new[]{order,child}) db.Set<OrderEvent>().Add(new OrderEvent{OrderN=target.N,Action="Split",Status=target.Status,ActorId=actor.FindFirstValue(ClaimTypes.NameIdentifier)!,OccurredAtUtc=now,Details=details});
   if(email != null) identity.EmailOutboxMessages.Add(outbox.Create(email,(testQuote ? "[TEST] " : "")+"Algara / Алгара — разделяне на поръчка #"+order.N,
    (testQuote ? "Тестова куриерска калкулация. / Test courier quote. " : "") + $"По съгласуване с Вас поръчка #{order.N} е разделена. Оставаща поръчка: {order.TotalAmount:N2} EUR. Нова поръчка #{child.N}: {child.TotalAmount:N2} EUR. / Your order was split as agreed. Remaining order: {order.TotalAmount:N2} EUR. New order #{child.N}: {child.TotalAmount:N2} EUR.",site+"/Checkout/Access#"+guest.LinkValue,null,null));

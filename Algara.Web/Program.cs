@@ -33,7 +33,7 @@ try
     builder.Host.UseNLog();
 
     // Add services to the container.
-    builder.Services.AddControllersWithViews(options => options.Conventions.Add(new StaffPermissionConvention()));
+    builder.Services.AddControllersWithViews(options => { options.Conventions.Add(new StaffPermissionConvention()); options.ModelBinderProviders.Insert(0,new Algara.Web.Services.Inquiries.InquiryMoneyBinderProvider()); });
     builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
     builder.Services.Configure<RequestLocalizationOptions>(CatalogLocalization.Configure);
 
@@ -102,6 +102,10 @@ try
     builder.Services.AddScoped<Algara.Web.Services.Checkout.OrderLifecycleService>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.OrderSplitService>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.StaffOrderService>();
+    builder.Services.AddScoped<Algara.Web.Services.Inquiries.InquiryService>();
+    builder.Services.AddScoped<Algara.Web.Services.ClientTimeDisplay>();
+    builder.Services.AddScoped<Algara.Web.Services.Inquiries.InquiryFiles>();
+    builder.Services.AddScoped<Algara.Web.Services.ProductImageStorage>();
     builder.Services.AddScoped<Algara.Web.Services.Checkout.GuestOrderLinkService>();
     builder.Services.AddHostedService<Algara.Web.Services.Checkout.ReservationExpiryWorker>();
     builder.Services.AddSingleton<Algara.Web.Services.Shipping.DeliverySecretProtector>();
@@ -117,6 +121,9 @@ try
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("Inquiries", context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            { PermitLimit = 12, Window = TimeSpan.FromMinutes(10), QueueLimit = 0, AutoReplenishment = true }));
         options.AddPolicy("DeliveryQuotes", context => RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
             {

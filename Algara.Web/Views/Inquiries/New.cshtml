@@ -1,0 +1,36 @@
+﻿@model Algara.Web.ViewModels.InquiryForm
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+@{
+    Layout = Model.Staff ? "_AdminLayout" : "_Layout";
+    ViewData["Title"] = T[Model.Staff ? "StaffNew" : "New"];
+}
+<div class="container py-4" style="max-width:1000px">
+    <h1 class="h3">@ViewData["Title"]</h1>
+    <p class="text-muted">@T["Notice"]</p>
+    @if (!Model.Staff && User.Identity?.IsAuthenticated == true) { <a asp-action="Mine">@T["Mine"]</a> }
+    @if (Model.Error != null) { <div class="alert alert-danger" role="alert">@T[Model.Error] @T["FileRetry"]</div> }
+    <form asp-action="@(Model.Staff ? "StaffCreate" : "Create")" method="post" enctype="multipart/form-data" class="mt-3">
+        <input asp-for="SubmissionToken" type="hidden" /><input asp-for="ProductN" type="hidden" /><input asp-for="VariantN" type="hidden" /><input asp-for="Quantity" type="hidden" />
+        <div asp-validation-summary="All" class="text-danger"></div>
+        @if (Model.ProductSelection != null) { <div class="alert alert-light border" style="white-space:pre-wrap">@Model.ProductSelection</div> }
+        <div class="row g-3">
+            <div class="col-md-8"><label asp-for="ContactName" class="form-label">@T["Name"] *</label><input asp-for="ContactName" class="form-control" maxlength="121" required autocomplete="name" /></div>
+            <div class="col-md-4"><label asp-for="Phone" class="form-label">@T["Phone"] *</label><input asp-for="Phone" class="form-control" maxlength="20" required autocomplete="tel" /></div>
+            <div class="col-md-6"><label asp-for="Email" class="form-label">@T["Email"]</label><input asp-for="Email" type="email" class="form-control" maxlength="256" autocomplete="email" /></div>
+            <div class="col-md-6"><label asp-for="Dimensions" class="form-label">@T["Dimensions"]</label><input asp-for="Dimensions" class="form-control" maxlength="500" placeholder="cm" /></div>
+            <div class="col-12"><label asp-for="Materials" class="form-label">@T["Materials"]</label><input asp-for="Materials" class="form-control" maxlength="1000" /></div>
+            <div class="col-12"><label asp-for="Description" class="form-label">@T["Description"] *</label><textarea asp-for="Description" class="form-control" rows="5" maxlength="4000" required></textarea></div>
+            <div class="col-12"><label asp-for="Files" class="form-label">@T["Attachments"]</label><input asp-for="Files" type="file" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" aria-describedby="file-help" /><div id="file-help" class="form-text">@T["Files"]</div></div>
+            @if (Model.Staff)
+            {
+                <div class="col-md-4"><label asp-for="Channel" class="form-label">@T["Channel"]</label><select asp-for="Channel" class="form-select"><option value="Phone">@T["PhoneChannel"]</option><option value="InStore">@T["InStore"]</option></select></div>
+                <div class="col-md-8"><label asp-for="Reason" class="form-label">@T["Reason"] *</label><textarea asp-for="Reason" class="form-control" maxlength="2000" required></textarea></div>
+            }
+            else
+            {
+                <div class="col-12 form-check ms-2"><input asp-for="Consent" class="form-check-input" required /><label asp-for="Consent" class="form-check-label">@T["Consent"]</label> <a asp-controller="Home" asp-action="Privacy">@T["Details"]</a></div>
+            }
+        </div>
+        <button class="btn algara-btn-primary mt-4" type="submit">@T["Submit"]</button>
+    </form>
+</div>

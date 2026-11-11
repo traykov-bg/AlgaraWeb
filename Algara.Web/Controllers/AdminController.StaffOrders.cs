@@ -22,6 +22,8 @@ public partial class AdminController
     [HttpPost("orders/create"),ValidateAntiForgeryToken,EnableRateLimiting("DeliveryQuotes"),RequirePermission("Orders.View","Orders.Create","Partners.View")]
     public async Task<IActionResult> OrderCreate(StaffOrderForm form,string? command,[FromServices] StaffOrderService service)
     {
+        if(form.InquiryN.HasValue && (!await new StaffAccessService(_identityDb).HasPermissionAsync(User,PermissionCatalog.Inquiries.View,HttpContext.RequestAborted) || !await new StaffAccessService(_identityDb).HasPermissionAsync(User,PermissionCatalog.Inquiries.Manage,HttpContext.RequestAborted))) return Forbid();
+        if(form.InquiryN.HasValue && (command?.StartsWith("add:")==true || command?.StartsWith("remove:")==true)) return BadRequest();
         if(form.Lines.Count>CartService.MaxLines) return BadRequest();
         if(command?.StartsWith("add:",StringComparison.Ordinal)==true)
         {
@@ -39,7 +41,7 @@ public partial class AdminController
         { form.PartnerN=partner;form.CustomerUserN=null; }
         else if(command=="offices")
         {
-            form.Cart=await service.ReadCartAsync(form.Lines);
+            form.Cart=await service.ReadCartAsync(form);
             var delivery=HttpContext.RequestServices.GetRequiredService<Algara.Web.Services.Shipping.DeliveryQuoteService>();
             var result=await delivery.OfficesAsync(form.Cart,form.Destination.Method,form.Destination.City,HttpContext.RequestAborted);
             if(result.Success) { form.Destination.Offices=result.Offices; if(!result.Offices.Any(o=>o.Code==form.Destination.OfficeCode))form.Destination.OfficeCode=null; }
@@ -61,7 +63,7 @@ public partial class AdminController
         if(command is not ("preview" or "submit"))form.PreviewToken=null;
         form.CustomerAgreed=false;
         ModelState.Clear();
-        form.Cart=await service.ReadCartAsync(form.Lines);
+        form.Cart=await service.ReadCartAsync(form);
         await LoadStaffOrderAsync(form);
         if(command?.StartsWith("partner:",StringComparison.Ordinal)==true && form.Customers.SingleOrDefault(c=>c.N==form.CustomerUserN) is {} selected)
         {
@@ -76,6 +78,7 @@ public partial class AdminController
         var ct=HttpContext.RequestAborted;
         var order=await _shopDb.Orders.AsNoTracking().Include(o=>o.OrderItems).SingleOrDefaultAsync(o=>o.N==n,ct);
         if(order==null)return NotFound();
+        if(order.InquiryN.HasValue){TempData["Error"]="За индивидуална изработка създайте ново запитване и съгласувайте условията.";return RedirectToAction(nameof(OrderDetail),new{n});}
         var form=StaffOrderService.CopyForm(order,tokens.Issue(StaffOrderService.Owner(User)));
         if(form.PartnerN==0&&order.UserN.HasValue)
             form.PartnerN=await _shopDb.PartnerAccountLinks.Where(l=>l.UserN==order.UserN).Select(l=>l.PartnerN).SingleOrDefaultAsync(ct)??0;
@@ -90,7 +93,7 @@ public partial class AdminController
             form.CustomerUserN=null;
             form.Error="Акаунтът от първоначалната поръчка вече не е достъпен за избор. Проверете клиента за новата поръчка.";
         }
-        form.Cart=await service.ReadCartAsync(form.Lines);
+        form.Cart=await service.ReadCartAsync(form);
         return View("OrderCreate",form);
     }
     [HttpGet("orders/create/search"),RequirePermission("Orders.View","Orders.Create","Partners.View")]
@@ -108,7 +111,7 @@ public partial class AdminController
             return Json(matches.Select(p=>new {command="partner:"+p.N,label=p.Code+" — "+p.SiteName}));
         }
         if(kind!="products")return BadRequest();
-        var ids=await _shopDb.Products.AsNoTracking().Where(p=>p.IsActive&&(p.Name.Contains(q)||p.Sku.Contains(q)||p.Variants.Any(v=>v.Sku.Contains(q))))
+        var ids=await _shopDb.Products.AsNoTracking().Where(p=>p.IsActive&&!p.IsStaffOnly&&(p.Name.Contains(q)||p.Sku.Contains(q)||p.Variants.Any(v=>v.Sku.Contains(q))))
             .OrderBy(p=>p.Name).Select(p=>p.N).Take(20).ToListAsync(ct);
         var choices=new List<object>();var repo=new ProductRepository(_shopDb);
         foreach(var id in ids)

@@ -19,7 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 namespace Algara.Web.Services.Checkout;
 
-public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService delivery, CheckoutTokens tokens,
+public sealed partial class StaffOrderService(ShopDbContext db, DeliveryQuoteService delivery, CheckoutTokens tokens,
     EmailDeliveryReadiness readiness, EmailOutboxFactory outbox, TimeProvider clock, IHostEnvironment? environment = null)
 {
     public static string Owner(ClaimsPrincipal actor) => "staff-order:" + CheckoutService.Owner(actor) + ":" + actor.FindFirstValue("SessionId") + ":" + actor.FindFirstValue("SecurityStamp");
@@ -43,9 +43,9 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         !string.IsNullOrWhiteSpace(form.ContactName) && !string.IsNullOrWhiteSpace(form.Phone) && !string.IsNullOrWhiteSpace(form.Reason) &&
         !form.ContactName.Any(char.IsControl) && !form.Phone.Any(char.IsControl) && !form.Reason.Any(char.IsControl) &&
         (string.IsNullOrWhiteSpace(form.Email) || AccountEmailRules.NormalizeEmail(form.Email) != null) &&
-        form.Lines.Count is > 0 and <= CartService.MaxLines && AccountCartStore.ValidIdentities(form.Lines) &&
+        form.Lines.Count is > 0 and <= CartService.MaxLines && (form.InquiryN.HasValue ? form.Lines.All(l=>l.ProductN>0 && (l.VariantN==null||l.VariantN>0)) : AccountCartStore.ValidIdentities(form.Lines)) &&
         form.Lines.All(l => l.Quantity is > 0 and <= CartService.MaxQuantity) &&
-        form.Lines.Select(l => (l.ProductN,l.VariantN)).Distinct().Count() == form.Lines.Count;
+        (form.InquiryN.HasValue || form.Lines.Select(l => (l.ProductN,l.VariantN)).Distinct().Count() == form.Lines.Count);
     }
 
     public async Task<CartSnapshot> ReadCartAsync(IReadOnlyList<CartEntry> entries)
@@ -64,7 +64,7 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         var priced = CheckoutTokens.Fingerprint(cart,new CheckoutForm { Method=destination.Method,City=destination.City,
             PostalCode=destination.PostalCode,Address=destination.Address,OfficeCode=destination.OfficeCode },quote);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
-            priced, form.Storefront,form.CopiedFromOrderN,form.Channel,form.PartnerN,form.CustomerUserN,form.ContactName,form.Email,form.Phone,form.Reason,
+            priced, form.InquiryN,form.InquiryOfferN,form.InquiryVersion,quote.ServicesAmount,form.Storefront,form.CopiedFromOrderN,form.Channel,form.PartnerN,form.CustomerUserN,form.ContactName,form.Email,form.Phone,form.Reason,
             form.Comment,form.InvoiceDetails,destination.AddressDetails,partnerSnapshot,linkVersion
         }))));
     }
@@ -80,6 +80,7 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         int? Fail(string message) { form.Error=message;form.PreviewToken=null;return null; }
         var ticket=tokens.Read(form.SubmissionToken,Owner(actor));
         if(ticket==null) return Fail("Формата е изтекла. Отворете нова служебна поръчка.");
+        if(form.InquiryN.HasValue) form.Cart=await ReadCartAsync(form);
         if(!Valid(form)) return Fail("Проверете клиента, контакта, основанието и артикулите.");
         if(submit && form.Destination.Method==DeliveryMethod.OwnTransport &&
             (string.IsNullOrWhiteSpace(form.Destination.Address) || form.Destination.Address.Any(char.IsControl))) return Fail("Въведете адрес за доставка.");
@@ -101,6 +102,20 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         db.ChangeTracker.Clear();
         var existing=await db.Orders.AsNoTracking().SingleOrDefaultAsync(o=>o.SubmissionId==ticket.Id,ct);
         if(existing!=null) return existing.CreatedByStaffId==CheckoutService.Owner(actor)?existing.N:Fail("Невалидна поръчка.");
+        FurnitureInquiry? inquiry = null;
+        InquiryOffer? acceptedOffer = null;
+        if(form.InquiryN.HasValue) {
+            foreach(var permission in new[]{PermissionCatalog.Inquiries.View,PermissionCatalog.Inquiries.Manage})
+                if(!await access.HasPermissionAsync(actor,permission,ct)) return Fail("Нямате право за поръчка по оферта.");
+            inquiry=await db.Set<FurnitureInquiry>().Include(i=>i.Offers).SingleOrDefaultAsync(i=>i.N==form.InquiryN,ct);
+            if(inquiry?.Status!=InquiryStatus.Accepted || inquiry.OrderN.HasValue || Convert.ToBase64String(inquiry.RowVersion)!=form.InquiryVersion)
+                return Fail("Офертата е променена или вече има поръчка. Презаредете запитването.");
+            acceptedOffer=inquiry.Offers.OrderByDescending(o=>o.N).FirstOrDefault();
+            if(acceptedOffer==null || acceptedOffer.N!=form.InquiryOfferN || acceptedOffer.LinesJson==null || form.Storefront || form.CopiedFromOrderN.HasValue)
+                return Fail("Запишете и потвърдете оферта с артикули преди създаване на поръчката.");
+        }
+        if(form.CopiedFromOrderN.HasValue&&await db.Orders.AnyAsync(o=>o.N==form.CopiedFromOrderN&&o.InquiryN!=null,ct))
+            return Fail("Индивидуална изработка се договаря с нова оферта; не се копира като стандартна поръчка.");
         if(form.CopiedFromOrderN.HasValue&&!await db.Orders.AnyAsync(o=>o.N==form.CopiedFromOrderN,ct))
             return Fail("Първоначалната поръчка не е намерена. Отворете нова служебна поръчка.");
         var partner=await db.Partners.AsNoTracking().Include(p=>p.Company).SingleOrDefaultAsync(p=>p.N==form.PartnerN&&p.IsActive,ct);
@@ -125,7 +140,7 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         var partnerSnapshot=JsonSerializer.Serialize(new { partner.Code,partner.SiteName,partner.Kind,partner.CompanyN,
             CompanyName=partner.Company?.Name,LegalForm=partner.Company?.LegalForm,RegistrationNumber=partner.Company?.RegistrationNumber,VatNumber=partner.Company?.VatNumber,
             Version=Convert.ToBase64String(partner.RowVersion) }, new JsonSerializerOptions { Encoder=System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) });
-        form.Cart=await ReadCartAsync(form.Lines);
+        form.Cart=await ReadCartAsync(form);
         if(!form.Cart.CanQuote) return Fail("Проверете вариантите, цените и наличностите на артикулите.");
         var d=form.Destination;
         if(DeliveryQuoteService.IsOffice(d.Method)&&!string.IsNullOrWhiteSpace(d.City))
@@ -133,7 +148,16 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
             var offices=await delivery.OfficesAsync(form.Cart,d.Method,d.City,ct);
             if(offices.Success)d.Offices=offices.Offices;
         }
-        var result=await delivery.CalculateAsync(form.Cart,d.Method,d.City,d.PostalCode,d.Address,d.OfficeCode,ct);
+        DeliveryQuoteResult result;
+        if(acceptedOffer?.DeliveryAmount is {} fixedDelivery && d.Method is DeliveryMethod.Pickup or DeliveryMethod.OwnTransport) {
+            if(d.Method==DeliveryMethod.Pickup && fixedDelivery!=0) return Fail("Договорената доставка не е нула. Променете и съгласувайте офертата за вземане от магазин.");
+            if(d.Method==DeliveryMethod.OwnTransport && (!DeliveryQuoteService.AllowsOwnTransport(form.Cart) || string.IsNullOrWhiteSpace(d.City) || string.IsNullOrWhiteSpace(d.Address) || d.City.Any(char.IsControl) || d.Address.Any(char.IsControl)))
+                return Fail("Проверете транспорта, населеното място и адреса.");
+            result=new(new DeliveryQuote(form.Cart.GoodsSubtotal,fixedDelivery,clock.GetUtcNow()));
+        } else result=await delivery.CalculateAsync(form.Cart,d.Method,d.City,d.PostalCode,d.Address,d.OfficeCode,ct);
+        if(result.Quote!=null && acceptedOffer!=null) result=new(result.Quote with {
+            DeliveryAmount=acceptedOffer.DeliveryAmount??result.Quote.DeliveryAmount,
+            ServicesAmount=AgreedOffer.Services(acceptedOffer.ServicesJson).Sum(x=>x.Amount) });
         if(result.Quote==null) return Fail("Доставката не може да бъде изчислена. Проверете транспорта, адреса и офиса.");
         form.Quote=result.Quote;
         if(result.Quote.IsTest && !OrderSplitService.AllowsSandbox(environment?.EnvironmentName)) return Fail("Тестова куриерска цена е разрешена само в среда Development.");
@@ -145,28 +169,44 @@ public sealed class StaffOrderService(ShopDbContext db, DeliveryQuoteService del
         if(email!=null&&site==null) return Fail("Настройте изпращането на имейли преди запис на поръчка с имейл.");
         AccountEmailRules.TryParse(ticket.GuestSecret,out _,out var secret);
         var now=clock.GetUtcNow().UtcDateTime;
-        var order=new Order { PartnerN=partner.N,PartnerSnapshot=partnerSnapshot,UserN=form.CustomerUserN,
+        var order=new Order { InquiryN=inquiry?.N,InquiryOfferN=acceptedOffer?.N,ServicesJson=acceptedOffer?.ServicesJson,PartnerN=partner.N,PartnerSnapshot=partnerSnapshot,UserN=form.CustomerUserN,
             CreatedByStaffId=CheckoutService.Owner(actor),CreationChannel=form.Channel,SubmissionId=ticket.Id,
             GuestTokenHash=email==null?null:Convert.ToHexString(SHA256.HashData(secret)),
             ContactName=form.ContactName.Trim(),ContactEmail=email,ContactPhone=form.Phone.Trim(),
             Comment=form.Comment?.Trim(),InvoiceDetails=form.InvoiceDetails?.Trim(),CreatedAt=now,ExpiresAtUtc=now.AddDays(7),
             DeliverySnapshot=JsonSerializer.Serialize(new { d.Method,Currency="EUR",Payment="OnReceipt",City=d.Method==DeliveryMethod.Pickup?null:d.City,PostalCode=d.Method==DeliveryMethod.Pickup?null:d.PostalCode,Address=d.Method==DeliveryMethod.Pickup||DeliveryQuoteService.IsOffice(d.Method)?null:d.Address,AddressDetails=d.Method==DeliveryMethod.Pickup||DeliveryQuoteService.IsOffice(d.Method)?null:d.AddressDetails,result.Quote.Office,result.Quote.ResolvedAddress,result.Quote.DistanceKm,result.Quote.IsTest }),DeliveryAmount=result.Quote.DeliveryAmount,TotalAmount=result.Quote.Total };
-        foreach(var line in form.Cart.Lines)
+        foreach(var pair in form.Cart.Lines.Select((line,index)=>(line,index)))
         {
-            var stock=line.Variant?.StockQuantity??line.Product!.StockQuantity??0;
+            var line=pair.line;
+            var agreed=acceptedOffer==null?null:form.AgreedLines[pair.index];
+            var stock=(line.Variant==null?line.Product!.StockQuantity:line.Variant.StockQuantity)??0;
             var reserved=await new StockReservationReader(db,clock).ReservedAsync(line.Entry.ProductN,line.Entry.VariantN);
-            var quantity=Math.Min(line.Entry.Quantity,Math.Max(0,stock-reserved));
+            var quantity=agreed?.IndividualManufacture==true?0:Math.Min(line.Entry.Quantity,Math.Max(0,stock-reserved-order.OrderItems.Where(i=>i.ProductN==line.Entry.ProductN&&i.VariantN==line.Entry.VariantN).Sum(i=>i.ReservedQuantity)));
             order.OrderItems.Add(new OrderItem { ProductN=line.Entry.ProductN,VariantN=line.Entry.VariantN,Quantity=line.Entry.Quantity,
-                UnitPrice=line.UnitPrice!.Value,ProductName=line.Name,VariantName=line.VariantName,Sku=line.Sku,
+                UnitPrice=line.UnitPrice!.Value,ProductName=agreed?.Name??line.Name,VariantName=agreed?.VariantName??line.VariantName,Sku=agreed?.Sku??line.Sku,
+                CatalogUnitPrice=agreed?.CatalogUnitPrice,ExecutionComment=agreed?.Comment,IndividualManufacture=agreed?.IndividualManufacture??false,
                 ReservedQuantity=quantity,RequiresManufacturing=quantity<line.Entry.Quantity });
+        }
+        if(inquiry!=null && acceptedOffer!=null) {
+            // The final destination and total are a new, explicitly phone/on-site agreed version.
+            var finalized=new InquiryOffer { InquiryN=inquiry.N,LinesJson=acceptedOffer.LinesJson,ServicesJson=acceptedOffer.ServicesJson,
+                DeliveryAmount=result.Quote.DeliveryAmount,Price=result.Quote.Total,Terms=acceptedOffer.Terms,Description=acceptedOffer.Description,
+                AtUtc=now,ActorId=order.CreatedByStaffId! };
+            db.Add(finalized);await db.SaveChangesAsync(ct);order.InquiryOfferN=finalized.N;
         }
         db.Orders.Add(order);
         db.Set<OrderEvent>().Add(new OrderEvent { Order=order,Action="StaffCreated",ActorId=order.CreatedByStaffId,
-            Status=OrderStatus.Pending,OccurredAtUtc=now,Details=JsonSerializer.Serialize(new { form.Channel,form.Reason,form.CopiedFromOrderN,form.PartnerN,form.CustomerUserN,result.Quote.IsTest,CustomerAgreedAtUtc=now }) });
+            Status=OrderStatus.Pending,OccurredAtUtc=now,Details=JsonSerializer.Serialize(new { form.Channel,form.Reason,form.InquiryN,order.InquiryOfferN,form.CopiedFromOrderN,form.PartnerN,form.CustomerUserN,result.Quote.IsTest,CustomerAgreedAtUtc=now }) });
         // Only the first successful storefront submission consumes the staff member's cart.
         // Duplicate submissions return above, and failures roll this change back with the order.
         if(form.Storefront)await AccountCartStore.ClearAsync(db,order.CreatedByStaffId!,now,ct);
         await db.SaveChangesAsync(ct);
+        if(inquiry!=null) {
+            inquiry.OrderN=order.N;inquiry.Status=InquiryStatus.Converted;inquiry.UpdatedAtUtc=now;
+            db.Add(new InquiryEvent { InquiryN=inquiry.N,ActorId=order.CreatedByStaffId,ActorName=await identity.Users.Where(u=>u.Id==order.CreatedByStaffId).Select(u=>(u.FirstName+" "+u.LastName).Trim()).SingleAsync(ct),
+                AtUtc=now,Status=InquiryStatus.Converted,Action="Converted",Note=$"Order #{order.N}; Offer #{order.InquiryOfferN}; {form.Reason}" });
+            await db.SaveChangesAsync(ct);
+        }
         if(email!=null)
         {
             identity.EmailOutboxMessages.Add(outbox.Create(email,(result.Quote.IsTest?"[TEST] ":"")+"Algara / Алгара — #"+order.N,

@@ -283,6 +283,7 @@ namespace Algara.Data.Data
 
             ConfigureProductShipping(modelBuilder);
             ConfigureCheckout(modelBuilder);
+            ConfigureInquiries(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
     }

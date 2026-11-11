@@ -27,26 +27,26 @@ namespace Algara.Data.Repositories
 
         public async Task<IEnumerable<Product>> GetAllAsync()
             => await WithPromotions(_context.Products.Include(p => p.Category))
-                .Where(p => p.IsActive)
+                .Where(p => p.IsActive && !p.IsStaffOnly)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetFeaturedAsync(int count = 4)
             => await WithPromotions(_context.Products.Include(p => p.Category))
-                .Where(p => p.IsFeatured && p.IsActive)
+                .Where(p => p.IsFeatured && p.IsActive && !p.IsStaffOnly)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetByCategoryAsync(int categoryN)
             => await WithPromotions(_context.Products.Include(p => p.Category))
-                .Where(p => p.CategoryN == categoryN && p.IsActive)
+                .Where(p => p.CategoryN == categoryN && p.IsActive && !p.IsStaffOnly)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 
         public async Task<IEnumerable<Product>> GetBySubCategoryAsync(int subCategoryN)
             => await WithPromotions(_context.Products.Include(p => p.Category))
-                .Where(p => p.IsActive && p.ProductSubCategories.Any(psc => psc.SubCategoryN == subCategoryN))
+                .Where(p => p.IsActive && !p.IsStaffOnly && p.ProductSubCategories.Any(psc => psc.SubCategoryN == subCategoryN))
                 .OrderBy(p => p.Name)
                 .ToListAsync();
 

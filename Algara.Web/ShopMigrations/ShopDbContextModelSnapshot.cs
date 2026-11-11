@@ -393,6 +393,125 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.FurnitureInquiry", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("AssignedStaffId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ContactName")
+                        .IsRequired()
+                        .HasMaxLength(121)
+                        .HasColumnType("nvarchar(121)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByStaffId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("CustomerId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Dimensions")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("GuestTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Materials")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("OrderN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("ProductN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("VariantN")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("OrderN")
+                        .IsUnique()
+                        .HasFilter("[OrderN] IS NOT NULL");
+
+                    b.HasIndex("ProductN");
+
+                    b.HasIndex("SubmissionId")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerId", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.ToTable("FurnitureInquiries", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FurnitureInquiries_Status", "[Status] BETWEEN 0 AND 6");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.GuestCartClaim", b =>
                 {
                     b.Property<Guid>("Id")
@@ -465,6 +584,132 @@ namespace Algara.Web.ShopMigrations
                     b.ToTable("HeroSlides", (string)null);
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.InquiryAttachment", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<byte[]>("Contents")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("InquiryN")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("InquiryN");
+
+                    b.ToTable("InquiryAttachments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InquiryAttachments_Size", "DATALENGTH([Contents]) BETWEEN 1 AND 5242880");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.InquiryEvent", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("ActorId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("InquiryN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("InquiryN");
+
+                    b.ToTable("InquiryEvents", (string)null);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.InquiryOffer", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DeliveryAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("InquiryN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LinesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ServicesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Terms")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("InquiryN");
+
+                    b.ToTable("InquiryOffers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InquiryOffers_Price", "[Price] > 0 AND [Price] <= 999999999");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Order", b =>
                 {
                     b.Property<int>("N")
@@ -517,6 +762,12 @@ namespace Algara.Web.ShopMigrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<int?>("InquiryN")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InquiryOfferN")
+                        .HasColumnType("int");
+
                     b.Property<string>("InvoiceDetails")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -533,6 +784,9 @@ namespace Algara.Web.ShopMigrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("ServicesJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SplitFromN")
                         .HasColumnType("int");
@@ -560,6 +814,12 @@ namespace Algara.Web.ShopMigrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("N");
+
+                    b.HasIndex("InquiryN")
+                        .IsUnique()
+                        .HasFilter("[InquiryN] IS NOT NULL AND [SplitFromN] IS NULL");
+
+                    b.HasIndex("InquiryOfferN");
 
                     b.HasIndex("PartnerN");
 
@@ -622,8 +882,19 @@ namespace Algara.Web.ShopMigrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
 
+                    b.Property<decimal?>("CatalogUnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("DeductedQuantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("ExecutionComment")
+                        .HasMaxLength(6000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IndividualManufacture")
+                        .HasColumnType("bit");
 
                     b.Property<int>("OrderN")
                         .HasColumnType("int");
@@ -636,6 +907,9 @@ namespace Algara.Web.ShopMigrations
                         .HasColumnType("nvarchar(300)");
 
                     b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReadyQuantity")
                         .HasColumnType("int");
 
                     b.Property<bool>("RequiresManufacturing")
@@ -667,6 +941,8 @@ namespace Algara.Web.ShopMigrations
                     b.ToTable("OrderItems", null, t =>
                         {
                             t.HasCheckConstraint("CK_OrderItems_DeductedQuantity", "[DeductedQuantity] >= 0 AND [DeductedQuantity] <= [Quantity]");
+
+                            t.HasCheckConstraint("CK_OrderItems_IndividualReady", "[ReadyQuantity] >= 0 AND [ReadyQuantity] <= [Quantity] AND ([IndividualManufacture] = 1 OR [ReadyQuantity] = 0) AND ([IndividualManufacture] = 0 OR ([ReservedQuantity] = 0 AND [DeductedQuantity] = 0))");
 
                             t.HasCheckConstraint("CK_OrderItems_ReservedQuantity", "[ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]");
                         });
@@ -935,6 +1211,9 @@ namespace Algara.Web.ShopMigrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStaffOnly")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsUpholstered")
@@ -1412,8 +1691,58 @@ namespace Algara.Web.ShopMigrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.FurnitureInquiry", b =>
+                {
+                    b.HasOne("Algara.Data.Models.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Algara.Data.Models.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductN")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.InquiryAttachment", b =>
+                {
+                    b.HasOne("Algara.Data.Models.FurnitureInquiry", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("InquiryN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.InquiryEvent", b =>
+                {
+                    b.HasOne("Algara.Data.Models.FurnitureInquiry", null)
+                        .WithMany("Events")
+                        .HasForeignKey("InquiryN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.InquiryOffer", b =>
+                {
+                    b.HasOne("Algara.Data.Models.FurnitureInquiry", null)
+                        .WithMany("Offers")
+                        .HasForeignKey("InquiryN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Order", b =>
                 {
+                    b.HasOne("Algara.Data.Models.FurnitureInquiry", null)
+                        .WithMany()
+                        .HasForeignKey("InquiryN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Algara.Data.Models.InquiryOffer", null)
+                        .WithMany()
+                        .HasForeignKey("InquiryOfferN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Algara.Data.Models.Partner", null)
                         .WithMany()
                         .HasForeignKey("PartnerN")
@@ -1745,6 +2074,15 @@ namespace Algara.Web.ShopMigrations
             modelBuilder.Entity("Algara.Data.Models.Fabric", b =>
                 {
                     b.Navigation("Colors");
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.FurnitureInquiry", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Events");
+
+                    b.Navigation("Offers");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Order", b =>

@@ -174,6 +174,10 @@
     <div class="form-check">
         @if (!canChangeActive) { <input type="hidden" name="IsActive" value="@Model.IsActive.ToString().ToLowerInvariant()" /> }
 <input disabled="@(!canChangeActive)" class="form-check-input" asp-for="IsActive" />
-        <label class="form-check-label" asp-for="IsActive">Активен (видим в каталога)</label>
+        <label class="form-check-label" asp-for="IsActive">Активен</label>
+    </div>
+    <div class="form-check">
+        @if (!canChangeActive) { <input type="hidden" name="IsStaffOnly" value="@Model.IsStaffOnly.ToString().ToLowerInvariant()" /> }
+        <input disabled="@(!canChangeActive)" class="form-check-input" asp-for="IsStaffOnly" /><label class="form-check-label" asp-for="IsStaffOnly">Само за служебни оферти (скрит от каталога)</label>
     </div>
 </div>

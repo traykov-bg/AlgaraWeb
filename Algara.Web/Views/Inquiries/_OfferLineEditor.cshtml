@@ -1,0 +1,24 @@
+﻿@model (string Index, Algara.Data.Models.AgreedOfferLine Line)
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.InquiryResources> T
+@{ var i=Model.Index; var line=Model.Line; var prefix=$"Lines[{i}]"; }
+<section class="offer-line" data-offer-line>
+    <div class="offer-line-heading"><div><strong data-line-title>@line.Name</strong><div class="small text-muted" data-line-variant>@line.VariantName @line.Sku</div></div>
+        <button name="Command" value="Remove:@i" formnovalidate data-offer-action="remove-line" class="btn btn-outline-danger btn-sm">@T["Remove"]</button></div>
+    <input type="hidden" name="@(prefix).ProductN" data-field="ProductN" value="@line.ProductN" />
+    <input type="hidden" name="@(prefix).VariantN" data-field="VariantN" value="@line.VariantN" />
+    <input type="hidden" name="@(prefix).Name" data-field="Name" value="@line.Name" />
+    <input type="hidden" name="@(prefix).VariantName" data-field="VariantName" value="@line.VariantName" />
+    <input type="hidden" name="@(prefix).Sku" data-field="Sku" value="@line.Sku" />
+    <input type="hidden" name="@(prefix).CatalogUnitPrice" data-field="CatalogUnitPrice" value="@line.CatalogUnitPrice" />
+    <div class="offer-line-prices">
+        <div><label for="line-@i-Quantity" data-label-field="Quantity">@T["Quantity"] *</label>@Html.TextBox(prefix+".Quantity", line.Quantity, new { id=$"line-{i}-Quantity", data_field="Quantity", type="number", min="1", max="99", @class="form-control" })</div>
+        <div><label for="line-@i-UnitPrice" data-label-field="UnitPrice">@T["UnitPrice"] *</label>@Html.TextBox(prefix+".UnitPrice", line.UnitPrice, new { id=$"line-{i}-UnitPrice", data_field="UnitPrice", inputmode="decimal", @class="form-control" })</div>
+        <div class="offer-catalog-price"><span>@T["CatalogPrice"]</span><strong data-catalog-price>@line.CatalogUnitPrice.ToString("N2") €</strong></div>
+    </div>
+    <label class="offer-manufacture" for="line-@i-IndividualManufacture" data-label-field="IndividualManufacture">
+        <input type="checkbox" id="line-@i-IndividualManufacture" name="@(prefix).IndividualManufacture" data-field="IndividualManufacture" value="true" checked="@line.IndividualManufacture" /> @T["IndividualManufacture"]
+    </label>
+    <input type="hidden" name="@(prefix).IndividualManufacture" data-field="IndividualManufacture" value="false" />
+    <label for="line-@i-Comment" data-label-field="Comment" class="form-label">@T["ExecutionComment"]</label>
+    @Html.TextArea(prefix+".Comment", line.Comment, new { id=$"line-{i}-Comment", data_field="Comment", maxlength="6000", @class="form-control", rows="2" })
+</section>
