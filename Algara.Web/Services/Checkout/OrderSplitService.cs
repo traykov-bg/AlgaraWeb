@@ -53,6 +53,10 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   var order = await db.Orders.Include(o=>o.OrderItems).ThenInclude(i=>i.Product).ThenInclude(p=>p.ShippingParcels).SingleOrDefaultAsync(o=>o.N==n, ct);
   if (order == null) return Fail("Поръчката не е намерена.");
   form.Order = order;
+  var paid=await db.OrderPayments.Where(p=>p.OrderN==n).SumAsync(p=>(decimal?)p.Amount,ct)??0m;
+  form.Paid=paid;
+  if(paid>0 && (!await access.HasPermissionAsync(actor,PermissionCatalog.Payments.View,ct) || !await access.HasPermissionAsync(actor,PermissionCatalog.Payments.Record,ct))) return Fail("Разделяне на платена поръчка изисква преглед и отчитане на плащания.");
+  if(!Algara.Web.Services.Payments.PaymentService.Parse(form.PaymentAmount,out var paymentAmount) || paymentAmount<0 || decimal.Round(paymentAmount,2)!=paymentAmount || paymentAmount>paid) return Fail("Проверете сумата за прехвърляне към отделената поръчка.");
   var email = AccountEmailRules.NormalizeEmail(order.ContactEmail);
   if (submit && email != null) { site = await readiness.GetPublicSiteUrlAsync(ct); if (site == null) return Fail("Настройте изпращането на имейли преди разделяне."); }
   if (!CanSplit(order) || Convert.ToBase64String(order.RowVersion)!=form.Version) return Fail("Разделяне е възможно само за непроменена потвърдена поръчка без товарителница.");
@@ -88,6 +92,7 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   form.RemainingQuote=left.Quote;form.SeparatedQuote=right.Quote;
   var fingerprint=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
    n,form.Version,Actor=actor.FindFirstValue(ClaimTypes.NameIdentifier),Session=actor.FindFirstValue("SessionId"),Stamp=actor.FindFirstValue("SecurityStamp"),form.Reason,
+   PaymentAmount=paymentAmount,Paid=paid,form.PaymentException,
    Quantities=form.Quantities.OrderBy(p=>p.Key),Services=form.ServiceAmounts.OrderBy(p=>p.Key),
    Left=DestinationSnapshot(form.Remaining,left.Quote),Right=DestinationSnapshot(form.Separated,right.Quote!),
    LeftTotal=left.Quote.Total,RightTotal=right.Quote!.Total
@@ -102,6 +107,12 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
    ContactEmail=order.ContactEmail,ContactPhone=order.ContactPhone,Comment=order.Comment,InvoiceDetails=order.InvoiceDetails,
    Status=OrderStatus.Confirmed,CreatedAt=now,ConfirmedAtUtc=order.ConfirmedAtUtc,TermsAcceptedAtUtc=order.TermsAcceptedAtUtc,
    DeliverySnapshot=DestinationSnapshot(form.Separated,right.Quote),DeliveryAmount=right.Quote.DeliveryAmount,TotalAmount=right.Quote.Total};
+  child.DepositPercent=order.DepositPercent;child.DepositExempt=order.DepositExempt;child.DeferredPaymentDays=order.DeferredPaymentDays;
+  if(paymentAmount>child.TotalAmount || paid-paymentAmount>left.Quote.Total) return Fail("Разпределеното плащане надвишава стойността на една от поръчките.");
+  var childNeedsDeposit=form.Separated.Method==DeliveryMethod.OwnTransport || moved.Any(l=>l.IndividualManufacture);
+  var parentNeedsDeposit=form.Remaining.Method==DeliveryMethod.OwnTransport || order.OrderItems.Any(i=>i.Quantity>form.Quantities.GetValueOrDefault(i.N) && (i.IndividualManufacture || i.RequiresManufacturing));
+  var insufficient=order.DepositExempt!=true && ((childNeedsDeposit && paymentAmount<Math.Ceiling(child.TotalAmount*(order.DepositPercent??50m))/100m) || (parentNeedsDeposit && paid-paymentAmount<Math.Ceiling(left.Quote.Total*(order.DepositPercent??50m))/100m));
+  if(insufficient && (string.IsNullOrWhiteSpace(form.PaymentException) || form.PaymentException.Length>1000 || !await access.HasPermissionAsync(actor,PermissionCatalog.Payments.Override,ct))) return Fail("Недостатъчно капаро след разделянето. Нужно е право за изключение и причина.");
   var beforeTotal=order.TotalAmount;
   foreach(var item in order.OrderItems.ToArray())
   {
@@ -111,8 +122,13 @@ public sealed class OrderSplitService(ShopDbContext db, DeliveryQuoteService del
   }
   order.ServicesJson=JsonSerializer.Serialize(allocation.Value.Remaining);
   order.DeliverySnapshot=DestinationSnapshot(form.Remaining,left.Quote);order.DeliveryAmount=left.Quote.DeliveryAmount;order.TotalAmount=left.Quote.Total;order.UpdatedAt=now;
+  child.DepositRequired=Algara.Web.Services.Payments.PaymentRules.RequiresDeposit(child);
+  order.DepositRequired=Algara.Web.Services.Payments.PaymentRules.RequiresDeposit(order);
   db.Orders.Add(child);await db.SaveChangesAsync(ct);
-  var details=JsonSerializer.Serialize(new { Parent=order.N,Child=child.N,BeforeTotal=beforeTotal,RemainingTotal=order.TotalAmount,SeparatedTotal=child.TotalAmount,IsTest=testQuote,Services=form.ServiceAmounts,form.Reason });
+  if(paymentAmount>0) {
+   foreach(var target in new[]{order,child}) db.OrderPayments.Add(new OrderPayment{OrderN=target.N,SubmissionId=Guid.NewGuid(),Kind=PaymentEntryKind.Allocation,Amount=target==child?paymentAmount:-paymentAmount,RelatedOrderN=target==child?order.N:child.N,Location="Разделяне / Split",MethodName="Разпределение / Allocation",PaidOn=Algara.Web.Services.Payments.PaymentRules.Today(clock),RecordedAtUtc=now,ActorId=actor.FindFirstValue(ClaimTypes.NameIdentifier)!,ActorName=actor.Identity?.Name??"",Note=form.Reason});
+  }
+  var details=JsonSerializer.Serialize(new { Parent=order.N,Child=child.N,BeforeTotal=beforeTotal,RemainingTotal=order.TotalAmount,SeparatedTotal=child.TotalAmount,IsTest=testQuote,Services=form.ServiceAmounts,PaymentAllocation=paymentAmount,PaymentException=insufficient?form.PaymentException:null,form.Reason });
   foreach(var target in new[]{order,child}) db.Set<OrderEvent>().Add(new OrderEvent{OrderN=target.N,Action="Split",Status=target.Status,ActorId=actor.FindFirstValue(ClaimTypes.NameIdentifier)!,OccurredAtUtc=now,Details=details});
   if(email != null) identity.EmailOutboxMessages.Add(outbox.Create(email,(testQuote ? "[TEST] " : "")+"Algara / Алгара — разделяне на поръчка #"+order.N,
    (testQuote ? "Тестова куриерска калкулация. / Test courier quote. " : "") + $"По съгласуване с Вас поръчка #{order.N} е разделена. Оставаща поръчка: {order.TotalAmount:N2} EUR. Нова поръчка #{child.N}: {child.TotalAmount:N2} EUR. / Your order was split as agreed. Remaining order: {order.TotalAmount:N2} EUR. New order #{child.N}: {child.TotalAmount:N2} EUR.",site+"/Checkout/Access#"+guest.LinkValue,null,null));

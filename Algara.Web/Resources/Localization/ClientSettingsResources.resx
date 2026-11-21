@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Допълнителни клиентски настройки</value></data>
+  <data name="Payments" xml:space="preserve"><value>Плащания</value></data>
+  <data name="PaymentsHelp" xml:space="preserve"><value>Условия за капаро и срок на плащане за този контрагент.</value></data>
+  <data name="EffectiveHelp" xml:space="preserve"><value>Промените важат при следващо потвърждаване на поръчка. Вече потвърдените поръчки запазват условията си.</value></data>
+  <data name="DeferredDays" xml:space="preserve"><value>Отложено плащане</value></data>
+  <data name="Days" xml:space="preserve"><value>дни</value></data>
+  <data name="DaysHelp" xml:space="preserve"><value>Календарни дни след получаване. При 0 остатъкът се плаща при получаване.</value></data>
+  <data name="Exempt" xml:space="preserve"><value>Освободен от капаро</value></data>
+  <data name="ExemptHelp" xml:space="preserve"><value>Позволява потвърждаване без капаро и без причина за изключение.</value></data>
+  <data name="Save" xml:space="preserve"><value>Запиши</value></data>
+  <data name="Back" xml:space="preserve"><value>Към контрагентите</value></data>
+  <data name="Saved" xml:space="preserve"><value>Настройките са записани успешно.</value></data>
+  <data name="Close" xml:space="preserve"><value>Затвори</value></data>
+</root>

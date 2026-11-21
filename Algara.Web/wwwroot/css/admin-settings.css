@@ -1,0 +1,21 @@
+﻿/* Reusable compact settings: page toolbar, themed sections, bounded fields and intrinsic-width actions. */
+.algara-settings-page { width: 100%; max-width: 65rem; }
+.algara-settings-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem 1.25rem; margin-bottom: 1.25rem; }
+.algara-settings-toolbar > :first-child { min-width: 0; }
+.algara-settings-toolbar .btn { flex: 0 1 auto; }
+.algara-settings-identity { overflow-wrap: anywhere; }
+.algara-settings-section { margin: 0 0 1rem; padding: 0; border: 1px solid #d7e3db; border-radius: .65rem; overflow: hidden; background: #fff; }
+.algara-settings-section-header { padding: .85rem 1.25rem; background: #eff6f1; border-bottom: 1px solid #d7e3db; }
+.algara-settings-fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.25rem 2rem; padding: 1.25rem; }
+.algara-settings-field { flex: 0 1 22rem; min-width: 0; max-width: 100%; }
+.algara-settings-field--short { flex-basis: 18rem; }
+.algara-settings-short-input { width: 9rem; max-width: 100%; }
+.algara-settings-toggle { padding-top: .2rem; }
+.algara-settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1.25rem; }
+.algara-settings-actions > .btn { flex: 0 0 auto; width: auto; }
+.algara-save-notice { position: fixed; top: 1rem; right: 1rem; z-index: 1090; width: min(25rem, calc(100vw - 2rem)); box-shadow: 0 .35rem 1.5rem #0003; }
+@media (max-width: 575.98px) {
+    .algara-settings-fields { gap: 1rem; padding: 1rem; }
+    .algara-settings-field { flex-basis: 100%; }
+    .algara-settings-section-header { padding: .85rem 1rem; }
+}

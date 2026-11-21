@@ -1,0 +1,8 @@
+﻿@model string
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ClientSettingsResources> SettingsText
+<div class="algara-save-notice alert alert-success d-flex align-items-center gap-2 mb-0" role="status" aria-live="polite" aria-atomic="true" data-admin-save-notice>
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>@Model</span>
+    <button type="button" class="btn-close ms-auto" aria-label="@SettingsText["Close"]" data-save-notice-close></button>
+</div>
+<script src="~/js/admin-save-notice.js" asp-append-version="true" defer></script>

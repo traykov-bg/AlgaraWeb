@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Additional customer settings</value></data>
+  <data name="Payments" xml:space="preserve"><value>Payments</value></data>
+  <data name="PaymentsHelp" xml:space="preserve"><value>Deposit and payment terms for this partner.</value></data>
+  <data name="EffectiveHelp" xml:space="preserve"><value>Changes apply at the next order confirmation. Confirmed orders retain their existing terms.</value></data>
+  <data name="DeferredDays" xml:space="preserve"><value>Deferred payment</value></data>
+  <data name="Days" xml:space="preserve"><value>days</value></data>
+  <data name="DaysHelp" xml:space="preserve"><value>Calendar days after receipt. With 0, the balance is due on receipt.</value></data>
+  <data name="Exempt" xml:space="preserve"><value>Exempt from deposit</value></data>
+  <data name="ExemptHelp" xml:space="preserve"><value>Allows confirmation without a deposit or an exception reason.</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Back" xml:space="preserve"><value>Back to partners</value></data>
+  <data name="Saved" xml:space="preserve"><value>Settings saved successfully.</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+</root>

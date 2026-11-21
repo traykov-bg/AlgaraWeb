@@ -231,6 +231,7 @@ try
             options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
         });
 
+    builder.Services.AddScoped<Algara.Web.Services.Payments.PaymentService>();
     var app = builder.Build();
 
     var dbHelper = app.Services.GetRequiredService<IDatabaseHelper>();

@@ -31,7 +31,7 @@
   <data name="Distance" xml:space="preserve"><value>Разстояние по права линия</value></data>
   <data name="QuoteTime" xml:space="preserve"><value>Изчислено на</value></data>
   <data name="QuoteNotice" xml:space="preserve"><value>Цената е към този момент. При промяна на количката или адреса изчислете отново. При бъдещото подаване на поръчка е нужна повторна проверка.</value></data>
-  <data name="PaymentNotice" xml:space="preserve"><value>Плащането е при получаване — в магазина, на фирмения екип или с наложен платеж при куриера.</value></data>
+  <data name="PaymentNotice" xml:space="preserve"><value>За изработка и доставка със собствен транспорт се изисква капаро преди потвърждаване, освен при договорено освобождаване. Остатъкът се плаща при получаване или в договорения с контрагента срок. Налична стока с лично получаване и обикновени куриерски поръчки не изискват капаро.</value></data>
   <data name="InvalidMethod" xml:space="preserve"><value>Изберете валиден начин на получаване.</value></data>
   <data name="InvalidAddress" xml:space="preserve"><value>Въведете населено място и пълен адрес с номер. Пощенският код е по избор; ако го попълните, използвайте четири цифри.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Заредете офисите за населеното място и изберете конкретен офис.</value></data>
@@ -61,4 +61,8 @@
   <data name="GeocodingUnavailable" xml:space="preserve"><value>Услугата за намиране на населено място временно не е достъпна. Опитайте по-късно или се свържете с нас. Цена не е изчислена.</value></data>
   <data name="OwnTransportNotAllowed" xml:space="preserve"><value>За количка само с артикули, позволяващи куриер, изберете куриер или вземане от магазина. Собствен транспорт не се предлага.</value></data>
   <data name="CourierOnlyCart" xml:space="preserve"><value>Всички артикули позволяват куриер. Можете да изберете куриерска доставка или вземане от магазина.</value></data>
+  <data name="DepositPercentLabel" xml:space="preserve"><value>Капаро</value></data>
+  <data name="DepositExemptLabel" xml:space="preserve"><value>Освободен от капаро</value></data>
+  <data name="DeferredDaysLabel" xml:space="preserve"><value>Календарни дни за плащане след получаване</value></data>
+  <data name="PaymentDueLabel" xml:space="preserve"><value>Падеж</value></data>
 </root>

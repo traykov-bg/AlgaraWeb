@@ -1,11 +1,19 @@
 ﻿@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
 @{ var canChangeActive = await StaffAccess.HasPermissionAsync(User, "Partners.Deactivate"); }
 @model Algara.Web.ViewModels.Admin.PartnerForm
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ClientSettingsResources> SettingsText
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = Model.N.HasValue ? "Редакция на контрагент" : "Нов контрагент";
 }
 <div class="card border-0 shadow-sm" style="max-width:65rem"><div class="card-body p-4">
+    <header class="algara-settings-toolbar">
+        <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+        @if (Model.N.HasValue)
+        {
+            <a asp-controller="AdminPartnerPaymentTerms" asp-action="Index" asp-route-n="@Model.N" class="btn btn-sm btn-outline-success" staff-permission="Partners.View,Users.EditProfile"><i class="bi bi-sliders me-1" aria-hidden="true"></i>@SettingsText["Title"]</a>
+        }
+    </header>
     <form asp-action="@(Model.N.HasValue ? "PartnerEdit" : "PartnerCreate")" asp-route-n="@Model.N" method="post">
         <input asp-for="N" type="hidden" /><input asp-for="RowVersion" type="hidden" />
         <div asp-validation-summary="All" class="alert alert-danger"></div>

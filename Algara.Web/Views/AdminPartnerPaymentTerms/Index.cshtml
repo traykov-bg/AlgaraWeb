@@ -1,0 +1,55 @@
+﻿@model Algara.Web.ViewModels.Admin.PartnerPaymentForm
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Algara.Web.Localization.ClientSettingsResources> T
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = T["Title"];
+}
+<div class="algara-settings-page">
+    <header class="algara-settings-toolbar">
+        <div>
+            <h1 class="h4 mb-1">@T["Title"]</h1>
+            <p class="algara-settings-identity text-muted mb-0">@Model.Name</p>
+        </div>
+        <a asp-controller="Admin" asp-action="Partners" class="btn btn-sm btn-outline-secondary">@T["Back"]</a>
+    </header>
+    @if (TempData["ClientSettingsSaved"] is true)
+    {
+        var savedMessage = T["Saved"].Value;
+        <partial name="_AdminSaveNotice" model="savedMessage" />
+    }
+    <form method="post" asp-action="Index" asp-route-n="@Model.N">
+        <input asp-for="N" type="hidden" />
+        <input asp-for="Version" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" tabindex="-1"></div>
+        <section class="algara-settings-section" aria-labelledby="payment-settings-title">
+            <div class="algara-settings-section-header">
+                <h2 id="payment-settings-title" class="h6 mb-1"><i class="bi bi-wallet2 me-2" aria-hidden="true"></i>@T["Payments"]</h2>
+                <p class="small text-muted mb-0">@T["PaymentsHelp"]</p>
+            </div>
+            <div class="algara-settings-fields">
+                <div class="algara-settings-field algara-settings-field--short">
+                    <label asp-for="DeferredPaymentDays" class="form-label">@T["DeferredDays"]</label>
+                    <div class="input-group input-group-sm algara-settings-short-input">
+                        <input asp-for="DeferredPaymentDays" type="number" min="0" max="3650" class="form-control" aria-describedby="deferred-days-unit deferred-days-help" />
+                        <span id="deferred-days-unit" class="input-group-text">@T["Days"]</span>
+                    </div>
+                    <span asp-validation-for="DeferredPaymentDays" class="text-danger small d-block"></span>
+                    <p id="deferred-days-help" class="form-text mb-0">@T["DaysHelp"]</p>
+                </div>
+                <div class="algara-settings-field algara-settings-toggle">
+                    <div class="form-check">
+                        <input asp-for="DepositExempt" class="form-check-input" aria-describedby="deposit-exempt-help" />
+                        <label asp-for="DepositExempt" class="form-check-label fw-semibold">@T["Exempt"]</label>
+                    </div>
+                    <span asp-validation-for="DepositExempt" class="text-danger small d-block"></span>
+                    <p id="deposit-exempt-help" class="form-text mb-0">@T["ExemptHelp"]</p>
+                </div>
+            </div>
+        </section>
+        <p class="small text-muted mb-0">@T["EffectiveHelp"]</p>
+        <div class="algara-settings-actions">
+            <button type="submit" class="btn btn-success btn-sm px-4">@T["Save"]</button>
+        </div>
+    </form>
+</div>
+<script src="~/js/payments.js" asp-append-version="true" defer></script>

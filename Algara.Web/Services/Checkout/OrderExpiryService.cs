@@ -17,7 +17,8 @@ public sealed class OrderExpiryService(ShopDbContext db, TimeProvider clock, Ema
         var now = clock.GetUtcNow().UtcDateTime;
         var expired = await db.Orders.FromSqlInterpolated($"""
             SELECT TOP(100) * FROM Orders WITH (UPDLOCK,READPAST,ROWLOCK)
-            WHERE Status=0 AND ExpiresAtUtc <= {now} ORDER BY N
+            WHERE Status=0 AND ExpiresAtUtc <= {now}
+            AND COALESCE((SELECT SUM(p.Amount) FROM OrderPayments p WHERE p.OrderN=Orders.N),0)<=0 ORDER BY N
             """).ToListAsync(ct);
         foreach (var order in expired)
         {

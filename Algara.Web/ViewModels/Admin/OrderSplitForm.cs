@@ -17,6 +17,9 @@ public sealed class SplitDestination
 }
 public sealed class OrderSplitForm
 {
+ [StringLength(1000)] public string? PaymentException { get; set; }
+ public string PaymentAmount { get; set; } = "0";
+ [BindNever, ValidateNever] public decimal Paid { get; set; }
  public string Version { get; set; } = "";
  [Microsoft.AspNetCore.Mvc.ModelBinder(BinderType=typeof(Algara.Web.Services.Inquiries.ServiceAmountsBinder))]
  public Dictionary<int,decimal> ServiceAmounts { get; set; } = [];

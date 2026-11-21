@@ -117,6 +117,7 @@ public sealed class CheckoutService(ShopDbContext db, CartService cart, Delivery
                     UnitPrice = line.UnitPrice!.Value, ProductName = line.Name, VariantName = line.VariantName, Sku = line.Sku,
                     ReservedQuantity = quantity, RequiresManufacturing = quantity < line.Entry.Quantity });
             }
+            await Algara.Web.Services.Payments.PaymentRules.InitializeAsync(db,order,ct);
             db.Orders.Add(order);
             db.Set<OrderEvent>().Add(new OrderEvent { Order = order, Action = "Submitted", ActorId = Owner(actor), Status = OrderStatus.Pending, OccurredAtUtc = now });
             await db.SaveChangesAsync(ct);

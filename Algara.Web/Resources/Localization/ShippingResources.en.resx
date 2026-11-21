@@ -31,7 +31,7 @@
   <data name="Distance" xml:space="preserve"><value>Straight-line distance</value></data>
   <data name="QuoteTime" xml:space="preserve"><value>Calculated at</value></data>
   <data name="QuoteNotice" xml:space="preserve"><value>This estimate is current at the time shown. Recalculate after changing your cart or address. Final order submission will require a fresh check.</value></data>
-  <data name="PaymentNotice" xml:space="preserve"><value>Payment is on receipt: at the store, to our delivery team, or cash on delivery with the courier.</value></data>
+  <data name="PaymentNotice" xml:space="preserve"><value>Manufacture and own-transport delivery require a deposit before confirmation unless an exemption applies. The balance is due on receipt or within the agreed partner payment term. In-stock pickup and ordinary courier orders require no deposit.</value></data>
   <data name="InvalidMethod" xml:space="preserve"><value>Choose a valid delivery method.</value></data>
   <data name="InvalidAddress" xml:space="preserve"><value>Enter a city and complete street address with a building number. The postal code is optional; if provided, use four digits.</value></data>
   <data name="ChooseOffice" xml:space="preserve"><value>Load offices for the city and select one.</value></data>
@@ -61,4 +61,8 @@
   <data name="GeocodingUnavailable" xml:space="preserve"><value>The city or village lookup service is currently unavailable. Try again later or contact us. No price has been calculated.</value></data>
   <data name="OwnTransportNotAllowed" xml:space="preserve"><value>For a cart containing only courier-eligible items, choose a courier or store pickup. Our transport is not available.</value></data>
   <data name="CourierOnlyCart" xml:space="preserve"><value>All items are courier-eligible. Choose courier delivery or store pickup.</value></data>
+  <data name="DepositPercentLabel" xml:space="preserve"><value>Deposit</value></data>
+  <data name="DepositExemptLabel" xml:space="preserve"><value>Deposit exemption</value></data>
+  <data name="DeferredDaysLabel" xml:space="preserve"><value>Calendar days to pay after delivery</value></data>
+  <data name="PaymentDueLabel" xml:space="preserve"><value>Payment due</value></data>
 </root>

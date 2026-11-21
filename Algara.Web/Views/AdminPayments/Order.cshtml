@@ -1,0 +1,40 @@
+﻿@model Algara.Web.ViewModels.Admin.PaymentForm
+@using Algara.Data.Models
+@inject Algara.Web.Services.ClientTimeDisplay ClientTime
+@inject Algara.Identity.Authorization.StaffAccessService StaffAccess
+@{ Layout="_AdminLayout"; ViewData["Title"]="Плащания / Payments #"+Model.Order.N; }
+<h1 class="h3">Плащания / Payments — #@Model.Order.N</h1>
+<a asp-controller="Admin" asp-action="OrderDetail" asp-route-n="@Model.Order.N">Поръчка / Order</a> · <a asp-action="Index">Справка / Report</a>
+@if(!Model.Order.DepositExempt.HasValue && Model.Order.Status!=OrderStatus.Pending){<div class="alert alert-warning">Стара поръчка: историческите плащания и договорни условия не са въведени автоматично. / Legacy order: previous payments and contractual terms were not inferred.</div>}
+<div class="row g-3 my-3">
+@foreach(var entry in new[]{("Общо / Total",Model.Order.TotalAmount),("Нетно платено / Net paid",Model.Paid),("Остатък / Balance",Model.Order.TotalAmount-Model.Paid),("Капаро / Deposit",Model.RequiredDeposit)}) {
+<div class="col-sm-6 col-xl-3"><div class="card border-success"><div class="card-body"><span>@entry.Item1</span><strong class="d-block fs-4">@entry.Item2.ToString("N2") €</strong></div></div></div>
+}
+</div>
+@if(Model.Order.Status==OrderStatus.Cancelled && Model.Paid>0){<div class="alert alert-warning">Отказана поръчка с получени средства за уреждане / Cancelled order with funds to settle.</div>}
+<p>Получена / Delivered: @(Model.Order.DeliveredOn?.ToString("dd.MM.yyyy")??"—") · Падеж / Due: @(Model.Order.PaymentDueOn?.ToString("dd.MM.yyyy")??"След получаване / On delivery") · Дни отложено плащане / Deferred days: @(Model.Order.DeferredPaymentDays?.ToString()??"При потвърждаване / At confirmation")</p>
+@if(await StaffAccess.HasPermissionAsync(User,"Payments.Record") || await StaffAccess.HasPermissionAsync(User,"Payments.Correct")){
+<div class="card mb-4"><div class="card-header bg-success text-white">Отчитане / Record payment</div><div class="card-body">
+<form method="post" asp-action="Order" asp-route-n="@Model.Order.N" data-payment-form>
+<input asp-for="Version" type="hidden"/><input asp-for="SubmissionId" type="hidden"/>
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" tabindex="-1"></div>
+<div class="row g-3">
+<div class="col-md-4"><label asp-for="Kind">Действие / Action</label><select asp-for="Kind" class="form-select"><option value="0" staff-permission="Payments.Record">Получено плащане / Receipt</option><option value="1" staff-permission="Payments.Correct">Корекция / Correction</option><option value="2" staff-permission="Payments.Correct">Връщане на пари / Refund</option></select><span asp-validation-for="Kind" class="text-danger"></span></div>
+<div class="col-md-4"><label asp-for="Amount">Сума (положителна) / Amount (positive)</label><input asp-for="Amount" inputmode="decimal" class="form-control" required/><span asp-validation-for="Amount" class="text-danger"></span></div>
+<div class="col-md-4"><label asp-for="PaidOn">Дата на плащане / Payment date</label><input asp-for="PaidOn" type="date" class="form-control" required/><span asp-validation-for="PaidOn" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="MethodN">Начин / Method</label><select asp-for="MethodN" class="form-select"><option value="">—</option>@foreach(var m in Model.Methods){<option value="@m.N">@m.Name / @m.EnglishName</option>}</select><span asp-validation-for="MethodN" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="Location">Място / Location</label><input asp-for="Location" class="form-control" maxlength="200" list="payment-locations" required/><datalist id="payment-locations"><option value="Каса в магазина / Store cash desk"></option><option value="При доставка / On delivery"></option><option value="Банкова сметка / Bank account"></option><option value="Куриер / Courier"></option></datalist><span asp-validation-for="Location" class="text-danger"></span></div>
+<div class="col-12" data-reversal><label asp-for="ReversesN">Оригинален запис / Original entry</label><select asp-for="ReversesN" class="form-select"><option value="">—</option>@foreach(var p in Model.Order.Payments.Where(p=>p.Amount>0 || p.Kind!=PaymentEntryKind.Allocation)){<option value="@p.N">#@p.N — @p.PaidOn.ToString("dd.MM.yyyy") — @p.Amount.ToString("N2") € — @p.MethodName</option>}</select><span asp-validation-for="ReversesN" class="text-danger"></span></div>
+<div class="col-12"><label asp-for="Note">Бележка / референция; задължителна причина за обратен запис / Note; reason required for reversal</label><textarea asp-for="Note" class="form-control" maxlength="1000"></textarea><span asp-validation-for="Note" class="text-danger"></span></div>
+</div><button class="btn btn-success mt-3">Запиши / Save</button>
+</form></div></div>
+}
+<p>Получени / Received: @Model.Order.Payments.Where(p=>p.Kind==PaymentEntryKind.Receipt).Sum(p=>p.Amount).ToString("N2") € · Възстановени / Refunded: @(-Model.Order.Payments.Where(p=>p.Kind==PaymentEntryKind.Refund).Sum(p=>p.Amount)) € · Корекции / Corrections: @Model.Order.Payments.Where(p=>p.Kind==PaymentEntryKind.Correction).Sum(p=>p.Amount).ToString("N2") € · Разпределени / Allocated: @Model.Order.Payments.Where(p=>p.Kind==PaymentEntryKind.Allocation).Sum(p=>p.Amount).ToString("N2") €</p>
+<h2 class="h5">История / Ledger</h2><div class="table-responsive"><table class="table table-striped"><thead><tr><th>№ / Действие</th><th>Дата / Date</th><th>Сума / Amount</th><th>Начин / Място</th><th>Служител / Staff</th><th>Бележка / Note</th></tr></thead><tbody>
+@foreach(var p in Model.Order.Payments.OrderByDescending(p=>p.N)){
+var recorded=await ClientTime.FormatAsync(p.RecordedAtUtc);
+<tr><td>#@p.N — @p.Kind @if(p.ReversesN.HasValue){<span>→ #@p.ReversesN</span>} @if(p.RelatedOrderN.HasValue){<a asp-action="Order" asp-route-n="@p.RelatedOrderN">Поръчка / Order #@p.RelatedOrderN</a>}</td><td>@p.PaidOn.ToString("dd.MM.yyyy")<small class="d-block"><time data-client-time data-time-zone="@recorded.Zone" datetime="@DateTime.SpecifyKind(p.RecordedAtUtc,DateTimeKind.Utc).ToString("O")">@recorded.Text</time></small></td><td class="@(p.Amount<0?"text-danger":"text-success")">@p.Amount.ToString("N2") €</td><td>@p.MethodName<br/>@p.Location</td><td>@p.ActorName</td><td>@p.Note</td></tr>
+}
+</tbody></table></div>
+<script src="~/js/client-time.js" asp-append-version="true" defer></script>
+<script src="~/js/payments.js" asp-append-version="true" defer></script>

@@ -7,6 +7,7 @@
     string MethodName(DeliveryMethod m)=>m switch { DeliveryMethod.Pickup=>"Вземане от магазина",DeliveryMethod.OwnTransport=>"Собствен транспорт",DeliveryMethod.EcontOffice=>"Еконт до офис",DeliveryMethod.EcontAddress=>"Еконт до адрес",DeliveryMethod.SpeedyOffice=>"Спиди до офис",_=>"Спиди до адрес" };
 }
 <h1 class="h4">Нова служебна поръчка</h1>
+<p class="alert alert-info">Поръчката се записва като чакаща. При изработка или собствен транспорт отчетете капарото от „Плащания“ преди потвърждаване, освен при освобождаване на контрагента или разрешено изключение.</p>
 @if(Model.CopiedFromOrderN.HasValue){<div class="alert alert-info">Копие на поръчка #@Model.CopiedFromOrderN. Проверете клиента и данните за доставка. Цените и наличностите са актуални; нужен е нов преглед и съгласуване с клиента преди запис.</div>}
 @if(Model.InquiryN.HasValue){<div class="alert alert-info">По запитване #@Model.InquiryN, оферта #@Model.InquiryOfferN. Артикулите и цените са договорени. За промяна редактирайте и потвърдете нова оферта. Индивидуална изработка се получава от магазин или със собствен транспорт.</div>}
 <p>За договорена продажба по телефон или на място. Поръчката се записва като чакаща; потвърждаването е отделно действие. Плащането е при получаване.</p>

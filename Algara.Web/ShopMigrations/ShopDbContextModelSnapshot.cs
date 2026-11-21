@@ -748,12 +748,28 @@ namespace Algara.Web.ShopMigrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int?>("DeferredPaymentDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("DeliveredOn")
+                        .HasColumnType("date");
+
                     b.Property<decimal>("DeliveryAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("DeliverySnapshot")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool?>("DepositExempt")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("DepositPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("DepositRequired")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
@@ -778,6 +794,9 @@ namespace Algara.Web.ShopMigrations
                     b.Property<string>("PartnerSnapshot")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateOnly?>("PaymentDueOn")
+                        .HasColumnType("date");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -833,7 +852,12 @@ namespace Algara.Web.ShopMigrations
 
                     b.HasIndex(new[] { "UserN" }, "IX_Orders_UserN");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Orders_DepositPercent", "[DepositPercent] IS NULL OR [DepositPercent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_Orders_PaymentDays", "[DeferredPaymentDays] IS NULL OR [DeferredPaymentDays] BETWEEN 0 AND 3650");
+                        });
                 });
 
             modelBuilder.Entity("Algara.Data.Models.OrderEvent", b =>
@@ -948,6 +972,85 @@ namespace Algara.Web.ShopMigrations
                         });
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.OrderPayment", b =>
+                {
+                    b.Property<long>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("N"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("MethodN")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MethodName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderN")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("PaidOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RelatedOrderN")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("ReversesN")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("MethodN");
+
+                    b.HasIndex("RelatedOrderN");
+
+                    b.HasIndex("ReversesN");
+
+                    b.HasIndex("SubmissionId")
+                        .IsUnique();
+
+                    b.HasIndex("OrderN", "N");
+
+                    b.ToTable("OrderPayments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderPayments_Amount", "[Amount] <> 0 AND (([Kind] = 0 AND [Amount] > 0 AND [MethodN] IS NOT NULL AND [ReversesN] IS NULL) OR ([Kind] = 1 AND [ReversesN] IS NOT NULL) OR ([Kind] = 2 AND [Amount] < 0 AND [ReversesN] IS NOT NULL) OR ([Kind] = 3 AND [RelatedOrderN] IS NOT NULL))");
+                        });
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Partner", b =>
                 {
                     b.Property<int>("N")
@@ -973,6 +1076,12 @@ namespace Algara.Web.ShopMigrations
                     b.Property<string>("ContactPerson")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DeferredPaymentDays")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DepositExempt")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -1058,6 +1167,8 @@ namespace Algara.Web.ShopMigrations
                             t.HasCheckConstraint("CK_Partners_Identity", "LEN(LTRIM(RTRIM([SiteName]))) > 0 AND LEN([NormalizedSiteName]) > 0");
 
                             t.HasCheckConstraint("CK_Partners_Kind", "([CompanyN] IS NULL AND [Kind] = 0) OR ([CompanyN] IS NOT NULL AND [Kind] = 1)");
+
+                            t.HasCheckConstraint("CK_Partners_PaymentDays", "[DeferredPaymentDays] BETWEEN 0 AND 3650");
 
                             t.HasCheckConstraint("CK_Partners_Phone", "[Phone] IS NULL OR [Phone] = N'0' OR (LEFT([Phone],1) = N'+' AND LEN([Phone]) BETWEEN 8 AND 16 AND SUBSTRING([Phone],2,15) COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%')");
                         });
@@ -1170,6 +1281,100 @@ namespace Algara.Web.ShopMigrations
                             t.HasCheckConstraint("CK_PartnerGroups_Order", "[DisplayOrder] >= 0");
 
                             t.HasCheckConstraint("CK_PartnerGroups_Parent", "([N] = 0 AND [ParentN] IS NULL) OR ([N] <> 0 AND [ParentN] IS NOT NULL AND [ParentN] <> [N])");
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PaymentMethod", b =>
+                {
+                    b.Property<int>("N")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("N"));
+
+                    b.Property<string>("EnglishName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("N");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("PaymentMethods");
+
+                    b.HasData(
+                        new
+                        {
+                            N = 1,
+                            EnglishName = "Cash",
+                            IsActive = true,
+                            Name = "В брой"
+                        },
+                        new
+                        {
+                            N = 2,
+                            EnglishName = "Bank transfer",
+                            IsActive = true,
+                            Name = "Банков превод"
+                        },
+                        new
+                        {
+                            N = 3,
+                            EnglishName = "POS card",
+                            IsActive = true,
+                            Name = "ПОС"
+                        },
+                        new
+                        {
+                            N = 4,
+                            EnglishName = "Cash on delivery",
+                            IsActive = true,
+                            Name = "Наложен платеж"
+                        });
+                });
+
+            modelBuilder.Entity("Algara.Data.Models.PaymentPolicy", b =>
+                {
+                    b.Property<int>("N")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DepositPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("N");
+
+                    b.ToTable("PaymentPolicies", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PaymentPolicies_Valid", "[N] = 1 AND [DepositPercent] > 0 AND [DepositPercent] <= 100");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            N = 1,
+                            DepositPercent = 50m
                         });
                 });
 
@@ -1784,6 +1989,32 @@ namespace Algara.Web.ShopMigrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Algara.Data.Models.OrderPayment", b =>
+                {
+                    b.HasOne("Algara.Data.Models.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("MethodN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Algara.Data.Models.Order", "Order")
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderN")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Algara.Data.Models.Order", null)
+                        .WithMany()
+                        .HasForeignKey("RelatedOrderN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Algara.Data.Models.OrderPayment", null)
+                        .WithMany()
+                        .HasForeignKey("ReversesN")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("Algara.Data.Models.Partner", b =>
                 {
                     b.HasOne("Algara.Data.Models.Company", "Company")
@@ -2088,6 +2319,8 @@ namespace Algara.Web.ShopMigrations
             modelBuilder.Entity("Algara.Data.Models.Order", b =>
                 {
                     b.Navigation("OrderItems");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("Algara.Data.Models.Product", b =>

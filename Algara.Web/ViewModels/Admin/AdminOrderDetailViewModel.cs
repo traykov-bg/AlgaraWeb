@@ -4,6 +4,8 @@ namespace Algara.Web.ViewModels.Admin
 {
     public class AdminOrderDetailViewModel
     {
+        public Dictionary<OrderStatus, Algara.Web.Services.Payments.OrderStatusPaymentNotice> PaymentNotices { get; set; } = [];
+        public bool CanOverridePayment { get; set; }
         public IReadOnlyDictionary<string, string> ActorNames { get; set; } = new Dictionary<string, string>();
         public IReadOnlyList<OrderEvent> History { get; set; } = [];
         public Order                   Order           { get; set; } = null!;

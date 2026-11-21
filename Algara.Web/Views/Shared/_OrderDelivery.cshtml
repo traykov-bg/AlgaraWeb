@@ -20,6 +20,9 @@
         @if (delivery.TryGetProperty("Office", out var office) && office.ValueKind == JsonValueKind.Object)
         { <p>@office.GetProperty("Name").GetString() — @office.GetProperty("Address").GetString()</p> }
         <p>@T["PaymentNotice"]</p>
+        @if(Model.DepositPercent.HasValue && Model.DepositRequired){<p>@T["DepositPercentLabel"]: @Model.DepositPercent.Value.ToString("0.##")% @if(Model.DepositExempt==true){<span>— @T["DepositExemptLabel"]</span>}</p>}
+        @if(Model.DeferredPaymentDays>0){<p>@T["DeferredDaysLabel"]: @Model.DeferredPaymentDays</p>}
+        @if(Model.PaymentDueOn.HasValue){<p>@T["PaymentDueLabel"]: @Model.PaymentDueOn.Value.ToString("dd.MM.yyyy")</p>}
         <p>@T["Delivery"]: @Model.DeliveryAmount.ToString("N2") €</p>
         @if (Model.ConfirmedAtUtc.HasValue) { <p>@C["Confirmed"]: @Model.ConfirmedAtUtc.Value.ToString("dd.MM.yyyy HH:mm") UTC</p> }
         @if (!string.IsNullOrEmpty(Model.Comment)) { <p>@C["Comment"]: @Model.Comment</p> }

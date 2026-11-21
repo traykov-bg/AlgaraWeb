@@ -1,0 +1,9 @@
+﻿@model Algara.Web.ViewModels.Admin.PaymentSettingsForm
+@{Layout="_AdminLayout";ViewData["Title"]="Настройки за плащания / Payment settings";}
+<h1 class="h3">Настройки за плащания / Payment settings</h1>
+<form method="post" asp-action="Index" class="card card-body mb-4"><input asp-for="Version" type="hidden"/><div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1"></div><label asp-for="DepositPercent">Минимално капаро % — само за нови поръчки / Minimum deposit % — new orders only</label><input asp-for="DepositPercent" inputmode="decimal" class="form-control" required/><span asp-validation-for="DepositPercent" class="text-danger"></span><button class="btn btn-success mt-2">Запиши / Save</button></form>
+<h2 class="h5">Начини на плащане / Payment methods</h2>
+@foreach(var m in Model.Methods.Append(Model.NewMethod)){
+<form method="post" asp-action="Method" class="card card-body mb-2"><input name="n" value="@m.N" type="hidden"/><input name="version" value="@Convert.ToBase64String(m.RowVersion)" type="hidden"/><div class="row g-2"><div class="col-md-4"><label for="method-@m.N">@(m.N==0?"Нов начин / New method":"Име / Name")</label><input id="method-@m.N" name="name" value="@m.Name" required maxlength="100" class="form-control"/>@Html.ValidationMessage("MethodName"+m.N,null,new { @class="text-danger", tabindex="-1" })</div><div class="col-md-4"><label for="english-@m.N">English name</label><input id="english-@m.N" name="englishName" value="@m.EnglishName" maxlength="100" class="form-control"/></div><div class="col-md-2 align-self-end"><label><input name="active" type="checkbox" value="true" checked="@m.IsActive"/> Активен / Active</label></div><div class="col-md-2 align-self-end"><button class="btn btn-outline-success">Запиши / Save</button></div></div></form>
+}
+<script src="~/js/payments.js" asp-append-version="true" defer></script>

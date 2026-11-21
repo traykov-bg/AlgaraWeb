@@ -195,6 +195,7 @@ public sealed partial class StaffOrderService(ShopDbContext db, DeliveryQuoteSer
             db.Add(finalized);await db.SaveChangesAsync(ct);order.InquiryOfferN=finalized.N;
         }
         db.Orders.Add(order);
+        await Algara.Web.Services.Payments.PaymentRules.InitializeAsync(db,order,ct);
         db.Set<OrderEvent>().Add(new OrderEvent { Order=order,Action="StaffCreated",ActorId=order.CreatedByStaffId,
             Status=OrderStatus.Pending,OccurredAtUtc=now,Details=JsonSerializer.Serialize(new { form.Channel,form.Reason,form.InquiryN,order.InquiryOfferN,form.CopiedFromOrderN,form.PartnerN,form.CustomerUserN,result.Quote.IsTest,CustomerAgreedAtUtc=now }) });
         // Only the first successful storefront submission consumes the staff member's cart.

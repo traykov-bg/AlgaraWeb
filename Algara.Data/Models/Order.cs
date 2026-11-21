@@ -12,6 +12,13 @@
     public class Order
     {
         public int N { get; set; }
+        public decimal? DepositPercent { get; set; }
+        public bool DepositRequired { get; set; }
+        public bool? DepositExempt { get; set; }
+        public int? DeferredPaymentDays { get; set; }
+        public DateOnly? DeliveredOn { get; set; }
+        public DateOnly? PaymentDueOn { get; set; }
+        public ICollection<OrderPayment> Payments { get; set; } = new List<OrderPayment>();
 
         /// <summary>
         /// FK към Users.N — без навигационно свойство, за да се избегне циклична референция

@@ -3,6 +3,8 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = $"Поръчка #{Model.Order.N}";
+    var selectedStatus = ViewData["PostedOrderStatus"] as OrderStatus? ?? Model.Order.Status;
+    var paymentError = ViewData.ModelState["paymentException"]?.Errors.Count > 0;
 
     string StatusLabel(OrderStatus s) => s switch
     {
@@ -38,6 +40,7 @@
     <span>Извършител: @Model.ActorNames.GetValueOrDefault(Model.Order.CreatedByStaffId ?? "", "Недостъпен потребител").</span></div>
 }
 @if(Model.Order.InquiryN.HasValue){<p>Запитване <a asp-controller="Inquiries" asp-action="StaffDetails" asp-route-n="@Model.Order.InquiryN" staff-permission="Inquiries.View">#@Model.Order.InquiryN</a> · Оферта #@Model.Order.InquiryOfferN</p>}
+<p><a asp-controller="AdminPayments" asp-action="Order" asp-route-n="@Model.Order.N" staff-permission="Payments.View,Orders.View" class="btn btn-outline-success">Плащания, капаро и остатък</a></p>
 <div class="row g-3">
     <!-- Информация за поръчката -->
     <div class="col-lg-4">
@@ -80,12 +83,13 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold">Промяна на статус</div>
             <div class="card-body">
-                <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post" staff-permission="Orders.View,Orders.ChangeStatus">
-                    <input type="hidden" name="version" value="@Convert.ToBase64String(Model.Order.RowVersion)" />
-                    <select name="status" class="form-select form-select-sm mb-2">
+                <form asp-action="OrderUpdateStatus" asp-route-n="@Model.Order.N" method="post" data-order-status-form staff-permission="Orders.View,Orders.ChangeStatus">
+                    <input type="hidden" name="version" value="@(ViewData["PostedOrderVersion"] as string ?? Convert.ToBase64String(Model.Order.RowVersion))" />
+                    <label for="orderStatus" class="form-label">Нов статус</label>
+                    <select id="orderStatus" name="status" class="form-select form-select-sm mb-2">
                         @foreach (var s in Model.AllStatuses)
                         {
-                            if (s == Model.Order.Status)
+                            if (s == selectedStatus)
                             {
                                 <option value="@((int)s)" selected="selected">@StatusLabel(s)</option>
                             }
@@ -95,6 +99,26 @@
                             }
                         }
                     </select>
+                    @Html.ValidationMessage("status",null,new { @class="text-danger", tabindex="-1" })
+                    <div class="mb-2" data-delivery-date>
+                        <label for="deliveredOn">Дата на действително получаване (при Доставена)</label>
+                        <input id="deliveredOn" type="date" name="deliveredOn" value="@ViewData["PostedDeliveredOn"]" class="form-control @(ViewData.ModelState["deliveredOn"]?.Errors.Count>0?"input-validation-error":"")" />
+                        @Html.ValidationMessage("deliveredOn",null,new { @class="text-danger" })
+                    </div>
+                    @foreach (var notice in Model.PaymentNotices)
+                    {
+                        <p class="small text-warning-emphasis mb-2" data-status-payment-notice="@((int)notice.Key)" data-reason-label="@notice.Value.ReasonLabel" hidden="@(paymentError && notice.Key == selectedStatus)">@notice.Value.Message</p>
+                    }
+                    <div class="mb-2" data-payment-exception>
+                        @if (Model.CanOverridePayment && Model.PaymentNotices.Count > 0)
+                        {
+                            <label for="paymentException" data-payment-exception-label>@Model.PaymentNotices.Values.First().ReasonLabel</label>
+                            <textarea id="paymentException" name="paymentException" maxlength="1000" aria-describedby="paymentExceptionError" class="form-control @(paymentError?"input-validation-error":"")">@ViewData["PostedPaymentException"]</textarea>
+                        }
+                        <div id="paymentExceptionError" data-payment-error-status="@((int)selectedStatus)">
+                            @Html.ValidationMessage("paymentException",null,new { @class="text-danger", tabindex="-1" })
+                        </div>
+                    </div>
                     @if (Model.Order.Status is OrderStatus.Confirmed or OrderStatus.Shipped)
                     {
                         <label for="waybill" class="form-label">Товарителница</label>
@@ -133,7 +157,7 @@
                         @if(item.IndividualManufacture){<p>Индивидуална изработка · Готови: @item.ReadyQuantity / @item.Quantity</p>
                             @if(Model.Order.Status==OrderStatus.Confirmed && string.IsNullOrEmpty(Model.Order.WaybillNumber)){
                             <form asp-action="OrderReady" asp-route-n="@Model.Order.N" method="post" staff-permission="Orders.View,Orders.ChangeStatus">
-                            <input type="hidden" name="version" value="@Convert.ToBase64String(Model.Order.RowVersion)" /><input type="hidden" name="itemN" value="@item.N" />
+                            <input type="hidden" name="version" value="@(ViewData["PostedOrderVersion"] as string ?? Convert.ToBase64String(Model.Order.RowVersion))" /><input type="hidden" name="itemN" value="@item.N" />
                             <label>Готово количество <input name="quantity" type="number" min="0" max="@item.Quantity" value="@item.ReadyQuantity" required /></label>
                             <label>Бележка <input name="note" maxlength="1000" required /></label><button class="btn btn-sm btn-outline-primary">Запиши готовността</button></form>}
                         }</td>
@@ -160,8 +184,8 @@
     <table class="table table-sm"><thead><tr><th>Дата (UTC)</th><th>Действие</th><th>Статус</th><th>Извършител</th></tr></thead><tbody>
     @foreach (var entry in Model.History)
     {
-        var action = entry.Action switch { "StaffCreated" => "Служебно създадена", "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", "Split" => "Разделяне на поръчка", _ => entry.Action };
-        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action @if(entry.Action == "StaffCreated" && entry.Details != null) { using var staffDoc = System.Text.Json.JsonDocument.Parse(entry.Details); <br />@staffDoc.RootElement.GetProperty("Reason").GetString() } @if(entry.Action == "Split" && entry.Details != null) { using var splitDoc = System.Text.Json.JsonDocument.Parse(entry.Details); var childN = splitDoc.RootElement.GetProperty("Child").GetInt32(); <a asp-action="OrderDetail" asp-route-n="@childN">#@childN</a><br />@splitDoc.RootElement.GetProperty("Reason").GetString() }</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
+        var action = entry.Action switch { "StaffCreated" => "Служебно създадена", "Submitted" => "Подадена", "StatusChanged" => "Промяна на статус", "Expired" => "Изтекъл срок", "ClaimedByVerifiedOwner" => "Свързана с профил", "WaybillUpdated" => "Обновена товарителница", "PaymentRecorded" => "Платежен запис", "PaymentException" => "Изключение от плащане", "PaymentTermsConfirmed" => "Потвърдени платежни условия", "Split" => "Разделяне на поръчка", _ => entry.Action };
+        <tr><td>@entry.OccurredAtUtc.ToString("dd.MM.yyyy HH:mm")</td><td>@action @if(entry.Action == "PaymentException" && entry.Details != null){using var exceptionDoc=System.Text.Json.JsonDocument.Parse(entry.Details);<p>@exceptionDoc.RootElement.GetProperty("Reason").GetString()</p>} @if(entry.Action == "PaymentTermsConfirmed" && entry.Details != null){using var termsDoc=System.Text.Json.JsonDocument.Parse(entry.Details);<p>Капаро: @termsDoc.RootElement.GetProperty("DepositPercent")%; освобождаване: @termsDoc.RootElement.GetProperty("DepositExempt"); отсрочка: @termsDoc.RootElement.GetProperty("DeferredPaymentDays") дни.</p>} @if(entry.Action == "StaffCreated" && entry.Details != null) { using var staffDoc = System.Text.Json.JsonDocument.Parse(entry.Details); <br />@staffDoc.RootElement.GetProperty("Reason").GetString() } @if(entry.Action == "Split" && entry.Details != null) { using var splitDoc = System.Text.Json.JsonDocument.Parse(entry.Details); var childN = splitDoc.RootElement.GetProperty("Child").GetInt32(); <a asp-action="OrderDetail" asp-route-n="@childN">#@childN</a><br />@splitDoc.RootElement.GetProperty("Reason").GetString() }</td><td>@StatusLabel(entry.Status)</td><td>@(entry.ActorId == "system" ? "Система" : entry.ActorId == "guest" ? (Model.Order.ContactName ?? "Гост") : Model.ActorNames.GetValueOrDefault(entry.ActorId, "Недостъпен потребител"))</td></tr>
     }
     </tbody></table>
 </section>
@@ -169,3 +193,5 @@
 { <a asp-action="OrderSplit" asp-route-n="@Model.Order.N" class="btn btn-outline-primary mt-3" staff-permission="Orders.View,Orders.Split">Разделяне на поръчката</a> }
 @if (Model.Order.SplitFromN.HasValue)
 { <p class="mt-3">Отделена от <a asp-action="OrderDetail" asp-route-n="@Model.Order.SplitFromN">поръчка #@Model.Order.SplitFromN</a>.</p> }
+
+<script src="~/js/payments.js" asp-append-version="true" defer></script>

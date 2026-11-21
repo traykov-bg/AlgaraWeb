@@ -4,6 +4,7 @@ using Algara.Data.Repositories;
 using Algara.Identity.Data;
 using Algara.Identity.Authorization;
 using Algara.Web.Helpers;
+using Algara.Web.Services.Payments;
 using Algara.Web.ViewModels.Admin;
 using Algara.Web.Authorization;
 using Microsoft.AspNetCore.Authorization;
@@ -582,18 +583,64 @@ namespace Algara.Web.Controllers
                 !string.IsNullOrWhiteSpace((u.FirstName + " " + u.LastName).Trim())
                     ? (u.FirstName + " " + u.LastName).Trim()
                     : u.DisplayName ?? "Потребител без име");
+            if (await CanAsync("Orders.ChangeStatus"))
+            {
+                vm.CanOverridePayment = await CanAsync("Payments.Override");
+                foreach (var target in new[] { OrderStatus.Confirmed, OrderStatus.Delivered })
+                {
+                    var notice = await StatusPaymentNoticeAsync(order, target, vm.CanOverridePayment);
+                    if (notice != null) vm.PaymentNotices[target] = notice;
+                }
+            }
             return View(vm);
+        }
+
+        private async Task<OrderStatusPaymentNotice?> StatusPaymentNoticeAsync(Order order, OrderStatus target, bool canOverride)
+        {
+            if (!Algara.Web.Services.Checkout.OrderLifecycleService.Allows(order.Status, target)) return null;
+            var ct = HttpContext.RequestAborted;
+            var partner = await PaymentRules.PartnerAsync(_shopDb, order, ct);
+            // Calculate missing legacy terms on a detached preview; viewing an order must not freeze them.
+            var preview = new Order
+            {
+                Status = order.Status, TotalAmount = order.TotalAmount, DepositPercent = order.DepositPercent,
+                DepositRequired = order.DepositRequired, DeliverySnapshot = order.DeliverySnapshot, OrderItems = order.OrderItems
+            };
+            if (preview.DepositPercent == null) await PaymentRules.InitializeAsync(_shopDb, preview, ct);
+            var paid = await _shopDb.OrderPayments.Where(p => p.OrderN == order.N).SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
+            var exempt = target == OrderStatus.Confirmed ? partner?.DepositExempt ?? false : order.DepositExempt ?? partner?.DepositExempt ?? false;
+            var days = target == OrderStatus.Confirmed ? partner?.DeferredPaymentDays ?? 0 : order.DeferredPaymentDays ?? partner?.DeferredPaymentDays ?? 0;
+            return OrderStatusPaymentNotice.Create(preview, target, paid, exempt, days, canOverride);
         }
 
         [HttpPost("orders/{n}/status")]
         [ValidateAntiForgeryToken]
         [RequirePermission("Orders.View", "Orders.ChangeStatus")]
-        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status, string? version, string? waybill, [FromServices] Algara.Web.Services.Checkout.OrderLifecycleService lifecycle)
+        public async Task<IActionResult> OrderUpdateStatus(int n, OrderStatus status, string? version, string? waybill, string? paymentException, DateOnly? deliveredOn, [FromServices] Algara.Web.Services.Checkout.OrderLifecycleService lifecycle)
         {
-            if (!await lifecycle.ChangeAsync(n, status, version, User, HttpContext.RequestAborted, waybill))
+            var current=await _shopDb.Orders.AsNoTracking().Include(o=>o.OrderItems).SingleOrDefaultAsync(o=>o.N==n);
+            if(current==null)return NotFound();
+            var today=Algara.Web.Services.Payments.PaymentRules.Today(HttpContext.RequestServices.GetRequiredService<TimeProvider>());
+            if(status==OrderStatus.Delivered && (!deliveredOn.HasValue || deliveredOn>today || deliveredOn<DateOnly.FromDateTime(current.CreatedAt)))
+                ModelState.AddModelError("deliveredOn","Посочете действителна дата между създаването на поръчката и днес.");
+            if(status is OrderStatus.Confirmed or OrderStatus.Delivered) {
+                var canOverride = await CanAsync("Payments.Override");
+                var notice = await StatusPaymentNoticeAsync(current, status, canOverride);
+                if (notice != null && (!canOverride || string.IsNullOrWhiteSpace(paymentException) || paymentException.Length > 1000))
+                    ModelState.AddModelError("paymentException", notice.Message + (paymentException?.Length > 1000 ? " Въведената причина е по-дълга от 1000 знака." : ""));
+            }
+            if (!ModelState.IsValid || !await lifecycle.ChangeAsync(n, status, version, User, HttpContext.RequestAborted, waybill, paymentException, deliveredOn))
             {
-                TempData["Error"] = "Промяната не е записана. Проверете статуса, срока и наличностите и презаредете поръчката.";
-                return RedirectToAction(nameof(OrderDetail), new { n });
+                if (ModelState.IsValid)
+                    ModelState.AddModelError("status", "Промяната не е записана. Проверете плащанията, датата, наличностите и актуалността на поръчката.");
+                ViewData["PostedPaymentException"]=paymentException;
+                ViewData["PostedDeliveredOn"]=deliveredOn?.ToString("yyyy-MM-dd");
+                ViewData["PostedOrderVersion"]=version;
+                ViewData["PostedOrderStatus"]=status;
+                _shopDb.ChangeTracker.Clear();
+                var result=await OrderDetail(n,_shopDb);
+                if(result is ViewResult view) view.ViewName="OrderDetail";
+                return result;
             }
             TempData["Success"] = "Статусът на поръчката е обновен.";
             return RedirectToAction(nameof(OrderDetail), new { n });

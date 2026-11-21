@@ -17,6 +17,8 @@
  <tr><td>@item.ProductName @item.VariantName @item.Sku <p>@item.ExecutionComment</p></td><td>@item.Quantity</td><td>@OrderSplitService.ReadyQuantity(item)</td><td><input class="form-control" type="number" min="0" max="@OrderSplitService.ReadyQuantity(item)" name="Quantities[@item.N]" value="@Model.Quantities.GetValueOrDefault(item.N)" /></td></tr>
  }
  </tbody></table>
+ <div class="alert alert-success" staff-permission="Payments.View"><label asp-for="PaymentAmount">Получено общо: @Model.Paid.ToString("N2") €. Сума за отделената поръчка</label><input asp-for="PaymentAmount" inputmode="decimal" class="form-control" /><span asp-validation-for="PaymentAmount" class="text-danger"></span><p>Остатъкът остава по първоначалната поръчка.</p></div>
+ <div class="mb-3" staff-permission="Payments.Override"><label asp-for="PaymentException">Причина за изключение при недостатъчно капаро след разделяне</label><textarea asp-for="PaymentException" class="form-control" maxlength="1000"></textarea><span asp-validation-for="PaymentException" class="text-danger"></span></div>
  <h2 class="h5">Разпределение на услугите</h2>
  @{ var services=Algara.Data.Models.AgreedOffer.Services(Model.Order.ServicesJson); }
  @for(var i=0;i<services.Count;i++){

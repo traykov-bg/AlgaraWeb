@@ -25,6 +25,7 @@ public static class PermissionCatalog
     public static class Content { public const string View = "Content.View", Create = "Content.Create", Edit = "Content.Edit", Deactivate = "Content.Deactivate"; }
     public static class Promotions { public const string View = "Promotions.View", Create = "Promotions.Create", Edit = "Promotions.Edit", Deactivate = "Promotions.Deactivate", Delete = "Promotions.Delete"; }
     public static class Orders { public const string View = "Orders.View", ChangeStatus = "Orders.ChangeStatus", Split = "Orders.Split", Create = "Orders.Create"; }
+    public static class Payments { public const string View = "Payments.View", Record = "Payments.Record", Correct = "Payments.Correct", Override = "Payments.Override"; }
     public static class Inquiries { public const string View = "Inquiries.View", Create = "Inquiries.Create", Manage = "Inquiries.Manage"; }
     public static class Companies { public const string View = "Companies.View", Create = "Companies.Create", Edit = "Companies.Edit", Deactivate = "Companies.Deactivate"; }
     public static class Partners { public const string View = "Partners.View", Create = "Partners.Create", Edit = "Partners.Edit", Deactivate = "Partners.Deactivate", Move = "Partners.Move"; }
@@ -51,6 +52,7 @@ public static class PermissionCatalog
         new(Content.View,"Съдържание","Преглед"), new(Content.Create,"Съдържание","Създаване"), new(Content.Edit,"Съдържание","Редакция"), new(Content.Deactivate,"Съдържание","Активиране и деактивиране"),
         new(Promotions.View,"Промоции","Преглед"), new(Promotions.Create,"Промоции","Създаване"), new(Promotions.Edit,"Промоции","Редакция"), new(Promotions.Deactivate,"Промоции","Активиране и деактивиране"), new(Promotions.Delete,"Промоции","Изтриване"),
         new(Orders.View,"Поръчки","Преглед"), new(Orders.ChangeStatus,"Поръчки","Промяна на статус"), new(Orders.Split,"Поръчки","Разделяне на поръчки"), new(Orders.Create,"Поръчки","Служебно създаване"),
+        new(Payments.View,"Плащания","Преглед"), new(Payments.Record,"Плащания","Отчитане"), new(Payments.Correct,"Плащания","Корекции и възстановявания"), new(Payments.Override,"Плащания","Изключения от капаро и пълно плащане"),
         new(Inquiries.View,"Запитвания","Преглед"), new(Inquiries.Create,"Запитвания","Служебно създаване"), new(Inquiries.Manage,"Запитвания","Обработка и оферти"),
         new(Companies.View,"Фирми","Преглед"), new(Companies.Create,"Фирми","Създаване"), new(Companies.Edit,"Фирми","Редакция"), new(Companies.Deactivate,"Фирми","Активиране и деактивиране"),
         new(Partners.View,"Контрагенти","Преглед"), new(Partners.Create,"Контрагенти","Създаване"), new(Partners.Edit,"Контрагенти","Редакция"), new(Partners.Deactivate,"Контрагенти","Активиране и деактивиране"), new(Partners.Move,"Контрагенти","Преместване"),
@@ -86,7 +88,7 @@ public static class PermissionCatalog
         .Where(p => role == StaffRoles.Admin || p.Key is not
             (Users.ViewDossier or Users.AddNotes or Users.ManagePartnerLinks or Users.ViewDossierHistory or Users.SendAccountEmails or Users.ManageInvitations or
              Users.EditProfile or Users.ManageAddresses or Users.Unlock or Users.SuspendAccess or Users.ViewSessions or Users.RevokeSessions or
-             Users.PreviewCustomer or Users.AssistCustomer or Users.ResetPassword or Orders.Split or Orders.Create or Inquiries.View or Inquiries.Create or Inquiries.Manage))
+             Users.PreviewCustomer or Users.AssistCustomer or Users.ResetPassword or Orders.Split or Orders.Create or Inquiries.View or Inquiries.Create or Inquiries.Manage or Payments.View or Payments.Record or Payments.Correct or Payments.Override))
         .Where(p => role switch
     {
         StaffRoles.Admin => true,
